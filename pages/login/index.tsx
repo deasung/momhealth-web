@@ -295,6 +295,7 @@ const LoginPage: NextPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
+                  onClick={() => signIn("kakao", { callbackUrl: "/" })}
                   className="h-12 rounded-lg bg-[#FEE500] text-black font-semibold hover:brightness-95 transition-colors"
                 >
                   카카오로 로그인

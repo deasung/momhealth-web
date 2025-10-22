@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import KakaoProvider from "next-auth/providers/kakao";
 import api from "@/lib/api";
 
 // 타입 정의
@@ -22,8 +23,26 @@ declare module "next-auth/jwt" {
   }
 }
 
+// 환경 변수 확인 로그
+console.log("NextAuth 환경 변수:", {
+  // NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  KAKAO_CLIENT_ID: process.env.KAKAO_CLIENT_ID ? "설정됨" : "설정되지 않음",
+  KAKAO_CLIENT_SECRET: process.env.KAKAO_CLIENT_SECRET
+    ? "설정됨"
+    : "설정되지 않음",
+});
+
 export default NextAuth({
   providers: [
+    KakaoProvider({
+      clientId: process.env.KAKAO_CLIENT_ID!,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account", // 카카오 로그인창 강제 표시
+        },
+      },
+    }),
     CredentialsProvider({
       name: "로그인",
       credentials: {
@@ -86,13 +105,23 @@ export default NextAuth({
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
         token.nickname = (user as any).nickname;
-        token.token = (user as any).token; // 토큰 저장
+
+        // 카카오 로그인인 경우 별도 토큰 생성
+        if (account?.provider === "kakao") {
+          const { generateToken } = await import("@/lib/auth");
+          token.token = generateToken({
+            id: user.id,
+            email: user.email || "",
+          });
+        } else {
+          token.token = (user as any).token; // Credentials 로그인의 경우
+        }
       }
       return token;
     },

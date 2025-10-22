@@ -3,9 +3,11 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 const Header = () => {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [isClient, setIsClient] = useState(false);
@@ -161,13 +163,32 @@ const Header = () => {
       </nav>
 
       <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm whitespace-nowrap">
-        <span>사용자 님 환영합니다!</span>
-        <Link
-          href="/login"
-          className="border border-white text-white px-2 md:px-3 py-1 rounded hover:bg-white hover:text-black transition duration-200"
-        >
-          로그인
-        </Link>
+        {status === "loading" ? (
+          <span>로딩 중...</span>
+        ) : session ? (
+          <>
+            <span>
+              {session.user?.nickname || session.user?.name || "사용자"}님
+              환영합니다!
+            </span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="border border-white text-white px-2 md:px-3 py-1 rounded hover:bg-white hover:text-black transition duration-200"
+            >
+              로그아웃
+            </button>
+          </>
+        ) : (
+          <>
+            <span>게스트님 환영합니다!</span>
+            <Link
+              href="/login"
+              className="border border-white text-white px-2 md:px-3 py-1 rounded hover:bg-white hover:text-black transition duration-200"
+            >
+              로그인
+            </Link>
+          </>
+        )}
       </div>
     </header>
   );

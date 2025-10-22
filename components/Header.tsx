@@ -66,15 +66,15 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-black text-white px-6 py-3 flex items-center justify-between shadow-md">
+    <header className="bg-black text-white px-3 md:px-6 py-2 md:py-3 flex items-center justify-between shadow-md">
       {/* ✨ 로고를 클릭 가능한 Link로 변경합니다. */}
       <Link href="/admin" legacyBehavior>
-        <a className="font-bold text-lg cursor-pointer hover:text-gray-300 transition-colors">
+        <a className="font-bold text-base md:text-lg cursor-pointer hover:text-gray-300 transition-colors whitespace-nowrap">
           오늘의 건강{" "}
         </a>
       </Link>
 
-      <nav className="flex gap-2 items-center">
+      <nav className="flex gap-1 md:gap-2 items-center">
         {navItems.map((item) => {
           const getIsActive = () => {
             if (!isClient) return false;
@@ -106,13 +106,13 @@ const Header = () => {
                         openDropdown === item.label ? null : item.label
                       )
                     }
-                    className={`relative flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
+                    className={`relative flex items-center px-3 md:px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base whitespace-nowrap ${
                       isMenuItemActive
                         ? "bg-gray-700 font-semibold"
                         : "hover:bg-gray-700"
                     }`}
                   >
-                    {item.label}
+                    <span className="whitespace-nowrap">{item.label}</span>
                     <span
                       className={`ml-2 transform transition-transform duration-200 ${
                         openDropdown === item.label ? "rotate-180" : "rotate-0"
@@ -145,7 +145,7 @@ const Header = () => {
               ) : (
                 <Link key={item.path} href={item.path!}>
                   <span
-                    className={`px-4 py-2 rounded-md transition-colors duration-200 ${
+                    className={`px-3 md:px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base whitespace-nowrap ${
                       isMenuItemActive
                         ? "bg-gray-700 font-semibold"
                         : "hover:bg-gray-700"
@@ -160,11 +160,14 @@ const Header = () => {
         })}
       </nav>
 
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm whitespace-nowrap">
         <span>사용자 님 환영합니다!</span>
-        <button className="border border-white text-white px-3 py-1 rounded hover:bg-white hover:text-black transition duration-200">
+        <Link
+          href="/login"
+          className="border border-white text-white px-2 md:px-3 py-1 rounded hover:bg-white hover:text-black transition duration-200"
+        >
           로그인
-        </button>
+        </Link>
       </div>
     </header>
   );

@@ -1,4 +1,4 @@
-import { CommunityPost } from "../types/home";
+import { CommunityPost } from "@/types/home";
 
 interface CommunityPostsProps {
   posts: CommunityPost[];

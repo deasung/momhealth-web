@@ -1,4 +1,4 @@
-import { RecommendedQuestion } from "../types/home";
+import { RecommendedQuestion } from "@/types/home";
 
 interface RecommendedQuestionsProps {
   questions: RecommendedQuestion[];

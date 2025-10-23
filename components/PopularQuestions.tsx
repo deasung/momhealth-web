@@ -1,4 +1,4 @@
-import { PopularQuestion } from "@/types/home";
+import { PopularQuestion } from "../types/home";
 
 interface PopularQuestionsProps {
   questions: PopularQuestion[];

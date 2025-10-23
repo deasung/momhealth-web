@@ -23,7 +23,7 @@ export function verifyToken(token: string): TokenPayload {
 // JWT 토큰 관련 유틸리티 함수들
 
 // JWT 토큰을 디코딩하는 함수 (서명 검증 없이)
-export function decodeJWT(token: string): Record<string, unknown> {
+export function decodeJWT(token: string): Record<string, unknown> | null {
   try {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -49,7 +49,7 @@ export function isTokenExpired(token: string): boolean {
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
-    const expirationTime = decoded.exp;
+    const expirationTime = decoded.exp as number;
 
     // 만료 5분 전부터는 만료된 것으로 간주 (여유 시간)
     const bufferTime = 5 * 60; // 5분
@@ -67,7 +67,7 @@ export function getTokenExpirationTime(token: string): Date | null {
     if (!decoded || !decoded.exp) {
       return null;
     }
-    return new Date(decoded.exp * 1000);
+    return new Date((decoded.exp as number) * 1000);
   } catch (error) {
     console.error("토큰 만료 시간 확인 실패:", error);
     return null;
@@ -83,7 +83,7 @@ export function getTokenRemainingTime(token: string): number {
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
-    const expirationTime = decoded.exp;
+    const expirationTime = decoded.exp as number;
 
     return Math.max(0, expirationTime - currentTime);
   } catch (error) {
@@ -109,7 +109,7 @@ export function logTokenInfo(token: string): void {
 
     console.log("토큰 정보:", {
       issuedAt: decoded.iat
-        ? new Date(decoded.iat * 1000).toLocaleString()
+        ? new Date((decoded.iat as number) * 1000).toLocaleString()
         : "N/A",
       expiresAt: expTime ? expTime.toLocaleString() : "N/A",
       remainingTime: `${Math.floor(remainingTime / 60)}분 ${

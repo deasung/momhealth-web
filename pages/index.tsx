@@ -5,7 +5,7 @@ import PopularQuestions from "../components/PopularQuestions";
 import RecommendedQuestions from "../components/RecommendedQuestions";
 import CommunityPosts from "../components/CommunityPosts";
 import { getHomeData } from "../lib/api";
-import { HomeData } from "@/types/home";
+import { HomeData } from "../types/home";
 import { useTokenSync } from "../lib/hooks/useTokenSync";
 
 export default function Home() {

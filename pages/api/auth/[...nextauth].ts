@@ -178,7 +178,8 @@ export default NextAuth({
         session.user.email = token.email as string;
         session.user.nickname = token.nickname as string;
         (session as { token?: string }).token = token.token; // 토큰을 세션에 포함
-        (session as { accessToken?: string }).accessToken = token.accessToken; // accessToken도 포함
+        (session as { accessToken?: string }).accessToken =
+          token.accessToken as string; // accessToken도 포함
         (
           session as { shouldSaveToLocalStorage?: boolean }
         ).shouldSaveToLocalStorage = true; // localStorage 저장 플래그

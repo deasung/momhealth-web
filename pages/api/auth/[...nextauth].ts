@@ -99,14 +99,18 @@ export default NextAuth({
             nickname: data.user?.nickname,
             token: data.access_token,
           };
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("Error during authentication:", error);
 
           // API 에러 응답 처리
-          if (error.response) {
-            const status = error.response.status;
+          if (error && typeof error === "object" && "response" in error) {
+            const axiosError = error as {
+              response: { status: number; data?: { message?: string } };
+            };
+            const status = axiosError.response.status;
             const message =
-              error.response.data?.message || "로그인 API 오류가 발생했습니다.";
+              axiosError.response.data?.message ||
+              "로그인 API 오류가 발생했습니다.";
             console.error("Login API error:", message);
           }
 
@@ -125,8 +129,8 @@ export default NextAuth({
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.nickname = (user as any).nickname;
-        token.accessToken = (user as any).token;
+        token.nickname = (user as { nickname?: string }).nickname;
+        token.accessToken = (user as { token?: string }).token;
 
         // 소셜 로그인인 경우 백엔드 API 호출
         if (account?.provider === "kakao" || account?.provider === "google") {
@@ -162,7 +166,7 @@ export default NextAuth({
             });
           }
         } else {
-          token.token = (user as any).token; // Credentials 로그인의 경우
+          token.token = (user as { token?: string }).token; // Credentials 로그인의 경우
         }
       }
       return token;
@@ -173,9 +177,11 @@ export default NextAuth({
         session.user.name = token.name as string;
         session.user.email = token.email as string;
         session.user.nickname = token.nickname as string;
-        (session as any).token = token.token; // 토큰을 세션에 포함
-        (session as any).accessToken = token.accessToken; // accessToken도 포함
-        (session as any).shouldSaveToLocalStorage = true; // localStorage 저장 플래그
+        (session as { token?: string }).token = token.token; // 토큰을 세션에 포함
+        (session as { accessToken?: string }).accessToken = token.accessToken; // accessToken도 포함
+        (
+          session as { shouldSaveToLocalStorage?: boolean }
+        ).shouldSaveToLocalStorage = true; // localStorage 저장 플래그
       }
       return session;
     },

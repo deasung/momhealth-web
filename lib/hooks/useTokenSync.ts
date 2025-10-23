@@ -16,8 +16,10 @@ export function useTokenSync() {
 
     if (session) {
       const userToken =
-        (session as any)?.token || (session as any)?.accessToken;
-      const shouldSave = (session as any)?.shouldSaveToLocalStorage;
+        (session as { token?: string; accessToken?: string })?.token ||
+        (session as { token?: string; accessToken?: string })?.accessToken;
+      const shouldSave = (session as { shouldSaveToLocalStorage?: boolean })
+        ?.shouldSaveToLocalStorage;
 
       if (userToken && shouldSave) {
         // NextAuth에서 지시한 경우에만 localStorage에 저장

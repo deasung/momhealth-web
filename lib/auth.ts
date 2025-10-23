@@ -23,7 +23,7 @@ export function verifyToken(token: string): TokenPayload {
 // JWT 토큰 관련 유틸리티 함수들
 
 // JWT 토큰을 디코딩하는 함수 (서명 검증 없이)
-export function decodeJWT(token: string): any {
+export function decodeJWT(token: string): Record<string, unknown> {
   try {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");

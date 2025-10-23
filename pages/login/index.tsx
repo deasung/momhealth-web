@@ -1,11 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { signIn, getSession } from "next-auth/react";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useLogout } from "@/lib/hooks/useLogout";
-import api from "@/lib/api";
 
 const LoginPage: NextPage = () => {
   const [email, setEmail] = useState("");
@@ -121,11 +120,12 @@ const LoginPage: NextPage = () => {
           // router.push("/");
         }
       }
-    } catch (error: any) {
-      showError(
-        "로그인 실패",
-        error.message || "로그인 중 오류가 발생했습니다."
-      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "로그인 중 오류가 발생했습니다.";
+      showError("로그인 실패", errorMessage);
     } finally {
       setLoading(false);
     }

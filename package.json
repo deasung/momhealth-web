@@ -6,7 +6,7 @@
     "dev": "next dev -p 3300",
     "build": "next build",
     "start": "next start -p 3300",
-    "lint": "next lint"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0"
   },
   "dependencies": {
     "@tailwindcss/line-clamp": "^0.4.4",
@@ -23,8 +23,12 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",
     "@types/react": "19.1.6",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "autoprefixer": "^10.4.21",
     "dotenv-cli": "^8.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.1.0",
     "postcss": "^8.5.4",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.19.4",

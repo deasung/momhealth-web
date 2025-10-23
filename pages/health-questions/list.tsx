@@ -4,10 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import { getHealthQuestions } from "../../lib/api";
-import {
-  HealthQuestion,
-  HealthQuestionsResponse,
-} from "../../types/health-questions";
+import { HealthQuestion } from "../../types/health-questions";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
 
 export default function HealthQuestionsList() {
@@ -18,7 +15,7 @@ export default function HealthQuestionsList() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
-  const router = useRouter();
+  // const router = useRouter(); // 현재 사용하지 않음
   const { isTokenSynced } = useTokenSync();
 
   // 초기 데이터 로드

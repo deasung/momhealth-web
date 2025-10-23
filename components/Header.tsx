@@ -3,7 +3,8 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { useLogout } from "../lib/hooks/useLogout";
 
 const Header = () => {
   const router = useRouter();
@@ -11,6 +12,7 @@ const Header = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [isClient, setIsClient] = useState(false);
+  const { logout } = useLogout();
 
   useEffect(() => {
     setIsClient(true);
@@ -172,7 +174,7 @@ const Header = () => {
               환영합니다!
             </span>
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={logout}
               className="border border-white text-white px-2 md:px-3 py-1 rounded hover:bg-white hover:text-black transition duration-200"
             >
               로그아웃

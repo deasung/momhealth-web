@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import { signIn, getSession } from "next-auth/react";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useLogout } from "@/lib/hooks/useLogout";
 import api from "@/lib/api";
 
 const LoginPage: NextPage = () => {
@@ -28,7 +29,8 @@ const LoginPage: NextPage = () => {
   });
 
   const router = useRouter();
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
+  const { logout } = useLogout();
 
   // 유효성 검사 규칙
   const EMAIL_RULE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -156,11 +158,17 @@ const LoginPage: NextPage = () => {
               M
             </div>
             <h1 className="text-2xl font-bold text-gray-800">
-              {isAuthenticated ? "이미 로그인됨" : "로그인"}
+              {isAuthenticated
+                ? "이미 로그인됨"
+                : isGuest
+                ? "게스트 모드"
+                : "로그인"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               {isAuthenticated
                 ? "이미 로그인된 상태입니다"
+                : isGuest
+                ? "게스트 모드로 이용 중입니다. 로그인하시면 더 많은 기능을 이용할 수 있습니다"
                 : "이메일로 로그인하거나 소셜 계정을 사용하세요"}
             </p>
           </div>

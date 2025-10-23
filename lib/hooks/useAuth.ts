@@ -10,6 +10,7 @@ import { TOKEN_KEYS, API_CONFIG } from "../constants";
 interface UseAuthReturn {
   token: string | null;
   isAuthenticated: boolean;
+  isGuest: boolean;
   isLoading: boolean;
   logout: () => void;
   refreshToken: () => void;
@@ -18,6 +19,7 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -83,22 +85,27 @@ export function useAuth(): UseAuthReturn {
         if (storedToken) {
           if (validateToken(storedToken)) {
             setToken(storedToken);
-            setIsAuthenticated(true);
+            setIsGuest(isGuest);
+            // 게스트 토큰이면 인증되지 않은 상태로 처리
+            setIsAuthenticated(!isGuest);
           } else {
             // 토큰이 만료되었으면 localStorage에서 제거
             localStorage.removeItem(TOKEN_KEYS.TOKEN);
             localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
             setToken(null);
             setIsAuthenticated(false);
+            setIsGuest(false);
           }
         } else {
           setToken(null);
           setIsAuthenticated(false);
+          setIsGuest(false);
         }
       } catch (error) {
         console.error("인증 초기화 실패:", error);
         setToken(null);
         setIsAuthenticated(false);
+        setIsGuest(false);
       } finally {
         setIsLoading(false);
       }
@@ -124,6 +131,7 @@ export function useAuth(): UseAuthReturn {
   return {
     token,
     isAuthenticated,
+    isGuest,
     isLoading,
     logout,
     refreshToken,

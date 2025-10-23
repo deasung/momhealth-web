@@ -185,4 +185,14 @@ export default NextAuth({
   },
   secret: process.env.NEXTAUTH_SECRET, // ✨ 이 부분이 .env.local과 연결됩니다.
   debug: process.env.NODE_ENV === "development",
+  // JWT 에러 핸들링
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30일
+  },
+  // 세션 에러 핸들링
+  events: {
+    async signOut({ token }) {
+      console.log("NextAuth signOut event:", token);
+    },
+  },
 });

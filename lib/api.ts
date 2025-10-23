@@ -245,4 +245,26 @@ export const getHomeData = async () => {
   }
 };
 
+// 질문목록 가져오기 (커서 기반 페이징)
+export const getHealthQuestions = async (
+  limit: number = 10,
+  cursor?: string
+) => {
+  try {
+    const params = new URLSearchParams();
+    params.append("limit", limit.toString());
+    if (cursor) {
+      params.append("cursor", cursor);
+    }
+
+    const response = await api.get(
+      `/private/health.questions?${params.toString()}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("질문목록 가져오기 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

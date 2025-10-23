@@ -42,8 +42,8 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
         <Head>
-          <title>MomHealth Web</title>
-          <meta name="description" content="MomHealth 웹 애플리케이션" />
+          <title>오늘의 건강</title>
+          <meta name="description" content="오늘의 건강 웹 애플리케이션" />
           <link rel="icon" href="/favicon.ico" />
         </Head>
         <Header />
@@ -61,8 +61,8 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
         <Head>
-          <title>MomHealth Web</title>
-          <meta name="description" content="MomHealth 웹 애플리케이션" />
+          <title>오늘의 건강</title>
+          <meta name="description" content="오늘의 건강" />
           <link rel="icon" href="/favicon.ico" />
         </Head>
         <Header />
@@ -85,8 +85,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
       <Head>
-        <title>MomHealth Web</title>
-        <meta name="description" content="MomHealth 웹 애플리케이션" />
+        <title>오늘의 건강</title>
+        <meta name="description" content="오늘의 건강 웹 애플리케이션" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 

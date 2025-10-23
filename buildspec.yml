@@ -1,0 +1,47 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: ap-northeast-2
+    IMAGE_REPO_NAME: momhealth-web-production   # ✅ ECR 리포 이름 그대로
+    IMAGE_TAG: latest
+    ENV_FILE: .env.production
+    PLATFORM: linux/amd64
+
+phases:
+  install:
+    runtime-versions:
+      docker: 20
+    commands:
+      - echo "[install] docker version"; docker --version
+
+  pre_build:
+    commands:
+      - echo "[pre_build] AWS login"
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - aws ecr describe-repositories --repository-names $IMAGE_REPO_NAME --region $AWS_REGION \
+        || aws ecr create-repository --repository-name $IMAGE_REPO_NAME --image-scanning-configuration scanOnPush=true --region $AWS_REGION
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${ECR_URI}
+      - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
+      - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
+
+  build:
+    commands:
+      - echo "[build] docker build"
+      - docker build --build-arg ENV_FILE=${ENV_FILE} --platform ${PLATFORM} -t ${IMAGE_REPO_NAME}:${COMMIT} .
+      - docker tag ${IMAGE_REPO_NAME}:${COMMIT} ${IMAGE}:${COMMIT}
+      - docker tag ${IMAGE_REPO_NAME}:${COMMIT} ${IMAGE}:${IMAGE_TAG}
+      - echo "[push] ${IMAGE}:${COMMIT} and ${IMAGE}:${IMAGE_TAG}"
+      - docker push ${IMAGE}:${COMMIT}
+      - docker push ${IMAGE}:${IMAGE_TAG}
+
+  post_build:
+    commands:
+      - echo "[post_build] write imagedefinitions.json"
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$IMAGE_REPO_NAME" "${IMAGE}:${IMAGE_TAG}" > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

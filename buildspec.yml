@@ -20,11 +20,13 @@ phases:
       - echo "[pre_build] AWS login"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-      - aws ecr describe-repositories --repository-names $IMAGE_REPO_NAME --region $AWS_REGION \
-        || aws ecr create-repository --repository-name $IMAGE_REPO_NAME --image-scanning-configuration scanOnPush=true --region $AWS_REGION
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${ECR_URI}
+      # 리포 존재 확인 (존재하지 않으면 생성)
+      - aws ecr describe-repositories --repository-names "$IMAGE_REPO_NAME" --region "$AWS_REGION" >/dev/null 2>&1 \
+        || aws ecr create-repository --repository-name "$IMAGE_REPO_NAME" --image-scanning-configuration scanOnPush=true --region "$AWS_REGION"
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${ECR_URI}"
       - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
       - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
+
 
   build:
     commands:

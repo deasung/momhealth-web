@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import { useSession, signOut } from "next-auth/react";
 import {
   isTokenExpired,
   logTokenInfo,
   getTokenRemainingTime,
 } from "@/lib/auth";
+import { TOKEN_KEYS, API_CONFIG } from "../constants";
 
 interface UseAuthReturn {
   token: string | null;
@@ -20,12 +20,13 @@ export function useAuth(): UseAuthReturn {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { data: session, status } = useSession();
 
   // 로그아웃 함수
   const logout = useCallback(async () => {
     console.log("로그아웃 실행");
-    await signOut({ redirect: false });
+    // localStorage에서 토큰 제거
+    localStorage.removeItem(TOKEN_KEYS.TOKEN);
+    localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
     setToken(null);
     setIsAuthenticated(false);
     router.push("/login");
@@ -33,7 +34,7 @@ export function useAuth(): UseAuthReturn {
 
   // 토큰 새로고침 함수
   const refreshToken = useCallback(() => {
-    const storedToken = localStorage.getItem("adminToken");
+    const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
     if (storedToken) {
       setToken(storedToken);
       setIsAuthenticated(true);
@@ -59,10 +60,9 @@ export function useAuth(): UseAuthReturn {
       // 개발 환경에서 토큰 정보 로깅
       logTokenInfo(tokenToValidate);
 
-      // 토큰이 곧 만료될 예정인지 확인 (10분 이내)
+      // 토큰이 곧 만료될 예정인지 확인
       const remainingTime = getTokenRemainingTime(tokenToValidate);
-      if (remainingTime < 10 * 60) {
-        // 10분
+      if (remainingTime < API_CONFIG.TOKEN_REFRESH_THRESHOLD) {
         console.warn(
           `토큰이 곧 만료됩니다. 남은 시간: ${Math.floor(remainingTime / 60)}분`
         );
@@ -73,32 +73,39 @@ export function useAuth(): UseAuthReturn {
     [logout]
   );
 
-  // NextAuth 세션 기반 인증 상태 관리
+  // localStorage 기반 인증 상태 관리
   useEffect(() => {
-    if (status === "loading") {
-      setIsLoading(true);
-      return;
-    }
+    const initializeAuth = () => {
+      try {
+        const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
+        const isGuest = localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
 
-    if (status === "unauthenticated") {
-      setIsLoading(false);
-      setIsAuthenticated(false);
-      setToken(null);
-      return;
-    }
-
-    if (status === "authenticated" && session) {
-      const userToken = (session as any).token;
-      if (userToken && validateToken(userToken)) {
-        setToken(userToken);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
+        if (storedToken) {
+          if (validateToken(storedToken)) {
+            setToken(storedToken);
+            setIsAuthenticated(true);
+          } else {
+            // 토큰이 만료되었으면 localStorage에서 제거
+            localStorage.removeItem(TOKEN_KEYS.TOKEN);
+            localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
+            setToken(null);
+            setIsAuthenticated(false);
+          }
+        } else {
+          setToken(null);
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error("인증 초기화 실패:", error);
         setToken(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }
-  }, [status, session, validateToken]);
+    };
+
+    initializeAuth();
+  }, [validateToken]);
 
   // 주기적으로 토큰 검증 (1분마다)
   useEffect(() => {
@@ -125,7 +132,7 @@ export function useAuth(): UseAuthReturn {
 
 // API 호출 전 토큰 검증을 위한 유틸리티 함수
 export function validateTokenBeforeRequest(): string | null {
-  const token = localStorage.getItem("adminToken");
+  const token = localStorage.getItem(TOKEN_KEYS.TOKEN);
 
   if (!token) {
     console.warn("토큰이 없습니다.");
@@ -134,9 +141,8 @@ export function validateTokenBeforeRequest(): string | null {
 
   if (isTokenExpired(token)) {
     console.warn("토큰이 만료되었습니다.");
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminName");
-    window.location.href = "/admin/login";
+    localStorage.removeItem(TOKEN_KEYS.TOKEN);
+    localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
     return null;
   }
 

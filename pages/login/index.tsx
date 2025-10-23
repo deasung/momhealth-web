@@ -302,6 +302,7 @@ const LoginPage: NextPage = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => signIn("google", { callbackUrl: "/" })}
                   className="h-12 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
                 >
                   구글로 로그인

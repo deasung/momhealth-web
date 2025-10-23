@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import KakaoProvider from "next-auth/providers/kakao";
+import GoogleProvider from "next-auth/providers/google";
 import api from "@/lib/api";
 
 // 타입 정의
@@ -20,6 +21,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     token?: string;
     nickname?: string;
+    refreshToken?: string;
   }
 }
 
@@ -28,6 +30,10 @@ console.log("NextAuth 환경 변수:", {
   // NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   KAKAO_CLIENT_ID: process.env.KAKAO_CLIENT_ID ? "설정됨" : "설정되지 않음",
   KAKAO_CLIENT_SECRET: process.env.KAKAO_CLIENT_SECRET
+    ? "설정됨"
+    : "설정되지 않음",
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "설정됨" : "설정되지 않음",
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET
     ? "설정됨"
     : "설정되지 않음",
 });
@@ -40,6 +46,15 @@ export default NextAuth({
       authorization: {
         params: {
           prompt: "select_account", // 카카오 로그인창 강제 표시
+        },
+      },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account", // 구글 로그인창 강제 표시
         },
       },
     }),
@@ -111,14 +126,41 @@ export default NextAuth({
         token.name = user.name;
         token.email = user.email;
         token.nickname = (user as any).nickname;
+        token.accessToken = (user as any).token;
 
-        // 카카오 로그인인 경우 별도 토큰 생성
-        if (account?.provider === "kakao") {
-          const { generateToken } = await import("@/lib/auth");
-          token.token = generateToken({
-            id: user.id,
-            email: user.email || "",
-          });
+        // 소셜 로그인인 경우 백엔드 API 호출
+        if (account?.provider === "kakao" || account?.provider === "google") {
+          try {
+            console.log("소셜 로그인 백엔드 API 호출:", {
+              provider: account.provider,
+              user: user.email,
+            });
+
+            const response = await api.post("/public/auth/social-login", {
+              provider: account.provider,
+              email: user.email,
+              name: user.name,
+              // 소셜 로그인에서 받은 추가 정보들
+              socialId: user.id,
+            });
+
+            if (response.data.success) {
+              // 백엔드에서 받은 토큰 사용
+              token.token = response.data.access_token;
+              token.refreshToken = response.data.refresh_token;
+              token.nickname = response.data.user?.nickname;
+            } else {
+              throw new Error(response.data.message || "소셜 로그인 실패");
+            }
+          } catch (error) {
+            console.error("소셜 로그인 API 호출 실패:", error);
+            // 백엔드 API 실패 시 로컬 JWT 토큰 생성
+            const { generateToken } = await import("@/lib/auth");
+            token.token = generateToken({
+              id: user.id,
+              email: user.email || "",
+            });
+          }
         } else {
           token.token = (user as any).token; // Credentials 로그인의 경우
         }
@@ -132,6 +174,8 @@ export default NextAuth({
         session.user.email = token.email as string;
         session.user.nickname = token.nickname as string;
         (session as any).token = token.token; // 토큰을 세션에 포함
+        (session as any).accessToken = token.accessToken; // accessToken도 포함
+        (session as any).shouldSaveToLocalStorage = true; // localStorage 저장 플래그
       }
       return session;
     },

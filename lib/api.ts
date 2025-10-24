@@ -1,9 +1,9 @@
 import axios from "axios";
 import { TOKEN_KEYS, API_CONFIG } from "./constants";
 
-export const BASE_URL = process.env.MOMHEATH_API_URL || "http://localhost:3000";
-export const API_KEY =
-  process.env.MOMHEATH_API_KEY || "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
+// 클라이언트에서는 Next.js API 라우트를 통해 프록시
+export const BASE_URL = "/api/proxy";
+export const API_KEY = "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
 
 // 토큰 관리 상태
 let currentToken: string | null = null;
@@ -113,47 +113,23 @@ const api = axios.create({
   timeout: API_CONFIG.TIMEOUT,
 });
 
-// 요청 인터셉터: 인증 토큰 추가 + 로깅
+// 요청 인터셉터: localStorage 토큰을 프록시로 전달
 api.interceptors.request.use(
-  async (config) => {
-    let { currentToken, isGuest } = {
-      currentToken: getCurrentToken(),
-      isGuest: getIsGuest(),
-    };
+  (config) => {
+    // localStorage에서 토큰 가져오기
+    const currentToken = getCurrentToken();
 
-    // 토큰이 없거나 만료된 경우 게스트 토큰 자동 발급
-    if (
-      (!currentToken || (currentToken && isTokenExpired(currentToken))) &&
-      !isGuest
-    ) {
-      console.log(
-        "🔄 [요청 인터셉터] 토큰이 없거나 만료되어 게스트 토큰 자동 발급 시도"
-      );
-      try {
-        const guestToken = await getGuestToken();
-        if (guestToken) {
-          setToken(guestToken, true);
-          currentToken = guestToken;
-          console.log("✅ 게스트 토큰 자동 발급 성공");
-        }
-      } catch (error) {
-        console.log("❌ 게스트 토큰 자동 발급 실패:", error);
-      }
-    }
-
-    // 토큰이 있으면 Authorization 헤더에 추가
     if (currentToken) {
       config.headers.Authorization = `Bearer ${currentToken}`;
     }
 
-    console.log("API 요청:", {
+    console.log("API 요청 (프록시):", {
       method: config.method?.toUpperCase(),
       url: config.url,
       baseURL: config.baseURL,
       fullURL: `${config.baseURL || ""}${config.url}`,
       hasToken: !!currentToken,
-      isGuest: isGuest,
-      headers: config.headers,
+      isGuest: getIsGuest(),
     });
 
     return config;
@@ -164,61 +140,33 @@ api.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터: 토큰 만료 처리 + 에러 처리
+// 응답 인터셉터: 프록시를 통한 응답 로깅만
 api.interceptors.response.use(
   (response) => {
-    console.log("API 응답 성공:", {
+    console.log("API 응답 성공 (프록시):", {
       status: response.status,
       url: response.config.url,
-      data: response.data,
     });
     return response;
   },
-  async (error) => {
-    const originalRequest = error.config;
-
-    // 401 Unauthorized 에러이고, 아직 재시도하지 않은 경우
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      console.log("🔑 토큰 만료 감지, 게스트 토큰으로 재시도");
-
-      try {
-        // 게스트 토큰 발급
-        const guestToken = await getGuestToken();
-        if (guestToken) {
-          setToken(guestToken, true);
-
-          // 원래 요청에 새 토큰 적용
-          originalRequest.headers.Authorization = `Bearer ${guestToken}`;
-
-          // 원래 요청 재시도
-          return api(originalRequest);
-        }
-      } catch (retryError) {
-        console.error("토큰 갱신 후 재시도 실패:", retryError);
-      }
-    }
-
-    console.error("API 요청 실패:", {
+  (error) => {
+    console.error("API 요청 실패 (프록시):", {
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
-      data: error.response?.data,
       message: error.message,
     });
     return Promise.reject(error);
   }
 );
 
-// 게스트 토큰 발급
+// 게스트 토큰 발급 (프록시를 통해)
 export const getGuestToken = async (): Promise<string | null> => {
   try {
     const response = await fetch(`${BASE_URL}/public/auth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(API_KEY && { "x-api-key": API_KEY }),
       },
       body: JSON.stringify({}),
     });

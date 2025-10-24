@@ -131,14 +131,54 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       responseData: error.response?.data,
     });
 
-    // 401 에러이고 클라이언트 토큰이 있었던 경우, 게스트 토큰으로 재시도
-    if (
-      error.response?.status === 401 &&
-      clientToken &&
-      !finalToken.includes("Bearer")
-    ) {
-      console.log("[API 프록시] 401 에러 - 게스트 토큰으로 재시도");
+    // 401 에러인 경우 토큰 갱신 시도
+    if (error.response?.status === 401) {
+      console.log("[API 프록시] 401 에러 - 토큰 갱신 시도");
+
+      // 1. 먼저 refresh_token으로 토큰 갱신 시도
+      if (clientToken) {
+        try {
+          console.log("[API 프록시] refresh_token으로 토큰 갱신 시도");
+          const refreshResponse = await axios({
+            method: "POST",
+            url: `${baseURL}/public/auth/token/refresh`,
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              Authorization: clientToken,
+            },
+            data: {},
+          });
+
+          if (refreshResponse.data?.access_token) {
+            console.log("[API 프록시] refresh_token으로 토큰 갱신 성공");
+            const retryResponse = await axios({
+              method: req.method,
+              url: `${baseURL}/${apiPath}`,
+              headers: {
+                "x-api-key": apiKey,
+                Authorization: `Bearer ${refreshResponse.data.access_token}`,
+              },
+              data: req.body,
+              params: req.query,
+            });
+
+            console.log(
+              `[API 프록시] 갱신된 토큰으로 재시도 성공: ${retryResponse.status}`
+            );
+            return res.status(retryResponse.status).json(retryResponse.data);
+          }
+        } catch (refreshError: any) {
+          console.error(
+            "[API 프록시] refresh_token 갱신 실패:",
+            refreshError.message
+          );
+        }
+      }
+
+      // 2. refresh_token 갱신 실패 시 게스트 토큰으로 재시도
       try {
+        console.log("[API 프록시] 게스트 토큰으로 재시도");
         const guestTokenResponse = await axios({
           method: "POST",
           url: `${baseURL}/public/auth/token`,
@@ -154,7 +194,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             method: req.method,
             url: `${baseURL}/${apiPath}`,
             headers: {
-              "Content-Type": "application/json",
               "x-api-key": apiKey,
               Authorization: `Bearer ${guestTokenResponse.data.access_token}`,
             },

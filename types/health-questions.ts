@@ -36,3 +36,24 @@ export interface HealthQuestionDetail {
   questionCount: number;
   userProgress?: UserProgress;
 }
+
+// 퀴즈 관련 타입 정의
+export interface QuizChoice {
+  id: string;
+  text: string;
+}
+
+export interface QuizItem {
+  id: string;
+  title: string;
+  choices: QuizChoice[];
+}
+
+export interface QuizData {
+  items: QuizItem[];
+}
+
+export interface QuizAnswer {
+  itemId: string;
+  choiceId: string;
+}

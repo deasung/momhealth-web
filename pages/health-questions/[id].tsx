@@ -31,8 +31,9 @@ const HealthQuestionDetail = () => {
   };
 
   const handleStartQuestion = () => {
-    // 질문 시작 로직 (추후 구현)
-    console.log("질문 시작:", question?.id);
+    if (question?.id) {
+      router.push(`/health-questions/${question.id}/quiz`);
+    }
   };
 
   if (loading) {

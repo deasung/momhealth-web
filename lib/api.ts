@@ -226,4 +226,28 @@ export const getHealthQuestionDetail = async (id: string) => {
   }
 };
 
+// 퀴즈 문항 가져오기
+export const getQuizItems = async (id: string) => {
+  try {
+    const response = await api.get(`/private/health.questions/${id}/items`);
+    return response.data;
+  } catch (error) {
+    console.error("퀴즈 문항 가져오기 실패:", error);
+    throw error;
+  }
+};
+
+// 퀴즈 답안 제출
+export const submitQuizAnswers = async (id: string, answers: any[]) => {
+  try {
+    const response = await api.post(`/private/health.questions/${id}/submit`, {
+      answers,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("퀴즈 답안 제출 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

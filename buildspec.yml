@@ -6,11 +6,14 @@ env:
     IMAGE_TAG: latest
     ENV_FILE: .env.production
     PLATFORM: linux/arm64
+    EC2_TAG_KEY: Name
+    EC2_TAG_VAL: momhealth-web        # ← EC2에 달아둔 태그값으로 변경 가능
+    CONTAINER_NAME: momhealth-web
+    HOST_PORT: "80"
+    APP_PORT: "3300"
 
 phases:
   install:
-    runtime-versions:
-      docker: 23
     commands:
       - echo "[install] docker version"; docker --version
 
@@ -18,12 +21,10 @@ phases:
     commands:
       - echo "[pre_build] login & ensure repo"
       - set -e
-      # REGION: AWS_REGION가 있으면 그값, 없으면 AWS_DEFAULT_REGION 사용
       - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
       - echo "Region=${REGION}"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-      # 이미 존재하면 조용히 통과, 없으면 생성
       - |
         if ! aws ecr describe-repositories --repository-names "${IMAGE_REPO_NAME}" --region "${REGION}" >/dev/null 2>&1; then
           aws ecr create-repository --repository-name "${IMAGE_REPO_NAME}" --image-scanning-configuration scanOnPush=true --region "${REGION}"
@@ -31,21 +32,72 @@ phases:
       - aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URI}"
       - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
       - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
+      # buildx/qemu (x86 CodeBuild에서 arm64 빌드 필요 시)
+      - docker run --privileged --rm tonistiigi/binfmt --install all
+      - docker buildx create --use --name multi || docker buildx use multi
+      - docker buildx inspect --bootstrap
 
   build:
     commands:
-      - echo "[build] docker build"
-      - docker build --build-arg ENV_FILE="${ENV_FILE}" --platform "${PLATFORM}" -t "${IMAGE_REPO_NAME}:${COMMIT}" .
-      - docker tag "${IMAGE_REPO_NAME}:${COMMIT}" "${IMAGE}:${COMMIT}"
-      - docker tag "${IMAGE_REPO_NAME}:${COMMIT}" "${IMAGE}:${IMAGE_TAG}"
-      - docker push "${IMAGE}:${COMMIT}"
-      - docker push "${IMAGE}:${IMAGE_TAG}"
+      - echo "[buildx] build and push (arm64)"
+      - docker buildx build \
+        --platform ${PLATFORM} \
+        --build-arg ENV_FILE="${ENV_FILE}" \
+        -t "${IMAGE}:${COMMIT}" -t "${IMAGE}:${IMAGE_TAG}" \
+        --push .
 
   post_build:
     commands:
+      - echo "[post_build] write imagedefinitions.json"
       - printf '[{"name":"%s","imageUri":"%s"}]' "${IMAGE_REPO_NAME}" "${IMAGE}:${IMAGE_TAG}" > imagedefinitions.json
       - cat imagedefinitions.json
 
+      - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
+      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
+      - |
+        CMD=$(cat <<'EOS'
+        #!/bin/bash
+        set -e
+        REGION='${REGION}'
+        ACCOUNT_ID='${ACCOUNT_ID}'
+        IMAGE='${IMAGE}'
+        CONTAINER='${CONTAINER_NAME}'
+        HOST_PORT='${HOST_PORT}'
+        APP_PORT='${APP_PORT}'
+
+        # login & pull
+        aws ecr get-login-password --region "$REGION" \
+        | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+
+        docker pull "${IMAGE}:latest"
+
+        # run idempotently
+        docker stop "$CONTAINER" || true
+        docker rm "$CONTAINER" || true
+
+        docker run -d --name "$CONTAINER" \
+          -p ${HOST_PORT}:${APP_PORT} \
+          --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 \
+          -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} \
+          "${IMAGE}:latest"
+        EOS
+        )
+        echo "$CMD" > deploy.sh
+
+      - |
+        COMMAND_ID=$(aws ssm send-command \
+          --document-name "AWS-RunShellScript" \
+          --comment "Deploy ${IMAGE_REPO_NAME} to EC2" \
+          --parameters commands="['bash -lc \"$(sed 's/\"/\\\"/g' deploy.sh)\"']" \
+          --targets "Key=tag:${EC2_TAG_KEY},Values=${EC2_TAG_VAL}" \
+          --timeout-seconds 600 \
+          --region "${REGION}" \
+          --query "Command.CommandId" --output text)
+        echo "SSM CommandId=${COMMAND_ID}"
+
+      # (선택) 간단 대기/확인
+      - sleep 5
+      - aws ssm list-command-invocations --command-id "$COMMAND_ID" --details --region "${REGION}" || true
 artifacts:
   files:
     - imagedefinitions.json

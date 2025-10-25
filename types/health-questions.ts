@@ -1,18 +1,22 @@
-// 질문 아이템 타입
 export interface QuestionItem {
   id: number;
   content: string;
   order: number;
 }
 
-// 카테고리 타입
 export interface Category {
   id: string;
   name: string;
 }
 
-// 질문 타입
-export interface HealthQuestion {
+export interface UserProgress {
+  isCompleted: boolean;
+  score: number | null;
+  completedAt: string | null;
+  result: any;
+}
+
+export interface HealthQuestionDetail {
   id: string;
   title: string;
   description: string;
@@ -20,24 +24,15 @@ export interface HealthQuestion {
   isVisible: boolean;
   viewCount: number;
   durationMinutes: number | null;
-  durationSeconds: number | null;
+  durationSeconds: number;
   detailDescription: string | null;
-  detailThumbnailUrl: string | null;
+  detailThumbnailUrl: string;
   createdAt: string;
-  primaryCategory: Category | null;
-  secondaryCategory: Category | null;
+  primaryCategory: Category;
+  secondaryCategory: Category;
   tertiaryCategory: Category | null;
   items: QuestionItem[];
+  questionResults: any[];
   questionCount: number;
-}
-
-// 질문목록 응답 타입
-export interface HealthQuestionsResponse {
-  questions: HealthQuestion[];
-  nextCursor: string | null;
-}
-
-// 질문목록 페이지 Props 타입
-export interface HealthQuestionsPageProps {
-  initialData: HealthQuestionsResponse;
+  userProgress?: UserProgress;
 }

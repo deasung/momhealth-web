@@ -86,6 +86,22 @@ export const clearToken = () => {
   console.log("🗑️ 토큰 초기화");
 };
 
+// 환경 변수 검증
+if (!process.env.MOMHEATH_API_URL) {
+  console.warn(
+    "⚠️ MOMHEATH_API_URL 환경 변수가 설정되지 않았습니다. 기본값 http://localhost:8080을 사용합니다."
+  );
+}
+
+if (!process.env.MOMHEATH_API_KEY) {
+  console.warn("⚠️ MOMHEATH_ADMIN_API_KEY 환경 변수가 설정되지 않았습니다.");
+}
+
+console.log("API 설정:", {
+  BASE_URL: BASE_URL || "상대 경로 사용",
+  API_KEY: API_KEY ? "설정됨" : "설정되지 않음",
+  NODE_ENV: process.env.NODE_ENV,
+});
 
 // axios 인스턴스 생성
 const api = axios.create({
@@ -107,14 +123,14 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${currentToken}`;
     }
 
-    console.log("API 요청 (프록시):", {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL || ""}${config.url}`,
-      hasToken: !!currentToken,
-      isGuest: getIsGuest(),
-    });
+    // console.log("API 요청 (프록시):", {
+    //   method: config.method?.toUpperCase(),
+    //   url: config.url,
+    //   baseURL: config.baseURL,
+    //   fullURL: `${config.baseURL || ""}${config.url}`,
+    //   hasToken: !!currentToken,
+    //   isGuest: getIsGuest(),
+    // });
 
     return config;
   },
@@ -195,6 +211,17 @@ export const getHealthQuestions = async (
     return response.data;
   } catch (error) {
     console.error("질문목록 가져오기 실패:", error);
+    throw error;
+  }
+};
+
+// 질문 상세 정보 가져오기
+export const getHealthQuestionDetail = async (id: string) => {
+  try {
+    const response = await api.get(`/private/health.questions/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("질문 상세 정보 가져오기 실패:", error);
     throw error;
   }
 };

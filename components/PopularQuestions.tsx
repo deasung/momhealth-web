@@ -1,10 +1,16 @@
 import { PopularQuestion } from "../types/home";
+import { useRouter } from "next/router";
 
 interface PopularQuestionsProps {
   questions: PopularQuestion[];
 }
 
 const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
+  const router = useRouter();
+
+  const handleQuestionClick = (questionId: string) => {
+    router.push(`/health-questions/${questionId}`);
+  };
   return (
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
@@ -18,7 +24,8 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
         {questions.map((question) => (
           <div
             key={question.id}
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+            onClick={() => handleQuestionClick(question.id)}
+            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer"
           >
             <div className="relative">
               <img

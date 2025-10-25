@@ -95,9 +95,9 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8">
         {/* 히어로 섹션 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+          {/* <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
             오늘의 건강
-          </h1>
+          </h1> */}
           <p className="text-lg text-gray-600 mb-8">
             당신의 건강을 위한 맞춤형 건강 관리 플랫폼
           </p>

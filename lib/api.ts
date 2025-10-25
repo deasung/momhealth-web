@@ -240,12 +240,41 @@ export const getQuizItems = async (id: string) => {
 // 퀴즈 답안 제출
 export const submitQuizAnswers = async (id: string, answers: any[]) => {
   try {
-    const response = await api.post(`/private/health.questions/${id}/submit`, {
-      answers,
+    console.log("=== API 호출 상세 정보 ===");
+    console.log("요청 URL:", `/private/health.questions/${id}/submit`);
+    console.log("원본 답변 데이터:", answers);
+
+    // 백엔드 API 형식에 맞게 데이터 변환
+    const formattedAnswers = answers.map((answer) => ({
+      itemId: parseInt(answer.itemId), // 문자열 → 숫자
+      choiceId: parseInt(answer.choiceId), // 문자열 → 숫자
+    }));
+
+    console.log("변환된 답변 데이터:", formattedAnswers);
+    console.log("답변 배열 길이:", formattedAnswers.length);
+
+    // 각 답변의 타입 확인
+    formattedAnswers.forEach((answer, index) => {
+      console.log(`답변 ${index + 1} 타입 확인:`, {
+        itemId: answer.itemId,
+        itemIdType: typeof answer.itemId,
+        choiceId: answer.choiceId,
+        choiceIdType: typeof answer.choiceId,
+        isItemIdValid: !isNaN(answer.itemId),
+        isChoiceIdValid: !isNaN(answer.choiceId),
+      });
     });
+
+    const response = await api.post(`/private/health.questions/${id}/submit`, {
+      answers: formattedAnswers,
+    });
+
+    console.log("API 응답 성공:", response.data);
     return response.data;
   } catch (error) {
     console.error("퀴즈 답안 제출 실패:", error);
+    console.error("에러 응답:", error.response?.data);
+    console.error("에러 상태:", error.response?.status);
     throw error;
   }
 };

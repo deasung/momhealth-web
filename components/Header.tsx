@@ -52,11 +52,13 @@ const Header = () => {
     };
   }, [router, isClient]);
 
-  const navItems: Array<{
+  type NavItem = {
     label: string;
     path: string;
     children?: Array<{ label: string; path: string }>;
-  }> = [
+  };
+
+  const navItems: NavItem[] = [
     { label: "홈", path: "/" },
     {
       label: "건강질문",

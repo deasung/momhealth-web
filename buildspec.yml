@@ -2,14 +2,20 @@ version: 0.2
 
 env:
   variables:
-    IMAGE_REPO_NAME: "momhealth-web-production"
-    IMAGE_TAG: "latest"
-    CONTAINER_NAME: "momhealth-web"
-    EC2_TAG_KEY: "Name"
-    EC2_TAG_VAL: "momhealth-web"
-    HOST_PORT: "80"
-    APP_PORT: "3300"
-    PLATFORM: "linux/arm64"
+    # --- 이미지 / 빌드 ---
+    IMAGE_REPO_NAME: momhealth-web-production
+    IMAGE_TAG: latest
+    ENV_FILE: .env.production
+    PLATFORM: linux/arm64
+
+    # --- 배포 대상 EC2 (태그로 지정) ---
+    EC2_TAG_KEY: Name
+    EC2_TAG_VAL: momhealth-web
+
+    # --- 컨테이너 실행 옵션 ---
+    CONTAINER_NAME: momhealth-web
+    HOST_PORT: "80"     # 외부로 노출할 포트
+    APP_PORT: "3300"    # 컨테이너 내 Next.js 포트 (Dockerfile에서 EXPOSE 3300)
 
 phases:
   install:
@@ -25,12 +31,13 @@ phases:
       - echo "Region=${REGION}"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-      - if ! aws ecr describe-repositories --repository-names "${IMAGE_REPO_NAME}" --region "${REGION}" >/dev/null 2>&1; then
-        aws ecr create-repository --repository-name "${IMAGE_REPO_NAME}" --image-scanning-configuration scanOnPush=true --region "${REGION}";
-        fi
+      # 리포지토리 없으면 생성
+      - if ! aws ecr describe-repositories --repository-names "${IMAGE_REPO_NAME}" --region "${REGION}" >/dev/null 2>&1; then aws ecr create-repository --repository-name "${IMAGE_REPO_NAME}" --image-scanning-configuration scanOnPush=true --region "${REGION}"; fi
+      # 로그인
       - aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URI}"
       - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
       - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
+      # 멀티아키 세팅(buildx)
       - docker run --privileged --rm tonistiigi/binfmt --install all
       - docker buildx create --use --name multi || docker buildx use multi
       - docker buildx inspect --bootstrap
@@ -45,29 +52,44 @@ phases:
       - echo "[post_build] write imagedefinitions.json"
       - printf '[{"name":"%s","imageUri":"%s"}]' "${IMAGE_REPO_NAME}" "${IMAGE}:${IMAGE_TAG}" > imagedefinitions.json
       - cat imagedefinitions.json
+
       - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
       - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
+      # 1) 플레이스홀더 JSON 생성 (쉘 확장 방지)
       - |
-        cat > ssm-params.json <<EOF
+        cat > ssm-params.json <<'EOF'
         {
           "commands": [
             "set -e",
-            "REGION='${REGION}'",
-            "ACCOUNT_ID='${ACCOUNT_ID}'",
-            "IMAGE='${IMAGE}'",
-            "CONTAINER='${CONTAINER_NAME}'",
-            "HOST_PORT='${HOST_PORT}'",
-            "APP_PORT='${APP_PORT}'",
-            "aws ecr get-login-password --region \\${REGION} | docker login --username AWS --password-stdin \\${ACCOUNT_ID}.dkr.ecr.\\${REGION}.amazonaws.com",
-            "docker pull \\${IMAGE}:latest",
-            "docker stop \\${CONTAINER} || true",
-            "docker rm \\${CONTAINER} || true",
-            "docker run -d --name \\${CONTAINER} -p \\${HOST_PORT}:\\${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=\\${APP_PORT} \\${IMAGE}:latest"
+            "REGION='__REGION__'",
+            "ACCOUNT_ID='__ACCOUNT_ID__'",
+            "IMAGE='__IMAGE__'",
+            "CONTAINER='__CONTAINER__'",
+            "HOST_PORT='__HOST_PORT__'",
+            "APP_PORT='__APP_PORT__'",
+            "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com",
+            "docker pull ${IMAGE}:latest",
+            "docker stop ${CONTAINER} || true",
+            "docker rm ${CONTAINER} || true",
+            "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE}:latest"
           ]
         }
         EOF
 
+      # 2) 실제 값 치환
+      - |
+        sed -i \
+          -e "s|__REGION__|${REGION}|g" \
+          -e "s|__ACCOUNT_ID__|${ACCOUNT_ID}|g" \
+          -e "s|__IMAGE__|${IMAGE}|g" \
+          -e "s|__CONTAINER__|${CONTAINER_NAME}|g" \
+          -e "s|__HOST_PORT__|${HOST_PORT}|g" \
+          -e "s|__APP_PORT__|${APP_PORT}|g" \
+          ssm-params.json
+        echo "--- ssm-params.json ---"; cat ssm-params.json; echo "----------------------"
+
+      # 3) SSM 실행
       - |
         COMMAND_ID=$(aws ssm send-command \
           --document-name "AWS-RunShellScript" \
@@ -76,10 +98,15 @@ phases:
           --targets "Key=tag:${EC2_TAG_KEY},Values=${EC2_TAG_VAL}" \
           --timeout-seconds 600 \
           --region "${REGION}" \
-          --query "Command.CommandId" --output text)
+          --query "Command.CommandId" --output text) || true
         echo "SSM CommandId=${COMMAND_ID}"
 
-      - aws ssm list-command-invocations --command-id "$COMMAND_ID" --details --region "${REGION}" || true
+      - |
+        if [ -n "$COMMAND_ID" ] && [ "$COMMAND_ID" != "None" ]; then
+          aws ssm list-command-invocations --command-id "$COMMAND_ID" --details --region "${REGION}" || true
+        else
+          echo "WARN: SSM CommandId is empty (send-command might have failed)."
+        fi
 
 artifacts:
   files:

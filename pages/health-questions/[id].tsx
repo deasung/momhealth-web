@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { getHealthQuestionDetail } from "../../lib/api";
-import { HealthQuestionDetail } from "../../types/health-questions";
+import type { HealthQuestionDetail } from "../../types/health-questions";
 
 const HealthQuestionDetail = () => {
   const router = useRouter();

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import { getHealthQuestions } from "../../lib/api";
-import { HealthQuestion } from "../../types/health-questions";
+import type { HealthQuestionDetail } from "../../types/health-questions";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
 
 export default function HealthQuestionsList() {
-  const [questions, setQuestions] = useState<HealthQuestion[]>([]);
+  const [questions, setQuestions] = useState<HealthQuestionDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export default function HealthQuestionsList() {
   };
 
   // 질문 카드 컴포넌트
-  const QuestionCard = ({ question }: { question: HealthQuestion }) => (
+  const QuestionCard = ({ question }: { question: HealthQuestionDetail }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
       <div className="flex">
         {/* 썸네일 */}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Header from "../../components/Header";
 import { getHealthQuestionDetail } from "../../lib/api";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 
@@ -73,32 +74,8 @@ const HealthQuestionDetail = () => {
       </Head>
 
       <div className="min-h-screen bg-gray-50">
-        {/* 헤더 */}
-        <div className="bg-white shadow-sm">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center">
-              <button
-                onClick={() => router.back()}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-full"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <h1 className="text-lg font-semibold text-gray-800">건강질문</h1>
-            </div>
-          </div>
-        </div>
+        {/* 공통 헤더 */}
+        <Header />
 
         <div className="max-w-4xl mx-auto px-4 py-6">
           {/* 카테고리 태그 */}

@@ -27,7 +27,8 @@ declare module "next-auth/jwt" {
 
 // 환경 변수 확인 로그
 console.log("NextAuth 환경 변수:", {
-  // NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  NODE_ENV: process.env.NODE_ENV,
   KAKAO_CLIENT_ID: process.env.KAKAO_CLIENT_ID ? "설정됨" : "설정되지 않음",
   KAKAO_CLIENT_SECRET: process.env.KAKAO_CLIENT_SECRET
     ? "설정됨"
@@ -37,6 +38,13 @@ console.log("NextAuth 환경 변수:", {
     ? "설정됨"
     : "설정되지 않음",
 });
+
+// 환경별 콜백 URL 로깅
+const callbackUrls = {
+  kakao: `${process.env.NEXTAUTH_URL}/api/auth/callback/kakao`,
+  google: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,
+};
+console.log("OAuth 콜백 URL:", callbackUrls);
 
 export default NextAuth({
   providers: [

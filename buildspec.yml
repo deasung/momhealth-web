@@ -61,15 +61,15 @@ phases:
 
       # ====== 데모용 값 (운영은 SSM SecureString으로 읽는 것을 권장) ======
       - NEXTAUTH_URL_VALUE="https://medigen.ai.kr"   # 실제 서비스 도메인
-      - NEXTAUTH_SECRET_VALUE="__PUT_YOUR_SECRET__"
+      - NEXTAUTH_SECRET_VALUE="92nkzVApA5J9Fne9s8XeQAGdEkOiTK+v+1cztN/eTok="
       - MOMHEALTH_API_URL_VALUE="https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production"
-      - MOMHEALTH_API_KEY_VALUE="__PUT_API_KEY__"
+      - MOMHEALTH_API_KEY_VALUE="f5e60c40-5eb4-11ea-b4d7-0d9c1606f185"
       - JWT_SECRET_VALUE="e4f5d620-bb7a-4f56-90c7-5a9e6b7b2d10\$momhealth2025!"  # $ 이스케이프
       - CDN_URL_VALUE="https://di7imxmn4pwuq.cloudfront.net"
       - KAKAO_CLIENT_ID_VALUE="f8ac4eae134f37ea481b65f4e43ce54e"
-      - KAKAO_CLIENT_SECRET_VALUE="__PUT_KAKAO_SECRET__"
+      - KAKAO_CLIENT_SECRET_VALUE="asdfasdfsafasfasfsdfsfsa121231231"
       - GOOGLE_CLIENT_ID_VALUE="575173374427-t09ul9r8c0ckr2lp2r6bhfatksuru9ve.apps.googleusercontent.com"
-      - GOOGLE_CLIENT_SECRET_VALUE="__PUT_GOOGLE_SECRET__"
+      - GOOGLE_CLIENT_SECRET_VALUE="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"
       # ===========================================================
 
       # SSM 파라미터 JSON을 jq로 생성 (IDE YAML 경고 X, 이스케이프 안전)

@@ -14,8 +14,8 @@ env:
 
     # --- 컨테이너 실행 옵션 ---
     CONTAINER_NAME: momhealth-web
-    HOST_PORT: "80"     # 외부로 노출할 포트
-    APP_PORT: "3300"    # 컨테이너 내 Next.js 포트 (Dockerfile에서 EXPOSE 3300)
+    HOST_PORT: "80" # 외부로 노출할 포트
+    APP_PORT: "3300" # 컨테이너 내 Next.js 포트 (Dockerfile에서 EXPOSE 3300)
 
 phases:
   install:
@@ -72,7 +72,7 @@ phases:
             "docker pull ${IMAGE}:latest",
             "docker stop ${CONTAINER} || true",
             "docker rm ${CONTAINER} || true",
-            "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE}:latest"
+            "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} -e NEXTAUTH_URL=https://medigen.ai.kr -e NEXTAUTH_SECRET=92nkzVApA5J9Fne9s8XeQAGdEkOiTK+v+1cztN/eTok= -e MOMHEATH_API_URL=https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production -e MOMHEATH_API_KEY=f5e60c40-5eb4-11ea-b4d7-0d9c1606f185 -e JWT_SECRET=e4f5d620-bb7a-4f56-90c7-5a9e6b7b2d10\$momhealth2025! -e CDN_URL=https://di7imxmn4pwuq.cloudfront.net -e KAKAO_CLIENT_ID=f8ac4eae134f37ea481b65f4e43ce54e -e KAKAO_CLIENT_SECRET=asdfasdfsafasfasfsdfsfsa121231231 -e GOOGLE_CLIENT_ID=575173374427-t09ul9r8c0ckr2lp2r6bhfatksuru9ve.apps.googleusercontent.com -e GOOGLE_CLIENT_SECRET=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 ${IMAGE}:latest"
           ]
         }
         EOF

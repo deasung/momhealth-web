@@ -14,14 +14,16 @@ env:
 
     # --- 컨테이너 실행 옵션 ---
     CONTAINER_NAME: momhealth-web
-    HOST_PORT: "80" # 외부로 노출할 포트
-    APP_PORT: "3300" # 컨테이너 내 Next.js 포트 (Dockerfile에서 EXPOSE 3300)
+    HOST_PORT: "80"      # LB→EC2 외부 포트
+    APP_PORT: "3300"     # 컨테이너 내부 Next.js 포트
 
 phases:
   install:
     commands:
       - echo "[install] docker version"
       - docker --version
+      # jq가 없는 커스텀 이미지라면 주석 해제
+      # - yum install -y jq
 
   pre_build:
     commands:
@@ -31,20 +33,21 @@ phases:
       - echo "Region=${REGION}"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-      # 리포지토리 없으면 생성
-      - if ! aws ecr describe-repositories --repository-names "${IMAGE_REPO_NAME}" --region "${REGION}" >/dev/null 2>&1; then aws ecr create-repository --repository-name "${IMAGE_REPO_NAME}" --image-scanning-configuration scanOnPush=true --region "${REGION}"; fi
-      # 로그인
+      - |
+        if ! aws ecr describe-repositories --repository-names "${IMAGE_REPO_NAME}" --region "${REGION}" >/dev/null 2>&1; then
+          aws ecr create-repository --repository-name "${IMAGE_REPO_NAME}" --image-scanning-configuration scanOnPush=true --region "${REGION}"
+        fi
       - aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URI}"
       - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
       - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
-      # 멀티아키 세팅(buildx)
+      # buildx 멀티아키
       - docker run --privileged --rm tonistiigi/binfmt --install all
       - docker buildx create --use --name multi || docker buildx use multi
       - docker buildx inspect --bootstrap
 
   build:
     commands:
-      - echo "[buildx] build and push (arm64)"
+      - echo "[buildx] build and push (${PLATFORM})"
       - docker buildx build --platform "${PLATFORM}" --build-arg ENV_FILE="${ENV_FILE}" -t "${IMAGE}:${COMMIT}" -t "${IMAGE}:${IMAGE_TAG}" --push .
 
   post_build:
@@ -56,40 +59,56 @@ phases:
       - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
       - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
-      # 1) 플레이스홀더 JSON 생성 (쉘 확장 방지)
-      - |
-        cat > ssm-params.json <<'EOF'
-        {
-          "commands": [
-            "set -e",
-            "REGION='__REGION__'",
-            "ACCOUNT_ID='__ACCOUNT_ID__'",
-            "IMAGE='__IMAGE__'",
-            "CONTAINER='__CONTAINER__'",
-            "HOST_PORT='__HOST_PORT__'",
-            "APP_PORT='__APP_PORT__'",
-            "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com",
-            "docker pull ${IMAGE}:latest",
-            "docker stop ${CONTAINER} || true",
-            "docker rm ${CONTAINER} || true",
-            "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} -e NEXTAUTH_URL=https://medigen.ai.kr -e NEXTAUTH_SECRET=92nkzVApA5J9Fne9s8XeQAGdEkOiTK+v+1cztN/eTok= -e MOMHEATH_API_URL=https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production -e MOMHEATH_API_KEY=f5e60c40-5eb4-11ea-b4d7-0d9c1606f185 -e JWT_SECRET=e4f5d620-bb7a-4f56-90c7-5a9e6b7b2d10\$momhealth2025! -e CDN_URL=https://di7imxmn4pwuq.cloudfront.net -e KAKAO_CLIENT_ID=f8ac4eae134f37ea481b65f4e43ce54e -e KAKAO_CLIENT_SECRET=asdfasdfsafasfasfsdfsfsa121231231 -e GOOGLE_CLIENT_ID=575173374427-t09ul9r8c0ckr2lp2r6bhfatksuru9ve.apps.googleusercontent.com -e GOOGLE_CLIENT_SECRET=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 ${IMAGE}:latest"
-          ]
-        }
-        EOF
+      # ====== 데모용 값 (운영은 SSM SecureString으로 읽는 것을 권장) ======
+      - NEXTAUTH_URL_VALUE="https://medigen.ai.kr"   # 실제 서비스 도메인
+      - NEXTAUTH_SECRET_VALUE="__PUT_YOUR_SECRET__"
+      - MOMHEALTH_API_URL_VALUE="https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production"
+      - MOMHEALTH_API_KEY_VALUE="__PUT_API_KEY__"
+      - JWT_SECRET_VALUE="e4f5d620-bb7a-4f56-90c7-5a9e6b7b2d10\$momhealth2025!"  # $ 이스케이프
+      - CDN_URL_VALUE="https://di7imxmn4pwuq.cloudfront.net"
+      - KAKAO_CLIENT_ID_VALUE="f8ac4eae134f37ea481b65f4e43ce54e"
+      - KAKAO_CLIENT_SECRET_VALUE="__PUT_KAKAO_SECRET__"
+      - GOOGLE_CLIENT_ID_VALUE="575173374427-t09ul9r8c0ckr2lp2r6bhfatksuru9ve.apps.googleusercontent.com"
+      - GOOGLE_CLIENT_SECRET_VALUE="__PUT_GOOGLE_SECRET__"
+      # ===========================================================
 
-      # 2) 실제 값 치환
+      # SSM 파라미터 JSON을 jq로 생성 (IDE YAML 경고 X, 이스케이프 안전)
       - |
-        sed -i \
-          -e "s|__REGION__|${REGION}|g" \
-          -e "s|__ACCOUNT_ID__|${ACCOUNT_ID}|g" \
-          -e "s|__IMAGE__|${IMAGE}|g" \
-          -e "s|__CONTAINER__|${CONTAINER_NAME}|g" \
-          -e "s|__HOST_PORT__|${HOST_PORT}|g" \
-          -e "s|__APP_PORT__|${APP_PORT}|g" \
-          ssm-params.json
+        jq -n \
+          --arg region "${REGION}" \
+          --arg account "${ACCOUNT_ID}" \
+          --arg image "${IMAGE}" \
+          --arg container "${CONTAINER_NAME}" \
+          --arg host_port "${HOST_PORT}" \
+          --arg app_port "${APP_PORT}" \
+          --arg na_url "${NEXTAUTH_URL_VALUE}" \
+          --arg na_sec "${NEXTAUTH_SECRET_VALUE}" \
+          --arg mh_url "${MOMHEALTH_API_URL_VALUE}" \
+          --arg mh_key "${MOMHEALTH_API_KEY_VALUE}" \
+          --arg jwt    "${JWT_SECRET_VALUE}" \
+          --arg cdn    "${CDN_URL_VALUE}" \
+          --arg kid    "${KAKAO_CLIENT_ID_VALUE}" \
+          --arg ksec   "${KAKAO_CLIENT_SECRET_VALUE}" \
+          --arg gid    "${GOOGLE_CLIENT_ID_VALUE}" \
+          --arg gsec   "${GOOGLE_CLIENT_SECRET_VALUE}" \
+          '{
+            commands: [
+              "set -e",
+              "REGION='\''\($region)'\''",
+              "ACCOUNT_ID='\''\($account)'\''",
+              "IMAGE='\''\($image)'\''",
+              "CONTAINER='\''\($container)'\''",
+              "HOST_PORT='\''\($host_port)'\''",
+              "APP_PORT='\''\($app_port)'\''",
+              "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com",
+              "docker pull ${IMAGE}:latest",
+              "docker stop ${CONTAINER} || true",
+              "docker rm ${CONTAINER} || true",
+              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE}:latest"
+            ]
+          }' > ssm-params.json
         echo "--- ssm-params.json ---"; cat ssm-params.json; echo "----------------------"
 
-      # 3) SSM 실행
       - |
         COMMAND_ID=$(aws ssm send-command \
           --document-name "AWS-RunShellScript" \

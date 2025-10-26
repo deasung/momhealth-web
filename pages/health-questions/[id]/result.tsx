@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
 
 // 정적 생성에서 제외하고 동적으로 렌더링
 export const getServerSideProps = async () => {
@@ -30,18 +31,22 @@ const ResultPage = () => {
       {/* 공통 헤더 */}
       <Header />
 
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 md:px-6 py-8">
         {/* 결과 내용 */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-black mb-6">나의 점수</h1>
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl font-bold text-black mb-4 sm:mb-6">
+            나의 점수
+          </h1>
 
           {/* 점수 표시 */}
-          <div className="text-6xl font-bold text-teal-500 mb-4">25</div>
+          <div className="text-5xl sm:text-6xl font-bold text-teal-500 mb-4">
+            25
+          </div>
 
           {/* 피드백 태그 */}
-          <div className="inline-flex items-center bg-teal-50 text-teal-700 px-4 py-2 rounded-full mb-6">
+          <div className="inline-flex items-center bg-teal-50 text-teal-700 px-3 sm:px-4 py-2 rounded-full mb-4 sm:mb-6">
             <svg
-              className="w-5 h-5 mr-2"
+              className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -51,11 +56,11 @@ const ResultPage = () => {
                 clipRule="evenodd"
               />
             </svg>
-            뛰어난 스트레스 관리
+            <span className="text-sm sm:text-base">뛰어난 스트레스 관리</span>
           </div>
 
           {/* 설명 텍스트 */}
-          <div className="text-black text-lg leading-relaxed">
+          <div className="text-black text-base sm:text-lg leading-relaxed px-2">
             <p className="mb-2">
               스트레스를 잘 관리하고 있습니다! 현재의 방식 그대로,
             </p>
@@ -64,13 +69,13 @@ const ResultPage = () => {
         </div>
 
         {/* 하단 버튼 */}
-        <div className="w-full max-w-md flex items-center justify-between">
+        <div className="w-full max-w-md flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <button
             onClick={handleRetake}
-            className="flex items-center text-black hover:bg-gray-100 px-4 py-3 rounded-lg transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center text-black hover:bg-gray-100 px-4 py-3 rounded-lg transition-colors"
           >
             <svg
-              className="w-5 h-5 mr-2"
+              className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -82,16 +87,16 @@ const ResultPage = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            다시 풀기
+            <span className="text-sm sm:text-base">다시 풀기</span>
           </button>
 
           <button
             onClick={handleBackToList}
-            className="flex items-center bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition-colors"
           >
-            목록으로
+            <span className="text-sm sm:text-base">목록으로</span>
             <svg
-              className="w-5 h-5 ml-2"
+              className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -106,6 +111,9 @@ const ResultPage = () => {
           </button>
         </div>
       </div>
+
+      {/* 푸터 */}
+      <Footer />
     </div>
   );
 };

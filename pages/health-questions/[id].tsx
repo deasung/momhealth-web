@@ -1,43 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Image from "next/image";
 import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 import { getHealthQuestionDetail } from "../../lib/api";
+import { useAuth } from "../../lib/hooks/useAuth";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 
 const HealthQuestionDetail = () => {
   const router = useRouter();
   const { id } = router.query;
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [question, setQuestion] = useState<HealthQuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      fetchQuestionDetail();
-    }
-  }, [id]);
-
-  const fetchQuestionDetail = async () => {
+  const fetchQuestionDetail = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getHealthQuestionDetail(id as string);
       setQuestion(data);
     } catch (err) {
-      console.error("질문 상세 정보 로딩 실패:", err);
       setError("질문 정보를 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchQuestionDetail();
+    }
+  }, [id, fetchQuestionDetail]);
 
   const handleStartQuestion = () => {
+    // 로그인 여부 확인
+    if (!isAuthenticated) {
+      // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+      router.push("/login");
+      return;
+    }
+
     if (question?.id) {
       router.push(`/health-questions/${question.id}/quiz`);
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -73,11 +83,11 @@ const HealthQuestionDetail = () => {
         <meta name="description" content={question.description} />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         {/* 공통 헤더 */}
         <Header />
 
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           {/* 카테고리 태그 */}
           <div className="mb-4">
             <div className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -109,9 +119,11 @@ const HealthQuestionDetail = () => {
 
           {/* 썸네일 이미지 */}
           <div className="mb-8">
-            <img
+            <Image
               src={question.detailThumbnailUrl || question.thumbnailUrl}
               alt={question.title}
+              width={800}
+              height={256}
               className="w-full h-64 object-cover rounded-lg shadow-md"
             />
           </div>
@@ -132,7 +144,7 @@ const HealthQuestionDetail = () => {
               질문 미리보기
             </h3>
             <div className="space-y-3">
-              {question.items.slice(0, 3).map((item, index) => (
+              {question.items.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex items-start">
                   <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2 py-1 rounded-full mr-3 mt-1">
                     {item.order}
@@ -182,13 +194,20 @@ const HealthQuestionDetail = () => {
           <div className="text-center">
             <button
               onClick={handleStartQuestion}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg"
+              className={`font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg ${
+                isAuthenticated
+                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
             >
-              질문 시작하기
+              {isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* 푸터 */}
+      <Footer />
     </>
   );
 };

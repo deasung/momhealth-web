@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 import { getHealthQuestions } from "../../lib/api";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
@@ -15,7 +15,6 @@ export default function HealthQuestionsList() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
-  // const router = useRouter(); // 현재 사용하지 않음
   const { isTokenSynced } = useTokenSync();
 
   // 초기 데이터 로드
@@ -63,44 +62,45 @@ export default function HealthQuestionsList() {
 
   // 질문 카드 컴포넌트
   const QuestionCard = ({ question }: { question: HealthQuestionDetail }) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
-      <div className="flex">
-        {/* 썸네일 */}
-        <div className="w-24 h-24 flex-shrink-0">
-          <img
-            src={question.thumbnailUrl}
-            alt={question.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors duration-200">
+      <div className="p-6">
+        <div className="flex items-start justify-between">
+          {/* 왼쪽: 썸네일과 기본 정보 */}
+          <div className="flex items-start gap-4 flex-1">
+            {/* 썸네일 */}
+            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+              <img
+                src={question.thumbnailUrl}
+                alt={question.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-        {/* 내용 */}
-        <div className="flex-1 p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
+            {/* 질문 정보 */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
                 {question.title}
               </h3>
-              <p className="text-gray-600 text-xs mb-2 line-clamp-2">
+              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                 {question.description}
               </p>
 
-              {/* 카테고리 */}
-              <div className="flex flex-wrap gap-1 mb-2">
+              {/* 카테고리 태그 */}
+              <div className="flex flex-wrap gap-2 mb-3">
                 {question.primaryCategory && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
                     {question.primaryCategory.name}
                   </span>
                 )}
                 {question.secondaryCategory && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700">
                     {question.secondaryCategory.name}
                   </span>
                 )}
               </div>
 
               {/* 메타 정보 */}
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span>질문 {question.questionCount}개</span>
                 {question.durationSeconds && (
                   <span>{question.durationSeconds}초</span>
@@ -108,16 +108,16 @@ export default function HealthQuestionsList() {
                 <span>조회 {question.viewCount}</span>
               </div>
             </div>
+          </div>
 
-            {/* 시작 버튼 */}
-            <div className="ml-3">
-              <Link
-                href={`/health-questions/${question.id}`}
-                className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-xs font-medium rounded-lg hover:from-pink-600 hover:to-orange-600 transition-colors"
-              >
-                시작하기
-              </Link>
-            </div>
+          {/* 오른쪽: 시작 버튼 */}
+          <div className="ml-4 flex-shrink-0">
+            <Link
+              href={`/health-questions/${question.id}`}
+              className="inline-flex items-center justify-center px-6 py-3 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              시작하기
+            </Link>
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function HealthQuestionsList() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
+      <div className="min-h-screen bg-white">
         <Head>
           <title>질문목록 | 오늘의 건강</title>
           <meta name="description" content="건강 관련 질문목록을 확인하세요" />
@@ -144,7 +144,7 @@ export default function HealthQuestionsList() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
+      <div className="min-h-screen bg-white">
         <Head>
           <title>질문목록 | 오늘의 건강</title>
         </Head>
@@ -169,7 +169,7 @@ export default function HealthQuestionsList() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
+    <div className="min-h-screen bg-white">
       <Head>
         <title>질문목록 | 오늘의 건강</title>
         <meta name="description" content="건강 관련 질문목록을 확인하세요" />
@@ -177,19 +177,19 @@ export default function HealthQuestionsList() {
 
       <Header />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            건강 질문목록
-          </h1>
+          {/*<h1 className="text-2xl font-bold text-gray-900 mb-2">*/}
+          {/*  건강 질문목록*/}
+          {/*</h1>*/}
           <p className="text-gray-600">
             다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요.
           </p>
         </div>
 
         {/* 질문 목록 */}
-        <div className="space-y-4 mb-8">
+        <div className="space-y-3 mb-8">
           {questions.map((question) => (
             <QuestionCard key={question.id} question={question} />
           ))}
@@ -197,14 +197,14 @@ export default function HealthQuestionsList() {
 
         {/* 더보기 버튼 */}
         {hasMore && (
-          <div className="text-center">
+          <div className="text-center py-8">
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-8 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-100 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loadingMore ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
                   로딩 중...
                 </div>
@@ -233,6 +233,9 @@ export default function HealthQuestionsList() {
           </div>
         )}
       </main>
+
+      {/* 푸터 */}
+      <Footer />
     </div>
   );
 }

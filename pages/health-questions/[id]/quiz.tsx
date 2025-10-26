@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
 import { getQuizItems, submitQuizAnswers } from "../../../lib/api";
 import { QuizData, QuizAnswer } from "../../../types/health-questions";
 
@@ -162,7 +163,7 @@ const QuizPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-12">
       <Head>
         <title>건강 질문 퀴즈</title>
       </Head>
@@ -171,15 +172,15 @@ const QuizPage = () => {
       <Header />
 
       {/* 진행률 바 */}
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-3">
+      <div className="bg-gray-50 border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.back()}
               className="p-2 hover:bg-gray-200 rounded-full"
             >
               <svg
-                className="w-6 h-6"
+                className="w-5 h-5 sm:w-6 sm:h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -193,7 +194,7 @@ const QuizPage = () => {
               </svg>
             </button>
 
-            <div className="flex-1 mx-4">
+            <div className="flex-1 mx-2 sm:mx-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-orange-500 h-2 rounded-full transition-all duration-300"
@@ -202,8 +203,8 @@ const QuizPage = () => {
               </div>
             </div>
 
-            <div className="bg-yellow-100 border border-yellow-200 rounded-lg px-3 py-1">
-              <span className="text-yellow-600 text-sm font-medium">
+            <div className="bg-yellow-100 border border-yellow-200 rounded-lg px-2 sm:px-3 py-1">
+              <span className="text-yellow-600 text-xs sm:text-sm font-medium">
                 {current + 1}/{items.length}
               </span>
             </div>
@@ -212,26 +213,26 @@ const QuizPage = () => {
       </div>
 
       {/* 질문 및 선택지 */}
-      <div className="px-5 py-10">
-        <h2 className="text-2xl font-bold text-black mb-10 leading-8">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+        <h2 className="text-lg sm:text-2xl font-bold text-black mb-6 sm:mb-10 leading-6 sm:leading-8">
           {currentItem.title}
         </h2>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {currentItem.choices.map((choice) => {
             const isSelected = selectedChoiceId === choice.id;
             return (
               <button
                 key={choice.id}
                 onClick={() => handleSelect(currentItem.id, choice.id)}
-                className={`w-full flex items-center p-4 rounded-2xl transition-all duration-200 ${
+                className={`w-full flex items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200 ${
                   isSelected
                     ? "bg-orange-50 border-2 border-orange-500"
                     : "bg-orange-50 border border-transparent hover:bg-orange-100"
                 }`}
               >
                 <div
-                  className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 mr-3 flex items-center justify-center flex-shrink-0 ${
                     isSelected
                       ? "border-orange-500 bg-white"
                       : "border-gray-300 bg-white"
@@ -241,7 +242,7 @@ const QuizPage = () => {
                     <div className="w-2 h-2 bg-orange-500 rounded-full" />
                   )}
                 </div>
-                <span className="text-lg font-medium text-black text-left">
+                <span className="text-sm sm:text-lg font-medium text-black text-left">
                   {choice.text}
                 </span>
               </button>
@@ -251,19 +252,19 @@ const QuizPage = () => {
       </div>
 
       {/* 하단 버튼 */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-5">
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-5">
         <div className="flex items-center justify-between">
           <button
             onClick={handlePrevious}
             disabled={current === 0}
-            className={`flex items-center px-5 py-3 rounded-xl transition-colors ${
+            className={`flex items-center px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-colors ${
               current === 0
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-black hover:bg-gray-100"
             }`}
           >
             <svg
-              className="w-5 h-5 mr-2"
+              className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -275,13 +276,13 @@ const QuizPage = () => {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            이전
+            <span className="text-sm sm:text-base">이전</span>
           </button>
 
           <button
             onClick={handleNext}
             disabled={!selectedChoiceId || submitting}
-            className={`flex items-center px-5 py-3 rounded-xl transition-colors ${
+            className={`flex items-center px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-colors ${
               selectedChoiceId && !submitting
                 ? isLastQuestion
                   ? "bg-orange-100 text-orange-500 hover:bg-orange-200"
@@ -289,11 +290,15 @@ const QuizPage = () => {
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >
-            <span className="mr-2">
+            <span className="mr-1 sm:mr-2 text-sm sm:text-base">
               {isLastQuestion ? (submitting ? "제출 중..." : "제출") : "다음"}
             </span>
             {isLastQuestion ? (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -302,7 +307,7 @@ const QuizPage = () => {
               </svg>
             ) : (
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -318,6 +323,9 @@ const QuizPage = () => {
           </button>
         </div>
       </div>
+
+      {/* 푸터 */}
+      <Footer />
     </div>
   );
 };

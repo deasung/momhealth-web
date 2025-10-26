@@ -31,7 +31,7 @@ const CommunityPosts = ({ posts }: CommunityPostsProps) => {
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">커뮤니티</h2>
-        <button className="text-blue-600 hover:text-blue-800 font-medium">
+        <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
           전체보기 →
         </button>
       </div>

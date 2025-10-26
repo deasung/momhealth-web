@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import PopularQuestions from "../components/PopularQuestions";
 import RecommendedQuestions from "../components/RecommendedQuestions";
 import CommunityPosts from "../components/CommunityPosts";
@@ -40,7 +41,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
+      <div className="min-h-screen bg-white">
         <Head>
           <title>오늘의 건강</title>
           <meta name="description" content="오늘의 건강 웹 애플리케이션" />
@@ -53,13 +54,16 @@ export default function Home() {
             <p className="mt-4 text-gray-600">데이터를 불러오는 중...</p>
           </div>
         </main>
+
+        {/* 푸터 */}
+        <Footer />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
+      <div className="min-h-screen bg-white">
         <Head>
           <title>오늘의 건강</title>
           <meta name="description" content="오늘의 건강" />
@@ -78,12 +82,15 @@ export default function Home() {
             </button>
           </div>
         </main>
+
+        {/* 푸터 */}
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50">
+    <div className="min-h-screen bg-white">
       <Head>
         <title>오늘의 건강</title>
         <meta name="description" content="오늘의 건강 웹 애플리케이션" />
@@ -92,7 +99,7 @@ export default function Home() {
 
       <Header />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
         {/* 히어로 섹션 */}
         <div className="text-center mb-12">
           {/* <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
@@ -103,21 +110,21 @@ export default function Home() {
           </p>
 
           {/* 통계 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-3xl font-bold text-blue-600 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
+            <div className="bg-gray-50 rounded-xl p-8 text-center">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
                 {homeData?.popularQuestions.length || 0}
               </div>
               <div className="text-gray-600">인기 질문</div>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-3xl font-bold text-green-600 mb-2">
+            <div className="bg-gray-50 rounded-xl p-8 text-center">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
                 {homeData?.recommendedQuestions.length || 0}
               </div>
               <div className="text-gray-600">추천 질문</div>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="text-3xl font-bold text-purple-600 mb-2">
+            <div className="bg-gray-50 rounded-xl p-8 text-center">
+              <div className="text-3xl font-bold text-gray-900 mb-2">
                 {homeData?.communityPosts.length || 0}
               </div>
               <div className="text-gray-600">커뮤니티 게시글</div>
@@ -141,6 +148,9 @@ export default function Home() {
           <CommunityPosts posts={homeData.communityPosts} />
         )}
       </main>
+
+      {/* 푸터 */}
+      <Footer />
     </div>
   );
 }

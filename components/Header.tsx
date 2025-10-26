@@ -68,7 +68,7 @@ const Header = () => {
     },
     {
       label: "커뮤니티",
-      path: "/community",
+      path: "/community/list",
     },
     { label: "마이", path: "/my" },
   ];
@@ -78,7 +78,7 @@ const Header = () => {
       {/* 메인 헤더 */}
       <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between max-w-6xl mx-auto">
         {/* 로고 */}
-        <Link href="/admin" legacyBehavior>
+        <Link href="/" legacyBehavior>
           <a className="font-bold text-xl md:text-2xl cursor-pointer text-gray-900 hover:text-orange-500 transition-colors whitespace-nowrap">
             오늘의 건강
           </a>

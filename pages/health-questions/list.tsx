@@ -180,9 +180,9 @@ export default function HealthQuestionsList() {
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          {/*<h1 className="text-2xl font-bold text-gray-900 mb-2">*/}
-          {/*  건강 질문목록*/}
-          {/*</h1>*/}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            건강 질문
+          </h1>
           <p className="text-gray-600">
             다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요.
           </p>

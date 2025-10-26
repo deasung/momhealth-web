@@ -279,4 +279,24 @@ export const submitQuizAnswers = async (id: string, answers: any[]) => {
   }
 };
 
+// 커뮤니티 API 함수
+export const getCommunityPosts = async (
+  limit: number = 10,
+  cursor?: string
+) => {
+  try {
+    const params = new URLSearchParams();
+    params.append("limit", limit.toString());
+    if (cursor) {
+      params.append("cursor", cursor);
+    }
+
+    const response = await api.get(`/private/community?${params.toString()}`);
+    return response.data;
+  } catch (error) {
+    console.error("커뮤니티 게시글 로딩 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

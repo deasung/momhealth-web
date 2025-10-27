@@ -397,4 +397,79 @@ export const updateUserProfile = async (data: {
   }
 };
 
+// 매핑된 사용자 목록 조회 (친구 목록)
+export const getMappedUsers = async () => {
+  try {
+    const response = await api.get("/private/register/mapped-users");
+    return response.data;
+  } catch (error) {
+    console.error("매핑된 사용자 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 친구 요청 카운트 조회
+export const getFriendRequestCounts = async () => {
+  try {
+    const response = await api.get("/private/register/friend-requests");
+    return response.data;
+  } catch (error) {
+    console.error("친구 요청 카운트 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 보낸 친구 요청 조회
+export const getSentRequests = async () => {
+  try {
+    const response = await api.get("/private/register/friend-requests/sent");
+    return response.data;
+  } catch (error) {
+    console.error("보낸 친구 요청 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 받은 친구 요청 조회
+export const getReceivedRequests = async () => {
+  try {
+    const response = await api.get(
+      "/private/register/friend-requests/received"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("받은 친구 요청 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 친구 요청 수락
+export const acceptFriendRequest = async (requestId: number) => {
+  try {
+    const response = await api.put(
+      `/private/register/mapped-users/${requestId}`,
+      {
+        action: "accept",
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("친구 요청 수락 실패:", error);
+    throw error;
+  }
+};
+
+// 친구 요청 취소
+export const cancelFriendRequest = async (requestId: number) => {
+  try {
+    const response = await api.delete(
+      `/private/register/mapped-users/${requestId}/cancel`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("친구 요청 취소 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

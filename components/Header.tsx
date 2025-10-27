@@ -64,7 +64,7 @@ const Header = () => {
   const isLoggedIn = session && status === "authenticated";
   const navItems: NavItem[] = [
     { label: "홈", path: "/" },
-    ...(isLoggedIn ? [{ label: "친구", path: "/friends/list" }] : []),
+    ...(isLoggedIn ? [{ label: "친구", path: "/friends" }] : []),
     {
       label: "건강질문",
       path: "/health-questions/list",

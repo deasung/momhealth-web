@@ -30,6 +30,17 @@ const nextConfig = {
       "di7imxmn4pwuq.cloudfront.net", // CloudFront 도메인
     ],
   },
+
+  // 클라이언트 사이드 하이드레이션 문제 방지
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;

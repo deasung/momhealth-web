@@ -14,6 +14,11 @@ export default function MyPage() {
   const { logout } = useLogout();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -39,7 +44,15 @@ export default function MyPage() {
   }, [isAuthenticated, isLoading]);
 
   // 로그인 확인
-  if (!isLoading && !isAuthenticated) {
+  if (!mounted || (!isLoading && !isAuthenticated)) {
+    if (!mounted) {
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-white">
         <Head>

@@ -60,9 +60,11 @@ const Header = () => {
     children?: Array<{ label: string; path: string }>;
   };
 
-  // 로그인된 경우에만 마이 메뉴 추가
+  // 로그인된 경우에만 친구와 마이 메뉴 추가
+  const isLoggedIn = session && status === "authenticated";
   const navItems: NavItem[] = [
     { label: "홈", path: "/" },
+    ...(isLoggedIn ? [{ label: "친구", path: "/friends/list" }] : []),
     {
       label: "건강질문",
       path: "/health-questions/list",
@@ -71,9 +73,7 @@ const Header = () => {
       label: "커뮤니티",
       path: "/community/list",
     },
-    ...(session && status !== "loading"
-      ? [{ label: "마이", path: "/my" }]
-      : []),
+    ...(isLoggedIn ? [{ label: "마이", path: "/my" }] : []),
   ];
 
   return (

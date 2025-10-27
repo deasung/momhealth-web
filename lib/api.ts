@@ -267,6 +267,17 @@ export const getQuizItems = async (id: string) => {
   }
 };
 
+// 퀴즈 진행상태 리셋 (다시 풀기)
+export const resetQuizProgress = async (id: string) => {
+  try {
+    const response = await api.delete(`/private/health.questions/${id}/reset`);
+    return response.data;
+  } catch (error) {
+    console.error("퀴즈 진행상태 리셋 실패:", error);
+    throw error;
+  }
+};
+
 // 퀴즈 답안 제출
 export const submitQuizAnswers = async (id: string, answers: any[]) => {
   try {

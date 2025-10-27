@@ -4,7 +4,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { getHealthQuestionDetail } from "../../lib/api";
+import { getHealthQuestionDetail, resetQuizProgress } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 
@@ -15,6 +15,7 @@ const HealthQuestionDetail = () => {
   const [question, setQuestion] = useState<HealthQuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   const fetchQuestionDetail = useCallback(async () => {
     try {
@@ -44,6 +45,24 @@ const HealthQuestionDetail = () => {
 
     if (question?.id) {
       router.push(`/health-questions/${question.id}/quiz`);
+    }
+  };
+
+  const handleResetQuestion = async () => {
+    if (!question?.id || !isAuthenticated) return;
+
+    try {
+      setResetting(true);
+      // 진행상태 리셋 API 호출
+      await resetQuizProgress(question.id);
+
+      // 성공 후 퀴즈 페이지로 이동
+      router.push(`/health-questions/${question.id}/quiz`);
+    } catch (error) {
+      console.error("퀴즈 리셋 실패:", error);
+      alert("퀴즈 리셋에 실패했습니다.");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -196,10 +215,11 @@ const HealthQuestionDetail = () => {
             {isAuthenticated && question.userProgress?.isCompleted ? (
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
-                  onClick={handleStartQuestion}
-                  className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-gray-500 hover:bg-gray-600 text-white"
+                  onClick={handleResetQuestion}
+                  disabled={resetting}
+                  className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-gray-500 hover:bg-gray-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  다시 풀기
+                  {resetting ? "리셋 중..." : "다시 풀기"}
                 </button>
                 <button
                   onClick={() =>

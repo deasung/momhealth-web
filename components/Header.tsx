@@ -60,6 +60,7 @@ const Header = () => {
     children?: Array<{ label: string; path: string }>;
   };
 
+  // 로그인된 경우에만 마이 메뉴 추가
   const navItems: NavItem[] = [
     { label: "홈", path: "/" },
     {
@@ -70,7 +71,9 @@ const Header = () => {
       label: "커뮤니티",
       path: "/community/list",
     },
-    { label: "마이", path: "/my" },
+    ...(session && status !== "loading"
+      ? [{ label: "마이", path: "/my" }]
+      : []),
   ];
 
   return (
@@ -90,12 +93,21 @@ const Header = () => {
             const getIsActive = () => {
               if (!isClient) return false;
               if (item.children) {
-                return item.children.some((child) =>
-                  router.pathname.startsWith(child.path)
+                return item.children.some(
+                  (child) =>
+                    router.pathname === child.path ||
+                    router.pathname.startsWith(child.path + "/")
                 );
               }
               if (item.path) {
-                return router.pathname.startsWith(item.path);
+                // 홈 페이지는 정확히 일치해야 함
+                if (item.path === "/") {
+                  return router.pathname === "/";
+                }
+                return (
+                  router.pathname === item.path ||
+                  router.pathname.startsWith(item.path + "/")
+                );
               }
               return false;
             };
@@ -119,7 +131,7 @@ const Header = () => {
                       }
                       className={`relative flex items-center px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium whitespace-nowrap ${
                         isMenuItemActive
-                          ? "text-orange-500"
+                          ? "text-orange-500 font-semibold"
                           : "text-gray-700 hover:text-gray-900"
                       }`}
                     >
@@ -151,7 +163,7 @@ const Header = () => {
                               href={child.path}
                               className={`block px-4 py-2 text-sm transition-colors duration-150 ${
                                 router.pathname === child.path
-                                  ? "bg-orange-50 text-orange-600 font-medium"
+                                  ? "bg-orange-50 text-orange-500 font-semibold"
                                   : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                               }`}
                               onClick={() => setOpenDropdown(null)}
@@ -168,7 +180,7 @@ const Header = () => {
                     <span
                       className={`px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium whitespace-nowrap ${
                         isMenuItemActive
-                          ? "text-orange-500"
+                          ? "text-orange-500 font-semibold"
                           : "text-gray-700 hover:text-gray-900"
                       }`}
                     >
@@ -280,12 +292,21 @@ const Header = () => {
               const getIsActive = () => {
                 if (!isClient) return false;
                 if (item.children) {
-                  return item.children.some((child) =>
-                    router.pathname.startsWith(child.path)
+                  return item.children.some(
+                    (child) =>
+                      router.pathname === child.path ||
+                      router.pathname.startsWith(child.path + "/")
                   );
                 }
                 if (item.path) {
-                  return router.pathname.startsWith(item.path);
+                  // 홈 페이지는 정확히 일치해야 함
+                  if (item.path === "/") {
+                    return router.pathname === "/";
+                  }
+                  return (
+                    router.pathname === item.path ||
+                    router.pathname.startsWith(item.path + "/")
+                  );
                 }
                 return false;
               };
@@ -303,7 +324,7 @@ const Header = () => {
                         }
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors duration-200 text-sm ${
                           isMenuItemActive
-                            ? "bg-orange-50 text-orange-600 font-medium"
+                            ? "bg-orange-50 text-orange-500 font-semibold"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >
@@ -336,7 +357,7 @@ const Header = () => {
                               href={child.path}
                               className={`block px-3 py-2 text-sm text-gray-600 rounded-lg transition-colors duration-150 ${
                                 router.pathname === child.path
-                                  ? "bg-orange-50 text-orange-600 font-medium"
+                                  ? "bg-orange-50 text-orange-500 font-semibold"
                                   : "hover:bg-gray-100 hover:text-gray-900"
                               }`}
                               onClick={() => {
@@ -355,7 +376,7 @@ const Header = () => {
                       href={item.path!}
                       className={`block px-3 py-2 rounded-lg transition-colors duration-200 text-sm ${
                         isMenuItemActive
-                          ? "bg-orange-50 text-orange-600 font-medium"
+                          ? "bg-orange-50 text-orange-500 font-semibold"
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                       onClick={() => setIsMobileMenuOpen(false)}

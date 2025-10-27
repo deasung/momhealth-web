@@ -472,4 +472,31 @@ export const cancelFriendRequest = async (requestId: number) => {
   }
 };
 
+// 공지사항 목록 조회
+export const getNotices = async (params: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}) => {
+  try {
+    const response = await api.get("/public/notice/list", { params });
+    return response.data;
+  } catch (error) {
+    console.error("공지사항 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 공지사항 상세 조회
+export const getNoticeDetail = async (id: string) => {
+  try {
+    const response = await api.get(`/public/notice/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("공지사항 상세 조회 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

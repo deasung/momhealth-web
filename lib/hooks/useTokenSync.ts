@@ -18,6 +18,7 @@ export function useTokenSync() {
       const userToken =
         (session as { token?: string; accessToken?: string })?.token ||
         (session as { token?: string; accessToken?: string })?.accessToken;
+      const refreshToken = (session as { refreshToken?: string })?.refreshToken;
       const shouldSave = (session as { shouldSaveToLocalStorage?: boolean })
         ?.shouldSaveToLocalStorage;
 
@@ -25,15 +26,22 @@ export function useTokenSync() {
         // NextAuth에서 지시한 경우에만 localStorage에 저장
         localStorage.setItem(TOKEN_KEYS.TOKEN, userToken);
         localStorage.setItem(TOKEN_KEYS.IS_GUEST, "false");
-        setToken(userToken, false);
+
+        // refresh token도 저장
+        if (refreshToken) {
+          localStorage.setItem(TOKEN_KEYS.REFRESH_TOKEN, refreshToken);
+        }
+
+        setToken(userToken, false, refreshToken);
         setIsTokenSynced(true);
         console.log("🔄 NextAuth 세션에서 localStorage에 토큰 저장:", {
           hasToken: !!userToken,
+          hasRefreshToken: !!refreshToken,
           source: "NextAuth Session",
         });
       } else if (userToken) {
         // 이미 저장된 토큰이 있는 경우 API 시스템에만 설정
-        setToken(userToken, false);
+        setToken(userToken, false, refreshToken);
         setIsTokenSynced(true);
         console.log("🔄 기존 토큰을 API 시스템에 설정");
       }

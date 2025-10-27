@@ -155,9 +155,9 @@ const LoginPage: NextPage = () => {
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 flex items-center justify-center text-white font-bold">
-              M
+              오늘의 건강
             </div>
-            <h1 className="text-2xl font-bold text-gray-800">
+            {/* <h1 className="text-2xl font-bold text-gray-800">
               {isAuthenticated
                 ? "이미 로그인됨"
                 : isGuest
@@ -170,7 +170,7 @@ const LoginPage: NextPage = () => {
                 : isGuest
                 ? "게스트 모드로 이용 중입니다. 로그인하시면 더 많은 기능을 이용할 수 있습니다"
                 : "이메일로 로그인하거나 소셜 계정을 사용하세요"}
-            </p>
+            </p> */}
           </div>
 
           {!isAuthenticated && (

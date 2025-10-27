@@ -46,7 +46,11 @@ const isTokenExpired = (token: string): boolean => {
 };
 
 // 토큰 관리 함수들
-export const setToken = (token: string | null, guest: boolean = false) => {
+export const setToken = (
+  token: string | null,
+  guest: boolean = false,
+  refreshToken?: string | null
+) => {
   currentToken = token;
   isGuest = guest;
 
@@ -55,16 +59,28 @@ export const setToken = (token: string | null, guest: boolean = false) => {
       if (token) {
         localStorage.setItem(TOKEN_KEYS.TOKEN, token);
         localStorage.setItem(TOKEN_KEYS.IS_GUEST, guest.toString());
+
+        // refresh token도 저장
+        if (refreshToken) {
+          localStorage.setItem(TOKEN_KEYS.REFRESH_TOKEN, refreshToken);
+        } else {
+          localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
+        }
       } else {
         localStorage.removeItem(TOKEN_KEYS.TOKEN);
         localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
+        localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
       }
     } catch (error) {
       console.error("토큰 저장 실패:", error);
     }
   }
 
-  console.log("🔑 토큰 설정:", { hasToken: !!token, isGuest: guest });
+  console.log("🔑 토큰 설정:", {
+    hasToken: !!token,
+    isGuest: guest,
+    hasRefreshToken: !!refreshToken,
+  });
 };
 
 export const getCurrentToken = () => currentToken;
@@ -78,6 +94,7 @@ export const clearToken = () => {
     try {
       localStorage.removeItem(TOKEN_KEYS.TOKEN);
       localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
+      localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
     } catch (error) {
       console.error("토큰 삭제 실패:", error);
     }
@@ -116,21 +133,34 @@ const api = axios.create({
 // 요청 인터셉터: localStorage 토큰을 프록시로 전달
 api.interceptors.request.use(
   (config) => {
-    // localStorage에서 토큰 가져오기
+    // localStorage에서 토큰 및 refresh token 가져오기
     const currentToken = getCurrentToken();
+    let refreshToken: string | null = null;
+
+    if (typeof window !== "undefined") {
+      refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
+    }
 
     if (currentToken) {
       config.headers.Authorization = `Bearer ${currentToken}`;
+
+      // refresh token도 헤더에 추가
+      if (refreshToken) {
+        config.headers["x-refresh-token"] = refreshToken;
+      }
     }
 
-    // console.log("API 요청 (프록시):", {
-    //   method: config.method?.toUpperCase(),
-    //   url: config.url,
-    //   baseURL: config.baseURL,
-    //   fullURL: `${config.baseURL || ""}${config.url}`,
-    //   hasToken: !!currentToken,
-    //   isGuest: getIsGuest(),
-    // });
+    // 디버깅: 토큰 정보 로그
+    console.log("🔐 API 요청에 사용되는 토큰:", {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      hasToken: !!currentToken,
+      hasRefreshToken: !!refreshToken,
+      isGuest: getIsGuest(),
+      tokenPreview: currentToken
+        ? currentToken.substring(0, 50) + "..."
+        : "none",
+    });
 
     return config;
   },
@@ -295,6 +325,17 @@ export const getCommunityPosts = async (
     return response.data;
   } catch (error) {
     console.error("커뮤니티 게시글 로딩 실패:", error);
+    throw error;
+  }
+};
+
+// 커뮤니티 상세 게시글 가져오기
+export const getCommunityPostDetail = async (postId: string) => {
+  try {
+    const response = await api.get(`/private/community/${postId}`);
+    return response.data;
+  } catch (error) {
+    console.error("커뮤니티 게시글 상세 로딩 실패:", error);
     throw error;
   }
 };

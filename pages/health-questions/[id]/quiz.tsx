@@ -163,7 +163,7 @@ const QuizPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-12">
+    <div className="min-h-screen bg-white">
       <Head>
         <title>건강 질문 퀴즈</title>
       </Head>
@@ -212,48 +212,48 @@ const QuizPage = () => {
         </div>
       </div>
 
-      {/* 질문 및 선택지 */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-        <h2 className="text-lg sm:text-2xl font-bold text-black mb-6 sm:mb-10 leading-6 sm:leading-8">
-          {currentItem.title}
-        </h2>
+        {/* 질문 및 선택지 */}
+        <div className="mb-8">
+          <h2 className="text-lg sm:text-2xl font-bold text-black mb-6 sm:mb-10 leading-6 sm:leading-8">
+            {currentItem.title}
+          </h2>
 
-        <div className="space-y-2 sm:space-y-3">
-          {currentItem.choices.map((choice) => {
-            const isSelected = selectedChoiceId === choice.id;
-            return (
-              <button
-                key={choice.id}
-                onClick={() => handleSelect(currentItem.id, choice.id)}
-                className={`w-full flex items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200 ${
-                  isSelected
-                    ? "bg-orange-50 border-2 border-orange-500"
-                    : "bg-orange-50 border border-transparent hover:bg-orange-100"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 mr-3 flex items-center justify-center flex-shrink-0 ${
+          <div className="space-y-2 sm:space-y-3">
+            {currentItem.choices.map((choice) => {
+              const isSelected = selectedChoiceId === choice.id;
+              return (
+                <button
+                  key={choice.id}
+                  onClick={() => handleSelect(currentItem.id, choice.id)}
+                  className={`w-full flex items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-200 ${
                     isSelected
-                      ? "border-orange-500 bg-white"
-                      : "border-gray-300 bg-white"
+                      ? "bg-orange-50 border-2 border-orange-500"
+                      : "bg-orange-50 border border-transparent hover:bg-orange-100"
                   }`}
                 >
-                  {isSelected && (
-                    <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                  )}
-                </div>
-                <span className="text-sm sm:text-lg font-medium text-black text-left">
-                  {choice.text}
-                </span>
-              </button>
-            );
-          })}
+                  <div
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 mr-3 flex items-center justify-center flex-shrink-0 ${
+                      isSelected
+                        ? "border-orange-500 bg-white"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                    )}
+                  </div>
+                  <span className="text-sm sm:text-lg font-medium text-black text-left">
+                    {choice.text}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* 하단 버튼 */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-5">
-        <div className="flex items-center justify-between">
+        {/* 하단 버튼 */}
+        <div className="flex items-center justify-between border-t border-gray-200 pt-6">
           <button
             onClick={handlePrevious}
             disabled={current === 0}
@@ -285,8 +285,8 @@ const QuizPage = () => {
             className={`flex items-center px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-colors ${
               selectedChoiceId && !submitting
                 ? isLastQuestion
-                  ? "bg-orange-100 text-orange-500 hover:bg-orange-200"
-                  : "bg-orange-100 text-orange-500 hover:bg-orange-200"
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-orange-100 text-orange-600 hover:bg-orange-200"
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >

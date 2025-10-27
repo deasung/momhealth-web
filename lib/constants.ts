@@ -2,6 +2,7 @@
 export const TOKEN_KEYS = {
   TOKEN: "momhealth_token",
   IS_GUEST: "momhealth_is_guest",
+  REFRESH_TOKEN: "momhealth_refresh_token",
 } as const;
 
 // API 관련 상수

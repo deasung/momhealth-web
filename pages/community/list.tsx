@@ -125,11 +125,14 @@ export default function CommunityPage() {
             </div>
           </div>
 
-          {/* 오른쪽: 더보기 버튼 (향후 상세보기로 연결) */}
+          {/* 오른쪽: 더보기 버튼 */}
           <div className="ml-4 flex-shrink-0">
-            <button className="inline-flex items-center justify-center px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors">
+            <Link
+              href={`/community/${post.id}`}
+              className="inline-flex items-center justify-center px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors"
+            >
               더보기
-            </button>
+            </Link>
           </div>
         </div>
       </div>

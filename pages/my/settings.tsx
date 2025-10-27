@@ -1,16 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAuth } from "../../lib/hooks/useAuth";
+import { getUserProfile, updateUserProfile } from "../../lib/api";
+import type { UserProfile } from "../../types/user";
 
 export default function MySettingsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [nickname, setNickname] = useState("김대성");
-  const [age, setAge] = useState("39");
+  const [nickname, setNickname] = useState("");
+  const [age, setAge] = useState("");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // 사용자 프로필 정보 가져오기
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchProfile = async () => {
+        try {
+          setLoading(true);
+          const response = await getUserProfile();
+          setUserProfile(response.user);
+          setNickname(response.user.nickname);
+          setAge(response.user.age.toString());
+        } catch (error) {
+          // 프로필 정보 로딩 실패 시 기본값 유지
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchProfile();
+    }
+  }, [isAuthenticated]);
+
+  const handleSubmit = async () => {
+    if (!nickname.trim()) {
+      alert("닉네임을 입력해주세요.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await updateUserProfile({
+        nickname: nickname.trim(),
+        age: parseInt(age) || undefined,
+      });
+      alert("정보가 수정되었습니다.");
+      router.back();
+    } catch (error: unknown) {
+      // 프로필 수정 실패 처리
+      let errorMessage = "정보 수정 중 오류가 발생했습니다.";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const apiError = error as {
+          response?: { status?: number; data?: { error?: string } };
+        };
+        if (apiError.response?.status === 400) {
+          errorMessage =
+            apiError.response.data?.error || "입력 정보를 확인해주세요.";
+        } else if (apiError.response?.status === 401) {
+          errorMessage = "로그인이 필요합니다.";
+        }
+      }
+
+      alert(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // 로그인 확인
   if (!isAuthenticated) {
@@ -42,10 +104,23 @@ export default function MySettingsPage() {
     );
   }
 
-  const handleSubmit = () => {
-    // TODO: API 호출하여 정보 수정
-    alert("정보 수정 기능은 준비 중입니다.");
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Head>
+          <title>내 정보 설정 - 오늘의 건강</title>
+        </Head>
+        <Header />
+        <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">프로필 정보를 불러오는 중...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -82,8 +157,21 @@ export default function MySettingsPage() {
         {/* 프로필 사진 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
           <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-              <span className="text-5xl">👤</span>
+            <div className="relative w-32 h-32 rounded-full bg-orange-100 flex items-center justify-center mb-4 overflow-hidden">
+              {userProfile?.userThumbnailUrl ? (
+                <Image
+                  src={`${
+                    process.env.NEXT_PUBLIC_CDN_URL ||
+                    "https://di7imxmn4pwuq.cloudfront.net"
+                  }/${userProfile.userThumbnailUrl}`}
+                  alt={userProfile.nickname}
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-5xl">👤</span>
+              )}
               <button className="absolute bottom-0 right-0 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors">
                 <svg
                   className="w-5 h-5 text-white"
@@ -155,15 +243,24 @@ export default function MySettingsPage() {
         <div className="flex gap-4">
           <button
             onClick={() => router.back()}
-            className="flex-1 px-6 py-4 border border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            disabled={submitting}
+            className="flex-1 px-6 py-4 border border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 px-6 py-4 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+            disabled={submitting}
+            className="flex-1 px-6 py-4 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            변경하기
+            {submitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                수정 중...
+              </div>
+            ) : (
+              "변경하기"
+            )}
           </button>
         </div>
       </main>

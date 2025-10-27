@@ -279,7 +279,10 @@ export const resetQuizProgress = async (id: string) => {
 };
 
 // 퀴즈 답안 제출
-export const submitQuizAnswers = async (id: string, answers: any[]) => {
+export const submitQuizAnswers = async (
+  id: string,
+  answers: Array<{ questionId: string; choiceId: string }>
+) => {
   try {
     console.log("=== API 호출 상세 정보 ===");
     console.log("요청 URL:", `/private/health.questions/${id}/submit`);
@@ -312,10 +315,8 @@ export const submitQuizAnswers = async (id: string, answers: any[]) => {
 
     console.log("API 응답 성공:", response.data);
     return response.data;
-  } catch (error) {
-    console.error("퀴즈 답안 제출 실패:", error);
-    console.error("에러 응답:", error.response?.data);
-    console.error("에러 상태:", error.response?.status);
+  } catch (error: unknown) {
+    // 퀴즈 답안 제출 실패 처리
     throw error;
   }
 };
@@ -367,6 +368,31 @@ export const createCommunityPost = async (data: {
     return response.data;
   } catch (error) {
     console.error("커뮤니티 게시글 생성 실패:", error);
+    throw error;
+  }
+};
+
+// 사용자 프로필 정보 조회
+export const getUserProfile = async () => {
+  try {
+    const response = await api.get("/private/register/profile");
+    return response.data;
+  } catch (error) {
+    console.error("사용자 프로필 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 사용자 프로필 정보 수정
+export const updateUserProfile = async (data: {
+  nickname?: string;
+  age?: number;
+}) => {
+  try {
+    const response = await api.put("/private/register/profile", data);
+    return response.data;
+  } catch (error) {
+    console.error("사용자 프로필 수정 실패:", error);
     throw error;
   }
 };

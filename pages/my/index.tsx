@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -6,15 +6,37 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
+import { getUserProfile } from "../../lib/api";
+import type { UserProfile } from "../../types/user";
 
 export default function MyPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const { logout } = useLogout();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const handleLogout = () => {
     logout();
   };
+
+  // 사용자 프로필 정보 가져오기
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const fetchProfile = async () => {
+        try {
+          setProfileLoading(true);
+          const response = await getUserProfile();
+          setUserProfile(response.user);
+        } catch (error) {
+          // 프로필 정보 로딩 실패 시 기본값 유지
+        } finally {
+          setProfileLoading(false);
+        }
+      };
+
+      fetchProfile();
+    }
+  }, [isAuthenticated, isLoading]);
 
   // 로그인 확인
   if (!isLoading && !isAuthenticated) {
@@ -61,14 +83,41 @@ export default function MyPage() {
         {/* 사용자 프로필 카드 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center">
-            <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mr-4 flex-shrink-0">
-              <span className="text-3xl">👤</span>
+            <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mr-4 flex-shrink-0 overflow-hidden">
+              {profileLoading ? (
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              ) : userProfile?.userThumbnailUrl ? (
+                <Image
+                  src={`${
+                    process.env.NEXT_PUBLIC_CDN_URL ||
+                    "https://di7imxmn4pwuq.cloudfront.net"
+                  }/${userProfile.userThumbnailUrl}`}
+                  alt={userProfile.nickname}
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-3xl">👤</span>
+              )}
             </div>
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900 mb-1">
-                김대성님
+                {profileLoading ? (
+                  <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                ) : (
+                  `${userProfile?.nickname || "사용자"}님`
+                )}
               </h2>
-              <p className="text-sm text-gray-500">카카오 연동</p>
+              <p className="text-sm text-gray-500">
+                {profileLoading ? (
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                ) : userProfile?.isSocial ? (
+                  `${userProfile.socialProvider || "소셜"} 연동`
+                ) : (
+                  "이메일 가입"
+                )}
+              </p>
             </div>
             <Link
               href="/my/settings"
@@ -282,7 +331,7 @@ export default function MyPage() {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-gray-900">앱 정보</p>
+                  {/*<p className="font-medium text-gray-900">앱 정보</p>*/}
                   <p className="text-sm text-gray-500">버전 정보 및 라이선스</p>
                 </div>
               </div>

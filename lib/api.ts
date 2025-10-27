@@ -351,4 +351,24 @@ export const getCommunityPostDetail = async (postId: string) => {
   }
 };
 
+// 커뮤니티 게시글 생성
+export const createCommunityPost = async (data: {
+  title: string;
+  content: string;
+  type: "건강질문" | "리뷰";
+}) => {
+  try {
+    // 백엔드 API에서는 type이 "QUESTION" 또는 "REVIEW"로 변환되어야 할 수 있음
+    const response = await api.post("/private/community", {
+      title: data.title,
+      content: data.content,
+      type: data.type === "건강질문" ? "QUESTION" : "REVIEW",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("커뮤니티 게시글 생성 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

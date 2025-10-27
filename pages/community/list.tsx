@@ -3,7 +3,9 @@ import Head from "next/head";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { getCommunityPosts } from "../../lib/api";
+import CommunityWriteModal from "../../components/CommunityWriteModal";
+import { getCommunityPosts, createCommunityPost } from "../../lib/api";
+import { useAuth } from "../../lib/hooks/useAuth";
 import type { CommunityPost, CommunityResponse } from "../../types/community";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
 
@@ -15,7 +17,57 @@ export default function CommunityPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
+  // 글쓰기 모달 상태
+  const [showWriteModal, setShowWriteModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const { isTokenSynced } = useTokenSync();
+  const { isAuthenticated } = useAuth();
+
+  const handleWritePost = () => {
+    setShowWriteModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowWriteModal(false);
+  };
+
+  const handleSubmit = async (data: {
+    title: string;
+    content: string;
+    type: "건강질문" | "리뷰";
+  }) => {
+    try {
+      setSubmitting(true);
+
+      await createCommunityPost(data);
+
+      alert("게시글이 등록되었습니다.");
+      handleCloseModal();
+
+      // 게시글 목록 새로고침
+      const refreshedData: CommunityResponse = await getCommunityPosts(10);
+      setPosts(refreshedData.posts);
+      setNextCursor(refreshedData.nextCursor);
+      setHasMore(!!refreshedData.nextCursor);
+    } catch (err: any) {
+      let errorMessage = "등록 중 오류가 발생했습니다.";
+
+      const status = err?.response?.status;
+      if (status === 401) {
+        errorMessage = "로그인이 필요합니다.";
+      } else if (status === 400) {
+        errorMessage =
+          err?.response?.data?.error || "입력 정보를 확인해주세요.";
+      } else if (status >= 500) {
+        errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      }
+
+      alert(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -31,7 +83,6 @@ export default function CommunityPage() {
         setNextCursor(data.nextCursor);
         setHasMore(!!data.nextCursor);
       } catch (err) {
-        console.error("커뮤니티 게시글 로딩 실패:", err);
         setError("커뮤니티 게시글을 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
@@ -53,7 +104,6 @@ export default function CommunityPage() {
       setNextCursor(data.nextCursor);
       setHasMore(!!data.nextCursor);
     } catch (err) {
-      console.error("추가 커뮤니티 게시글 로딩 실패:", err);
       setError("추가 커뮤니티 게시글을 불러오는데 실패했습니다.");
     } finally {
       setLoadingMore(false);
@@ -205,10 +255,38 @@ export default function CommunityPage() {
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">커뮤니티</h1>
-          <p className="text-gray-600">
-            건강에 대한 다양한 이야기와 경험을 공유해보세요.
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                커뮤니티
+              </h1>
+              <p className="text-gray-600">
+                건강에 대한 다양한 이야기와 경험을 공유해보세요.
+              </p>
+            </div>
+            {/* 로그인 상태일 때만 글쓰기 버튼 표시 */}
+            {isAuthenticated && (
+              <button
+                onClick={handleWritePost}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                글쓰기
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 게시글 목록 */}
@@ -259,6 +337,14 @@ export default function CommunityPage() {
 
       {/* 푸터 */}
       <Footer />
+
+      {/* 글쓰기 모달 */}
+      <CommunityWriteModal
+        isOpen={showWriteModal}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+      />
     </div>
   );
 }

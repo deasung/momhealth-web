@@ -190,18 +190,39 @@ const HealthQuestionDetail = () => {
             </div>
           </div>
 
-          {/* 시작 버튼 */}
+          {/* 버튼 영역 */}
           <div className="text-center">
-            <button
-              onClick={handleStartQuestion}
-              className={`font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg ${
-                isAuthenticated
-                  ? "bg-orange-500 hover:bg-orange-600 text-white"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
-            >
-              {isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
-            </button>
+            {/* 진행상태가 완료이고 로그인된 경우 */}
+            {isAuthenticated && question.userProgress?.isCompleted ? (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={handleStartQuestion}
+                  className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-gray-500 hover:bg-gray-600 text-white"
+                >
+                  다시 풀기
+                </button>
+                <button
+                  onClick={() =>
+                    router.push(`/health-questions/${question.id}/result`)
+                  }
+                  className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  결과 보기
+                </button>
+              </div>
+            ) : (
+              /* 진행중이거나 로그인 안된 경우 */
+              <button
+                onClick={handleStartQuestion}
+                className={`font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg ${
+                  isAuthenticated
+                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                }`}
+              >
+                {isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
+              </button>
+            )}
           </div>
         </div>
       </div>

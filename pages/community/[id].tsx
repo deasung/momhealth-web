@@ -349,7 +349,7 @@ const CommunityPostDetailPage = () => {
             {/* 하단 정보 */}
             <div className="border-t border-gray-200 pt-4 flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center gap-4">
-                <span>조회수</span>
+                <span>조회수 {post.viewCount}</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg

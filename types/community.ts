@@ -50,4 +50,5 @@ export interface CommunityPostDetail {
   author: CommunityAuthor;
   comments: CommunityComment[];
   timeAgo: string;
+  viewCount: number;
 }

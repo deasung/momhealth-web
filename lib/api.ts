@@ -442,6 +442,29 @@ export const updateComment = async (
   }
 };
 
+// 내가 작성한 커뮤니티 게시글 목록 조회
+export const getMyCommunityPosts = async (params?: {
+  limit?: number;
+  cursor?: number;
+  type?: "QUESTION" | "REVIEW" | "ALL";
+}) => {
+  try {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params ?? {}).filter(([_, v]) => v !== undefined)
+    );
+    const response = await api.get("/private/community/my-posts", {
+      params: cleanParams,
+    });
+    return {
+      posts: response.data.posts,
+      nextCursor: response.data.nextCursor ?? null,
+    };
+  } catch (error) {
+    console.error("내 게시글 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 사용자 프로필 정보 조회
 export const getUserProfile = async () => {
   try {

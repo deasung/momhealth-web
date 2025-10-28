@@ -190,7 +190,7 @@ export default function MyPage() {
             </button>
 
             <Link
-              href="/community/list"
+              href="/community/my-posts"
               className="p-6 text-center hover:bg-gray-50 transition-colors"
             >
               <div className="mb-3">

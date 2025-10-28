@@ -61,22 +61,6 @@ const Footer = () => {
                   질문 목록
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/health-questions/categories"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  카테고리별 보기
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/health-questions/popular"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  인기 질문
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -88,26 +72,10 @@ const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/community"
+                  href="/community/list"
                   className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   커뮤니티 홈
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/community/posts"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  게시글 목록
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/community/write"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  글쓰기
                 </Link>
               </li>
             </ul>

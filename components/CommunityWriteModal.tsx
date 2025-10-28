@@ -128,7 +128,9 @@ export default function CommunityWriteModal({
               />
             </svg>
           </button>
-          <h2 className="text-lg font-semibold text-gray-900">글 작성하기</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {mode === "edit" ? "글 수정하기" : "글 작성하기"}
+          </h2>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}

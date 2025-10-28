@@ -163,18 +163,39 @@ api.interceptors.request.use(
 // 응답 인터셉터: 프록시를 통한 응답 로깅만
 api.interceptors.response.use(
   (response) => {
-    console.log("API 응답 성공 (프록시):", {
+    console.log("✅ API 응답 성공:", {
       status: response.status,
       url: response.config.url,
+      method: response.config.method?.toUpperCase(),
+      dataSize: JSON.stringify(response.data).length,
+      responseTime: response.headers["x-response-time"] || "N/A",
     });
+
+    // 특정 API의 경우 더 자세한 로그
+    if (
+      response.config.url?.includes("/health.questions") ||
+      response.config.url?.includes("/community") ||
+      response.config.url?.includes("/register")
+    ) {
+      console.log("📊 상세 응답 데이터:", {
+        url: response.config.url,
+        dataKeys: Object.keys(response.data || {}),
+        hasResults: !!response.data?.results,
+        resultsLength: response.data?.results?.length || 0,
+        hasNextCursor: !!response.data?.nextCursor,
+      });
+    }
+
     return response;
   },
   (error) => {
-    console.error("API 요청 실패 (프록시):", {
+    console.error("❌ API 요청 실패:", {
       url: error.config?.url,
-      method: error.config?.method,
+      method: error.config?.method?.toUpperCase(),
       status: error.response?.status,
+      statusText: error.response?.statusText,
       message: error.message,
+      errorData: error.response?.data,
     });
     return Promise.reject(error);
   }
@@ -342,22 +363,35 @@ export const getCommunityPostDetail = async (postId: string) => {
   }
 };
 
-// 커뮤니티 게시글 생성
-export const createCommunityPost = async (data: {
-  title: string;
-  content: string;
-  type: "건강질문" | "리뷰";
-}) => {
+// 커뮤니티 게시글 수정
+export const updateCommunityPost = async (
+  postId: string,
+  data: {
+    title: string;
+    content: string;
+    type: "건강질문" | "리뷰";
+  }
+) => {
   try {
-    // 백엔드 API에서는 type이 "QUESTION" 또는 "REVIEW"로 변환되어야 할 수 있음
-    const response = await api.post("/private/community", {
+    const response = await api.put(`/private/community/${postId}`, {
       title: data.title,
       content: data.content,
       type: data.type === "건강질문" ? "QUESTION" : "REVIEW",
     });
     return response.data;
   } catch (error) {
-    console.error("커뮤니티 게시글 생성 실패:", error);
+    console.error("커뮤니티 게시글 수정 실패:", error);
+    throw error;
+  }
+};
+
+// 커뮤니티 게시글 삭제
+export const deleteCommunityPost = async (postId: string) => {
+  try {
+    const response = await api.delete(`/private/community/${postId}`);
+    return response.data;
+  } catch (error) {
+    console.error("커뮤니티 게시글 삭제 실패:", error);
     throw error;
   }
 };

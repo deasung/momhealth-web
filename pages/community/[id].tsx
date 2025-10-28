@@ -3,17 +3,29 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { getCommunityPostDetail } from "../../lib/api";
+import CommunityWriteModal from "../../components/CommunityWriteModal";
+import {
+  getCommunityPostDetail,
+  updateCommunityPost,
+  deleteCommunityPost,
+  getUserProfile,
+} from "../../lib/api";
 import type { CommunityPostDetail } from "../../types/community";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
+import { useAuth } from "../../lib/hooks/useAuth";
+import type { UserProfile } from "../../types/user";
 
 const CommunityPostDetailPage = () => {
   const router = useRouter();
   const { id } = router.query;
   const { isTokenSynced } = useTokenSync();
+  const { isAuthenticated } = useAuth();
   const [post, setPost] = useState<CommunityPostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchPostDetail = useCallback(async () => {
     try {
@@ -27,12 +39,61 @@ const CommunityPostDetailPage = () => {
     }
   }, [id]);
 
+  const fetchCurrentUser = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const userData = await getUserProfile();
+      setCurrentUser(userData.user);
+    } catch (err) {
+      console.error("사용자 정보 조회 실패:", err);
+    }
+  }, [isAuthenticated]);
+
+  const handleEditPost = () => {
+    setShowEditModal(true);
+  };
+
+  const handleDeletePost = async () => {
+    if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+
+    try {
+      setSubmitting(true);
+      await deleteCommunityPost(id as string);
+      alert("게시글이 삭제되었습니다.");
+      router.push("/community/list");
+    } catch (err: any) {
+      alert("게시글 삭제에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdatePost = async (data: {
+    title: string;
+    content: string;
+    type: "건강질문" | "리뷰";
+  }) => {
+    try {
+      setSubmitting(true);
+      await updateCommunityPost(id as string, data);
+      alert("게시글이 수정되었습니다.");
+      setShowEditModal(false);
+      // 게시글 정보 새로고침
+      await fetchPostDetail();
+    } catch (err: any) {
+      alert("게시글 수정에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     if (!isTokenSynced) return;
     if (id) {
       fetchPostDetail();
+      fetchCurrentUser();
     }
-  }, [id, isTokenSynced, fetchPostDetail]);
+  }, [id, isTokenSynced, fetchPostDetail, fetchCurrentUser]);
 
   // 게시글 타입별 색상 반환
   const getTypeColor = (type: string) => {
@@ -45,6 +106,43 @@ const CommunityPostDetailPage = () => {
         return "bg-gray-50 text-gray-700";
     }
   };
+
+  // 본인 글인지 확인 (타입 변환하여 비교)
+  const isOwnPost =
+    currentUser && post && String(currentUser.id) === String(post.author.id);
+
+  // 디버깅 로그
+  console.log("🔍 본인 글 확인 로그:", {
+    currentUser: currentUser
+      ? {
+          id: currentUser.id,
+          nickname: currentUser.nickname,
+          email: currentUser.email,
+        }
+      : null,
+    post: post
+      ? {
+          id: post.id,
+          title: post.title,
+          author: {
+            id: post.author.id,
+            nickname: post.author.nickname,
+          },
+        }
+      : null,
+    isOwnPost: isOwnPost,
+    comparison:
+      currentUser && post
+        ? {
+            currentUserId: currentUser.id,
+            currentUserIdType: typeof currentUser.id,
+            postAuthorId: post.author.id,
+            postAuthorIdType: typeof post.author.id,
+            idsMatch: currentUser.id === post.author.id,
+            idsMatchString: String(currentUser.id) === String(post.author.id),
+          }
+        : null,
+  });
 
   if (loading) {
     return (
@@ -174,6 +272,26 @@ const CommunityPostDetailPage = () => {
                   </div>
                 </div>
               </div>
+
+              {/* 본인 글인 경우 수정/삭제 버튼 */}
+              {isOwnPost && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleEditPost}
+                    disabled={submitting}
+                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={handleDeletePost}
+                    disabled={submitting}
+                    className="px-3 py-1 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                  >
+                    삭제
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 게시글 내용 */}
@@ -267,6 +385,22 @@ const CommunityPostDetailPage = () => {
       </main>
 
       <Footer />
+
+      {/* 수정 모달 */}
+      {showEditModal && post && (
+        <CommunityWriteModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleUpdatePost}
+          initialData={{
+            title: post.title,
+            content: post.content,
+            type: post.type as "건강질문" | "리뷰",
+          }}
+          mode="edit"
+          submitting={submitting}
+        />
+      )}
     </div>
   );
 };

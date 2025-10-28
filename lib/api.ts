@@ -499,4 +499,21 @@ export const getNoticeDetail = async (id: string) => {
   }
 };
 
+// 사용자의 완료한 건강 질문 조회
+export const getUserCompletedQuestions = async (params: {
+  userId: string;
+  page?: number;
+  limit?: number;
+}) => {
+  try {
+    const response = await api.get("/private/health.questions/user/completed", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("사용자의 완료한 건강 질문 조회 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

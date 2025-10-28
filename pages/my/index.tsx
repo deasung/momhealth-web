@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,28 +20,30 @@ export default function MyPage() {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
-  };
+  }, [logout]);
 
   // 사용자 프로필 정보 가져오기
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      const fetchProfile = async () => {
-        try {
-          setProfileLoading(true);
-          const response = await getUserProfile();
-          setUserProfile(response.user);
-        } catch (error) {
-          // 프로필 정보 로딩 실패 시 기본값 유지
-        } finally {
-          setProfileLoading(false);
-        }
-      };
+  const fetchProfile = useCallback(async () => {
+    if (!isAuthenticated || isLoading) return;
 
-      fetchProfile();
+    try {
+      setProfileLoading(true);
+      const response = await getUserProfile();
+      setUserProfile(response.user);
+    } catch (error) {
+      // 프로필 정보 로딩 실패 시 기본값 유지
+    } finally {
+      setProfileLoading(false);
     }
   }, [isAuthenticated, isLoading]);
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      fetchProfile();
+    }
+  }, [isAuthenticated, isLoading, fetchProfile]);
 
   // 로그인 확인
   if (!mounted || (!isLoading && !isAuthenticated)) {
@@ -159,9 +161,13 @@ export default function MyPage() {
             <h3 className="text-lg font-semibold text-gray-900">내 활동</h3>
           </div>
           <div className="grid grid-cols-3 divide-x divide-gray-200">
-            <Link
-              href="/health-questions/list"
-              className="p-6 text-center hover:bg-gray-50 transition-colors"
+            <button
+              onClick={() => {
+                if (userProfile?.id) {
+                  window.location.href = `/health-questions/user-completed?userId=${userProfile.id}`;
+                }
+              }}
+              className="p-6 text-center hover:bg-gray-50 transition-colors w-full"
             >
               <div className="mb-3">
                 <div className="w-12 h-12 mx-auto bg-blue-50 rounded-lg flex items-center justify-center">
@@ -181,7 +187,7 @@ export default function MyPage() {
                 </div>
               </div>
               <p className="text-sm font-medium text-gray-700">건강 질문</p>
-            </Link>
+            </button>
 
             <Link
               href="/community/list"

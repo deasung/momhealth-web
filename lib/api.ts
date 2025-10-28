@@ -464,6 +464,50 @@ export const getServiceTerms = async () => {
   }
 };
 
+// ===== Friends: Search / Request / Cancel / Invite =====
+export interface SearchUsersResponse {
+  users: Array<{
+    id: number;
+    email: string;
+    nickname: string;
+    age: number;
+    userThumbnailUrl: string | null;
+    createdAt: string;
+    mappingStatus: "ACCEPTED" | "PENDING" | "NONE";
+    isMapped: boolean;
+    mappingId?: string;
+  }>;
+  nextCursor: string | null;
+  canSendEmail?: boolean;
+}
+
+export const searchUsers = async (params: {
+  query: string;
+  cursor?: string;
+}) => {
+  const response = await api.get("/private/register/search", { params });
+  return response.data as SearchUsersResponse;
+};
+
+export const sendFriendRequest = async (mappedUserId: number) => {
+  const response = await api.post("/private/register/mapped-users", {
+    mappedUserId,
+  });
+  return response.data;
+};
+
+export const cancelFriendRequestByMappingId = async (mappingId: string) => {
+  const response = await api.delete(
+    `/private/register/mapped-users/${mappingId}/cancel`
+  );
+  return response.data;
+};
+
+export const inviteFriendByEmail = async (email: string) => {
+  const response = await api.post("/private/register/invite", { email });
+  return response.data;
+};
+
 // 내가 작성한 커뮤니티 게시글 목록 조회
 export const getMyCommunityPosts = async (params?: {
   limit?: number;

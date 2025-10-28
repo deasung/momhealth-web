@@ -34,16 +34,10 @@ export function useTokenSync() {
 
         setToken(userToken, false, refreshToken);
         setIsTokenSynced(true);
-        console.log("🔄 NextAuth 세션에서 localStorage에 토큰 저장:", {
-          hasToken: !!userToken,
-          hasRefreshToken: !!refreshToken,
-          source: "NextAuth Session",
-        });
       } else if (userToken) {
         // 이미 저장된 토큰이 있는 경우 API 시스템에만 설정
         setToken(userToken, false, refreshToken);
         setIsTokenSynced(true);
-        console.log("🔄 기존 토큰을 API 시스템에 설정");
       }
     } else {
       // 세션이 없으면 localStorage에서 토큰 확인
@@ -57,17 +51,14 @@ export function useTokenSync() {
         localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
         clearToken();
         setIsTokenSynced(true);
-        console.log("🗑️ 로그아웃으로 인한 토큰 제거");
       } else if (storedToken && storedIsGuest) {
         // 게스트 토큰은 유지
         setToken(storedToken, true);
         setIsTokenSynced(true);
-        console.log("👤 게스트 토큰 유지");
       } else {
         // 토큰이 없으면 초기화
         clearToken();
         setIsTokenSynced(true);
-        console.log("🔄 토큰 없음, 게스트 모드로 전환");
       }
     }
   }, [session, status]);

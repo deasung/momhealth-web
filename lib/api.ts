@@ -19,10 +19,6 @@ const initializeTokenFromStorage = () => {
       if (storedToken) {
         currentToken = storedToken;
         isGuest = storedIsGuest === "true";
-        console.log("🔄 localStorage에서 토큰 복원:", {
-          hasToken: !!storedToken,
-          isGuest: storedIsGuest === "true",
-        });
       }
     } catch (error) {
       console.error("토큰 복원 실패:", error);
@@ -75,12 +71,6 @@ export const setToken = (
       console.error("토큰 저장 실패:", error);
     }
   }
-
-  console.log("🔑 토큰 설정:", {
-    hasToken: !!token,
-    isGuest: guest,
-    hasRefreshToken: !!refreshToken,
-  });
 };
 
 export const getCurrentToken = () => currentToken;

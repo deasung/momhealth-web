@@ -442,6 +442,28 @@ export const updateComment = async (
   }
 };
 
+// 공개 정책: 개인정보 처리방침 조회
+export const getPrivacyPolicy = async () => {
+  try {
+    const response = await api.get("/public/policy/privacy");
+    return response.data;
+  } catch (error) {
+    console.error("개인정보 처리방침 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 공개 정책: 서비스 이용약관 조회
+export const getServiceTerms = async () => {
+  try {
+    const response = await api.get("/public/policy/terms");
+    return response.data;
+  } catch (error) {
+    console.error("서비스 이용약관 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 내가 작성한 커뮤니티 게시글 목록 조회
 export const getMyCommunityPosts = async (params?: {
   limit?: number;

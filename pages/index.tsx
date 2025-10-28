@@ -109,8 +109,8 @@ export default function Home() {
             당신의 건강을 위한 맞춤형 건강 관리 플랫폼
           </p>
 
-          {/* 통계 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
+          {/* 통계 카드 - 데스크톱에서만 표시 */}
+          <div className="hidden md:grid grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
             <div className="bg-gray-50 rounded-xl p-8 text-center">
               <div className="text-3xl font-bold text-gray-900 mb-2">
                 {homeData?.popularQuestions.length || 0}

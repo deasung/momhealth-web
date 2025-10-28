@@ -396,6 +396,52 @@ export const deleteCommunityPost = async (postId: string) => {
   }
 };
 
+// 댓글 등록
+export const createComment = async (postId: string, content: string) => {
+  try {
+    const response = await api.post(`/private/community/${postId}/comments`, {
+      content,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("댓글 등록 실패:", error);
+    throw error;
+  }
+};
+
+// 댓글 삭제
+export const deleteComment = async (postId: string, commentId: string) => {
+  try {
+    const response = await api.delete(
+      `/private/community/${postId}/comments/${commentId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("댓글 삭제 실패:", error);
+    throw error;
+  }
+};
+
+// 댓글 수정
+export const updateComment = async (
+  postId: string,
+  commentId: string,
+  content: string
+) => {
+  try {
+    const response = await api.put(
+      `/private/community/${postId}/comments/${commentId}`,
+      {
+        content,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("댓글 수정 실패:", error);
+    throw error;
+  }
+};
+
 // 사용자 프로필 정보 조회
 export const getUserProfile = async () => {
   try {

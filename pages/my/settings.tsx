@@ -1,11 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAuth } from "../../lib/hooks/useAuth";
-import { getUserProfile, updateUserProfile } from "../../lib/api";
+import {
+  getUserProfile,
+  updateUserProfile,
+  uploadThumbnail,
+} from "../../lib/api";
 import type { UserProfile } from "../../types/user";
 
 export default function MySettingsPage() {
@@ -16,6 +20,9 @@ export default function MySettingsPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [thumbnailPath, setThumbnailPath] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 사용자 프로필 정보 가져오기
   useEffect(() => {
@@ -38,6 +45,42 @@ export default function MySettingsPage() {
     }
   }, [isAuthenticated]);
 
+  const handleSelectFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 간단한 검증 (이미지 타입/파일 크기 제한: 5MB)
+    if (!file.type.startsWith("image/")) {
+      alert("이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("파일 크기가 5MB를 초과할 수 없습니다.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const { thumbnailUrl } = await uploadThumbnail(file, "profile");
+      setThumbnailPath(thumbnailUrl);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      alert(
+        `프로필 이미지 업로드에 실패했습니다: ${
+          error?.message || "알 수 없는 오류"
+        }`
+      );
+    } finally {
+      setUploading(false);
+      // 동일 파일 재업로드 허용 위해 리셋
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async () => {
     if (!nickname.trim()) {
       alert("닉네임을 입력해주세요.");
@@ -49,6 +92,7 @@ export default function MySettingsPage() {
       await updateUserProfile({
         nickname: nickname.trim(),
         age: parseInt(age) || undefined,
+        userThumbnailUrl: thumbnailPath || undefined,
       });
       alert("정보가 수정되었습니다.");
       router.back();
@@ -122,6 +166,10 @@ export default function MySettingsPage() {
     );
   }
 
+  const cdn =
+    process.env.NEXT_PUBLIC_CDN_URL || "https://di7imxmn4pwuq.cloudfront.net";
+  const currentImagePath = thumbnailPath || userProfile?.userThumbnailUrl || "";
+
   return (
     <div className="min-h-screen bg-white">
       <Head>
@@ -157,45 +205,66 @@ export default function MySettingsPage() {
         {/* 프로필 사진 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
           <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32 rounded-full bg-orange-100 flex items-center justify-center mb-4 overflow-hidden">
-              {userProfile?.userThumbnailUrl ? (
-                <Image
-                  src={`${
-                    process.env.NEXT_PUBLIC_CDN_URL ||
-                    "https://di7imxmn4pwuq.cloudfront.net"
-                  }/${userProfile.userThumbnailUrl}`}
-                  alt={userProfile.nickname}
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-5xl">👤</span>
-              )}
-              <button className="absolute bottom-0 right-0 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+            {/* 아바타 래퍼: 오버플로우 없음 */}
+            <div className="relative w-32 h-32 mb-4">
+              {/* 실제 아바타: 동그라미 내부 잘림 */}
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-orange-100 flex items-center justify-center">
+                {currentImagePath ? (
+                  <Image
+                    src={`${cdn}/${currentImagePath}`}
+                    alt={userProfile?.nickname || "profile"}
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
                   />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+                ) : (
+                  <span className="text-5xl">👤</span>
+                )}
+              </div>
+
+              {/* 카메라 버튼: 원 밖으로 살짝 겹치도록 위치 */}
+              <button
+                type="button"
+                onClick={handleSelectFile}
+                disabled={uploading}
+                className="absolute -bottom-2 -right-2 w-11 h-11 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors disabled:opacity-50 shadow-md ring-4 ring-white"
+                aria-label="프로필 이미지 변경"
+              >
+                {uploading ? (
+                  <span className="w-4 h-4 border-b-2 border-white rounded-full animate-spin" />
+                ) : (
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                )}
               </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
             </div>
             <p className="text-sm text-gray-500">
-              프로필 사진은 웹에서 변경할 수 없습니다.
+              이미지를 업로드하여 프로필 사진을 변경할 수 있습니다.
             </p>
           </div>
         </div>

@@ -508,6 +508,82 @@ export const inviteFriendByEmail = async (email: string) => {
   return response.data;
 };
 
+// ===== File Upload: Profile Thumbnail =====
+export const getPresignedPost = async (fileExt: string, group: string) => {
+  const response = await api.get("/public/aws/s3-presigned-post", {
+    params: { file_ext: fileExt, group },
+  });
+  return response.data;
+};
+
+// path-style URL을 virtual-hosted 스타일로 변환
+const toVhostUrl = (url: string, bucket?: string) => {
+  // ex) https://s3.ap-northeast-2.amazonaws.com/moms40-dev  -> https://moms40-dev.s3.ap-northeast-2.amazonaws.com/
+  const m = url.match(/^https:\/\/s3\.([a-z0-9-]+)\.amazonaws\.com\/(.+)$/);
+  if (m && bucket) {
+    const region = m[1];
+    return `https://${bucket}.s3.${region}.amazonaws.com/`;
+  }
+  return url.endsWith("/") ? url : url + "/";
+};
+
+export const uploadThumbnail = async (
+  file: File,
+  group: "profile" | "community" | "misc" = "profile"
+): Promise<{ thumbnailUrl: string }> => {
+  const fileExt = (file.name.split(".").pop() || "").toLowerCase();
+  if (!fileExt) throw new Error("파일 확장자를 확인할 수 없습니다.");
+
+  // 1) presigned POST 수신
+  const presigned = await getPresignedPost(fileExt, group);
+  const { url, fields } = presigned;
+  if (!url || !fields?.key) throw new Error("Presigned POST 응답 형식 오류");
+
+  // 2) FormData 구성 (bucket 필드는 제외)
+  const formData = new FormData();
+  Object.entries(fields).forEach(([k, v]) => {
+    if (k !== "bucket") formData.append(k, String(v));
+  });
+
+  // 3) 웹 File 객체로 직접 첨부
+  formData.append("file", file, file.name);
+
+  // 4) URL을 virtual-hosted 로 변환해서 업로드
+  const postUrl = toVhostUrl(url, (fields as { bucket?: string }).bucket);
+
+  // 5) 업로드
+  const controller = new AbortController();
+  const to = setTimeout(() => controller.abort(), 30000);
+
+  let resp: Response;
+  try {
+    resp = await fetch(postUrl, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+      // 헤더에 Content-Type 지정 ❌  (FormData가 boundary 포함해서 자동 지정)
+    });
+  } catch (e: unknown) {
+    const error = e as { name?: string; message?: string };
+    if (error.name === "AbortError")
+      throw new Error("S3 업로드가 시간 초과되었습니다.");
+    throw new Error(
+      `네트워크 요청 실패: ${error?.message || "알 수 없는 오류"}`
+    );
+  } finally {
+    clearTimeout(to);
+  }
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(
+      `S3 업로드 실패 (${resp.status}): ${text || resp.statusText}`
+    );
+  }
+
+  return { thumbnailUrl: fields.key };
+};
+
 // 내가 작성한 커뮤니티 게시글 목록 조회
 export const getMyCommunityPosts = async (params?: {
   limit?: number;
@@ -546,6 +622,7 @@ export const getUserProfile = async () => {
 export const updateUserProfile = async (data: {
   nickname?: string;
   age?: number;
+  userThumbnailUrl?: string;
 }) => {
   try {
     const response = await api.put("/private/register/profile", data);

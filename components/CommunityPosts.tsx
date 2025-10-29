@@ -1,10 +1,17 @@
 import { CommunityPost } from "../types/home";
+import { useRouter } from "next/router";
+import Link from "next/link";
 
 interface CommunityPostsProps {
   posts: CommunityPost[];
 }
 
 const CommunityPosts = ({ posts }: CommunityPostsProps) => {
+  const router = useRouter();
+
+  const handlePostClick = (postId: string | number) => {
+    router.push(`/community/${postId}`);
+  };
   const getTypeColor = (type: string) => {
     switch (type) {
       case "REVIEW":
@@ -31,16 +38,20 @@ const CommunityPosts = ({ posts }: CommunityPostsProps) => {
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">커뮤니티</h2>
-        <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+        <Link
+          href="/community/list"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+        >
           전체보기 →
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {posts.map((post, index) => (
           <div
             key={post.id}
-            className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
+            onClick={() => handlePostClick(post.id)}
+            className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 cursor-pointer ${
               index === posts.length - 1 ? "border-b-0" : ""
             }`}
           >

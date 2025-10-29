@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+Use the SEO component under /components/SEO.tsx for per-page meta where possible.
+Provide title/description defaults and allow overrides per page.
+Avoid inlining large JSON-LD blocks; extract helpers to /lib if needed.

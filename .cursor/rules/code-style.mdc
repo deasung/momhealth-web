@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+Do not modify existing code formatting or indentation.
+Follow the current code style exactly as written.
+Do not auto-reorder imports or rewrap lines unless explicitly asked.
+Do not introduce or change ESLint/Prettier configs.

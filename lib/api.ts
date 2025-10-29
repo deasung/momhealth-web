@@ -771,4 +771,29 @@ export const getInquiries = async (params?: {
   }
 };
 
+// 문의 상세 조회
+export const getInquiryDetail = async (id: number) => {
+  try {
+    const response = await api.get(`/private/inquiry/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("문의 상세 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 문의 생성
+export const createInquiry = async (data: {
+  title: string;
+  content: string;
+}) => {
+  try {
+    const response = await api.post("/private/inquiry", data);
+    return response.data;
+  } catch (error) {
+    console.error("문의 등록 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+Auth is handled by next-auth under /pages/api/auth/[...nextauth].ts.
+Use JWT strategy; use getServerSession on the server where needed and useSession() on the client.
+Do not introduce custom auth frameworks unless requested.
+Keep secrets out of the client; use NEXT*PUBLIC* only for safe, public values.

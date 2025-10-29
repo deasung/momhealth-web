@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+Do not modify formatting or code style.
+Do not add new libraries without being asked.
+Do not migrate to App Router, Server Actions, or different state libs unless requested.
+Avoid the 'any' type; use explicit, narrow TypeScript types.
+Keep environment variables namespaced (NEXT*PUBLIC*\* for client, others server-only).

@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+Use axios for HTTP requests.
+Prefer a single axios instance (e.g., /hooks/api.ts) for baseURL and interceptors; reuse it instead of creating new clients.
+For server-side data on Pages Router, use getServerSideProps/getStaticProps as appropriate.
+All async calls must use try/catch with reasonable error surfaces (no silent failures).

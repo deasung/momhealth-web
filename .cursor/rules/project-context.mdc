@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+This is a Next.js 14 project using the **Pages Router** (not App Router).
+React 18 with TypeScript is required.
+TailwindCSS is used for styling.
+Do not suggest switching to the App Router or Server Actions.
+Port 3300 is used for dev and start scripts.

@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+Use these locations:
+
+- /components : reusable UI components (e.g., Header, Footer, SEO).
+- /pages : route pages and API routes under /pages/api.
+- /hooks : React hooks (e.g., useAuth, useLogout, useTokenSync).
+- /lib : helpers and utilities (if added later).
+- /public : static assets.
+  Do not place feature logic inside /pages components when it belongs in /hooks or /lib.

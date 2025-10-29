@@ -254,7 +254,7 @@ export default function CommunityPage() {
         ogTitle="건강 커뮤니티 - 오늘의 건강"
         ogDescription="건강에 대한 다양한 이야기와 경험을 공유하는 커뮤니티"
         ogUrl={`${
-          process.env.NEXT_PUBLIC_SITE_URL || "https://momhealth.co.kr"
+          process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr"
         }/community/list`}
       />
 

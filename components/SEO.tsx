@@ -29,7 +29,7 @@ export default function SEO({
   canonical,
   noindex = false,
 }: SEOProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://momhealth.co.kr";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
   const fullTitle = title === "오늘의 건강" ? title : `${title} | 오늘의 건강`;
 
   return (

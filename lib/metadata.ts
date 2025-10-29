@@ -111,7 +111,7 @@ export function generateCommunityPostMetadata(post: {
     ogTitle: post.title,
     ogDescription: truncatedContent,
     ogUrl: `${
-      process.env.NEXT_PUBLIC_SITE_URL || "https://momhealth.co.kr"
+      process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr"
     }/community/${post.id}`,
   };
 }

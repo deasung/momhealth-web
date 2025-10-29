@@ -108,7 +108,7 @@ export default function Home() {
         ogTitle={metadata.ogTitle}
         ogDescription={metadata.ogDescription}
         ogUrl={`${
-          process.env.NEXT_PUBLIC_SITE_URL || "https://momhealth.co.kr"
+          process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr"
         }`}
       />
 

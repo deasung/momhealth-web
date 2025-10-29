@@ -310,7 +310,15 @@ const LoginPage: NextPage = () => {
                           className="text-gray-400 hover:text-gray-600"
                           aria-label="비밀번호 표시 전환"
                         >
-                          {showPassword ? "🙈" : "👁️"}
+                          <img
+                            src="/eyes_off_illust.svg"
+                            alt={
+                              showPassword
+                                ? "비밀번호 숨기기"
+                                : "비밀번호 보이기"
+                            }
+                            className="w-5 h-5"
+                          />
                         </button>
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 import { PopularQuestion } from "../types/home";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 interface PopularQuestionsProps {
   questions: PopularQuestion[];
@@ -8,23 +9,26 @@ interface PopularQuestionsProps {
 const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
   const router = useRouter();
 
-  const handleQuestionClick = (questionId: string) => {
+  const handleQuestionClick = (questionId: string | number) => {
     router.push(`/health-questions/${questionId}`);
   };
   return (
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">인기 건강질문</h2>
-        <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+        <Link
+          href="/health-questions/list"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+        >
           전체보기 →
-        </button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {questions.map((question) => (
           <div
             key={question.id}
-            onClick={() => handleQuestionClick(question.id.toString())}
+            onClick={() => handleQuestionClick(question.id)}
             className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer"
           >
             <div className="relative">

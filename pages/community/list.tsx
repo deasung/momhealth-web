@@ -3,6 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import CommunityWriteModal from "../../components/CommunityWriteModal";
 import { getCommunityPosts, createCommunityPost } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
@@ -125,12 +126,13 @@ export default function CommunityPage() {
   // 게시글 카드 컴포넌트
   const PostCard = ({ post }: { post: CommunityPost }) => (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors duration-200">
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          {/* 왼쪽: 작성자 정보와 게시글 내용 */}
-          <div className="flex items-start gap-4 flex-1">
+      <div className="p-4 md:p-6">
+        {/* 모바일: 세로 레이아웃, 데스크톱: 가로 레이아웃 */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          {/* 작성자 정보와 게시글 내용 */}
+          <div className="flex items-start gap-3 md:gap-4 flex-1">
             {/* 작성자 아바타 */}
-            <div className="w-12 h-12 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
+            <div className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
               {post.author.userThumbnailUrl ? (
                 <img
                   src={post.author.userThumbnailUrl}
@@ -138,7 +140,7 @@ export default function CommunityPage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600 text-sm font-medium">
+                <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600 text-xs md:text-sm font-medium">
                   {post.author.nickname.charAt(0)}
                 </div>
               )}
@@ -157,17 +159,20 @@ export default function CommunityPage() {
                 <span className="text-xs text-gray-500">{post.timeAgo}</span>
               </div>
 
-              <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
+              <h3 className="font-semibold text-gray-900 text-base md:text-lg mb-2 line-clamp-2">
                 {post.title}
               </h3>
-              <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+              <p className="text-gray-600 text-sm mb-3 line-clamp-2 md:line-clamp-3">
                 {post.content}
               </p>
 
               {/* 메타 정보 */}
-              <div className="flex items-center gap-4 text-sm text-gray-500">
+              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-xs md:text-sm text-gray-500">
                 <span>작성자: {post.author.nickname}</span>
-                <span>댓글 {post.commentCount}개</span>
+                <span className="hidden md:inline">
+                  댓글 {post.commentCount}개
+                </span>
+                <span className="md:hidden">댓글 {post.commentCount}개</span>
                 <span>
                   {new Date(post.createdAt).toLocaleDateString("ko-KR")}
                 </span>
@@ -175,11 +180,11 @@ export default function CommunityPage() {
             </div>
           </div>
 
-          {/* 오른쪽: 더보기 버튼 */}
-          <div className="ml-4 flex-shrink-0">
+          {/* 더보기 버튼 */}
+          <div className="md:ml-4 md:flex-shrink-0">
             <Link
               href={`/community/${post.id}`}
-              className="inline-flex items-center justify-center px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors"
+              className="inline-flex items-center justify-center w-full md:w-auto px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors"
             >
               더보기
             </Link>
@@ -192,13 +197,11 @@ export default function CommunityPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>커뮤니티 | 오늘의 건강</title>
-          <meta
-            name="description"
-            content="건강 관련 커뮤니티 게시글을 확인하세요"
-          />
-        </Head>
+        <SEO
+          title="커뮤니티"
+          description="건강에 대한 다양한 이야기와 경험을 공유하는 커뮤니티입니다. 건강 질문과 리뷰를 확인하고 참여해보세요."
+          keywords="건강 커뮤니티, 건강 질문, 건강 리뷰, 건강 경험 공유"
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -216,9 +219,11 @@ export default function CommunityPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>커뮤니티 | 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="커뮤니티 오류"
+          description="커뮤니티 페이지에서 오류가 발생했습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -242,25 +247,28 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>커뮤니티 | 오늘의 건강</title>
-        <meta
-          name="description"
-          content="건강 관련 커뮤니티 게시글을 확인하세요"
-        />
-      </Head>
+      <SEO
+        title="커뮤니티"
+        description="건강에 대한 다양한 이야기와 경험을 공유하는 커뮤니티입니다. 건강 질문과 리뷰를 확인하고 참여해보세요."
+        keywords="건강 커뮤니티, 건강 질문, 건강 리뷰, 건강 경험 공유"
+        ogTitle="건강 커뮤니티 - 오늘의 건강"
+        ogDescription="건강에 대한 다양한 이야기와 경험을 공유하는 커뮤니티"
+        ogUrl={`${
+          process.env.NEXT_PUBLIC_SITE_URL || "https://momhealth.co.kr"
+        }/community/list`}
+      />
 
       <Header />
 
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                 커뮤니티
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm md:text-base text-gray-600">
                 건강에 대한 다양한 이야기와 경험을 공유해보세요.
               </p>
             </div>
@@ -268,8 +276,9 @@ export default function CommunityPage() {
             {isAuthenticated && (
               <button
                 onClick={handleWritePost}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium ml-4 flex-shrink-0"
               >
+                {/* 모바일에서는 아이콘만, 데스크톱에서는 아이콘 + 텍스트 */}
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -283,14 +292,14 @@ export default function CommunityPage() {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                글쓰기
+                <span className="hidden md:inline">글쓰기</span>
               </button>
             )}
           </div>
         </div>
 
         {/* 게시글 목록 */}
-        <div className="space-y-3 mb-8">
+        <div className="space-y-2 md:space-y-3 mb-6 md:mb-8">
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}

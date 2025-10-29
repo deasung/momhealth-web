@@ -4,6 +4,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import CommunityWriteModal from "../../components/CommunityWriteModal";
 import {
   getCommunityPostDetail,
@@ -18,6 +19,7 @@ import type { CommunityPostDetail } from "../../types/community";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
 import { useAuth } from "../../lib/hooks/useAuth";
 import type { UserProfile } from "../../types/user";
+import { generateCommunityPostMetadata } from "../../lib/metadata";
 
 const CommunityPostDetailPage = () => {
   const router = useRouter();
@@ -190,10 +192,10 @@ const CommunityPostDetailPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>커뮤니티 | 오늘의 건강</title>
-          <meta name="description" content="커뮤니티 게시글 상세" />
-        </Head>
+        <SEO
+          title="커뮤니티 게시글"
+          description="커뮤니티 게시글을 불러오는 중입니다."
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -209,9 +211,11 @@ const CommunityPostDetailPage = () => {
   if (error || !post) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>커뮤니티 | 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="게시글 오류"
+          description="게시글을 불러올 수 없습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -235,12 +239,19 @@ const CommunityPostDetailPage = () => {
     );
   }
 
+  // 동적 메타데이터 생성
+  const metadata = generateCommunityPostMetadata(post);
+
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>{post.title} | 오늘의 건강</title>
-        <meta name="description" content={post.content} />
-      </Head>
+      <SEO
+        title={metadata.title}
+        description={metadata.description}
+        keywords={metadata.keywords}
+        ogTitle={metadata.ogTitle}
+        ogDescription={metadata.ogDescription}
+        ogUrl={metadata.ogUrl}
+      />
 
       <Header />
 

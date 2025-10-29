@@ -1,13 +1,14 @@
-import Head from "next/head";
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import SEO from "../components/SEO";
 import PopularQuestions from "../components/PopularQuestions";
 import RecommendedQuestions from "../components/RecommendedQuestions";
 import CommunityPosts from "../components/CommunityPosts";
 import { getHomeData } from "../lib/api";
 import { HomeData } from "../types/home";
 import { useTokenSync } from "../lib/hooks/useTokenSync";
+import { generatePageMetadata } from "../lib/metadata";
 
 export default function Home() {
   const [homeData, setHomeData] = useState<HomeData | null>(null);
@@ -29,7 +30,6 @@ export default function Home() {
         const data = await getHomeData();
         setHomeData(data);
       } catch (err) {
-        console.error("홈 데이터 로딩 실패:", err);
         setError("데이터를 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
@@ -42,11 +42,11 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>오늘의 건강</title>
-          <meta name="description" content="오늘의 건강 웹 애플리케이션" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
+        <SEO
+          title="홈"
+          description="건강한 하루를 위한 맞춤형 건강 관리 서비스입니다. 건강 질문, 커뮤니티, 친구와의 건강 공유를 통해 더 나은 건강을 만들어보세요."
+          keywords="건강 관리, 건강 질문, 건강 커뮤니티, 건강 공유"
+        />
         <Header />
         <main className="container mx-auto px-4 py-16">
           <div className="text-center">
@@ -64,11 +64,11 @@ export default function Home() {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>오늘의 건강</title>
-          <meta name="description" content="오늘의 건강" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
+        <SEO
+          title="홈 오류"
+          description="홈페이지에서 오류가 발생했습니다."
+          noindex={true}
+        />
         <Header />
         <main className="container mx-auto px-4 py-16">
           <div className="text-center">
@@ -89,13 +89,28 @@ export default function Home() {
     );
   }
 
+  // 홈페이지 메타데이터 생성
+  const metadata = generatePageMetadata("home", {
+    title: homeData
+      ? `오늘의 건강 - ${homeData.popularQuestions.length}개 인기 질문, ${homeData.communityPosts.length}개 커뮤니티 게시글`
+      : undefined,
+    description: homeData
+      ? `인기 질문 ${homeData.popularQuestions.length}개, 추천 질문 ${homeData.recommendedQuestions.length}개, 커뮤니티 게시글 ${homeData.communityPosts.length}개가 있는 건강 관리 플랫폼입니다.`
+      : undefined,
+  });
+
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>오늘의 건강</title>
-        <meta name="description" content="오늘의 건강 웹 애플리케이션" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO
+        title={metadata.title}
+        description={metadata.description}
+        keywords={metadata.keywords}
+        ogTitle={metadata.ogTitle}
+        ogDescription={metadata.ogDescription}
+        ogUrl={`${
+          process.env.NEXT_PUBLIC_SITE_URL || "https://momhealth.co.kr"
+        }`}
+      />
 
       <Header />
 

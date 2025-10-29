@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import {
-  isTokenExpired,
-  logTokenInfo,
-  getTokenRemainingTime,
-} from "@/lib/auth";
-import { TOKEN_KEYS, API_CONFIG } from "../constants";
+import { isTokenExpired } from "@/lib/auth";
+import { TOKEN_KEYS } from "../constants";
 
 interface UseAuthReturn {
   token: string | null;
@@ -25,7 +21,6 @@ export function useAuth(): UseAuthReturn {
 
   // 로그아웃 함수
   const logout = useCallback(async () => {
-    console.log("로그아웃 실행");
     // localStorage에서 토큰 제거
     localStorage.removeItem(TOKEN_KEYS.TOKEN);
     localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
@@ -46,34 +41,18 @@ export function useAuth(): UseAuthReturn {
   }, [logout]);
 
   // 토큰 검증 함수
-  const validateToken = useCallback(
-    (tokenToValidate: string): boolean => {
-      if (!tokenToValidate) {
-        return false;
-      }
+  const validateToken = useCallback((tokenToValidate: string): boolean => {
+    if (!tokenToValidate) {
+      return false;
+    }
 
-      // 토큰 만료 여부 확인
-      if (isTokenExpired(tokenToValidate)) {
-        console.log("토큰이 만료되었습니다.");
-        logout();
-        return false;
-      }
+    // 토큰 만료 여부 확인
+    if (isTokenExpired(tokenToValidate)) {
+      return false;
+    }
 
-      // 개발 환경에서 토큰 정보 로깅
-      logTokenInfo(tokenToValidate);
-
-      // 토큰이 곧 만료될 예정인지 확인
-      const remainingTime = getTokenRemainingTime(tokenToValidate);
-      if (remainingTime < API_CONFIG.TOKEN_REFRESH_THRESHOLD) {
-        console.warn(
-          `토큰이 곧 만료됩니다. 남은 시간: ${Math.floor(remainingTime / 60)}분`
-        );
-      }
-
-      return true;
-    },
-    [logout]
-  );
+    return true;
+  }, []);
 
   // localStorage 기반 인증 상태 관리
   useEffect(() => {
@@ -102,7 +81,6 @@ export function useAuth(): UseAuthReturn {
           setIsGuest(false);
         }
       } catch (error) {
-        console.error("인증 초기화 실패:", error);
         setToken(null);
         setIsAuthenticated(false);
         setIsGuest(false);
@@ -114,7 +92,7 @@ export function useAuth(): UseAuthReturn {
     initializeAuth();
   }, [validateToken]);
 
-  // 주기적으로 토큰 검증 (1분마다)
+  // 주기적으로 토큰 검증 (5분마다)
   useEffect(() => {
     if (!isAuthenticated || !token) return;
 
@@ -123,7 +101,7 @@ export function useAuth(): UseAuthReturn {
         // 토큰이 만료되었으면 로그아웃
         logout();
       }
-    }, 60000); // 1분마다
+    }, 300000); // 5분마다
 
     return () => clearInterval(interval);
   }, [isAuthenticated, token, validateToken, logout]);
@@ -143,12 +121,10 @@ export function validateTokenBeforeRequest(): string | null {
   const token = localStorage.getItem(TOKEN_KEYS.TOKEN);
 
   if (!token) {
-    console.warn("토큰이 없습니다.");
     return null;
   }
 
   if (isTokenExpired(token)) {
-    console.warn("토큰이 만료되었습니다.");
     localStorage.removeItem(TOKEN_KEYS.TOKEN);
     localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
     return null;

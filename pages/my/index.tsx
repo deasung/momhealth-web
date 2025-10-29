@@ -40,10 +40,10 @@ export default function MyPage() {
   }, [isAuthenticated, isLoading]);
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    if (isAuthenticated && !isLoading && mounted) {
       fetchProfile();
     }
-  }, [isAuthenticated, isLoading, fetchProfile]);
+  }, [isAuthenticated, isLoading, mounted, fetchProfile]);
 
   // 로그인 확인
   if (!mounted || (!isLoading && !isAuthenticated)) {

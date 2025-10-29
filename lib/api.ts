@@ -752,4 +752,23 @@ export const getUserCompletedQuestions = async (params: {
   }
 };
 
+// 문의 목록 조회
+export const getInquiries = async (params?: {
+  limit?: number;
+  cursor?: string;
+}) => {
+  try {
+    const response = await api.get("/private/inquiries", {
+      params: {
+        limit: params?.limit || 10,
+        cursor: params?.cursor,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("문의 목록 조회 실패:", error);
+    throw error;
+  }
+};
+
 export default api;

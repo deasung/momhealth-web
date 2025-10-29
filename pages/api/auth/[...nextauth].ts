@@ -214,38 +214,38 @@ export default NextAuth({
       }
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      console.log("NextAuth redirect 콜백:", {
-        url,
-        baseUrl,
-        NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-      });
+    // async redirect({ url, baseUrl }) {
+    //   console.log("NextAuth redirect 콜백:", {
+    //     url,
+    //     baseUrl,
+    //     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    //   });
 
-      // 상대 경로인 경우 NEXTAUTH_URL 사용
-      if (url.startsWith("/")) {
-        const redirectUrl = `${process.env.NEXTAUTH_URL}${url}`;
-        console.log("상대 경로 리다이렉트:", redirectUrl);
-        return redirectUrl;
-      }
+    //   // 상대 경로인 경우 NEXTAUTH_URL 사용
+    //   if (url.startsWith("/")) {
+    //     const redirectUrl = `${process.env.NEXTAUTH_URL}${url}`;
+    //     console.log("상대 경로 리다이렉트:", redirectUrl);
+    //     return redirectUrl;
+    //   }
 
-      // 절대 URL인 경우 같은 origin인지 확인
-      try {
-        const urlObj = new URL(url);
-        const baseUrlObj = new URL(process.env.NEXTAUTH_URL || baseUrl);
+    //   // 절대 URL인 경우 같은 origin인지 확인
+    //   try {
+    //     const urlObj = new URL(url);
+    //     const baseUrlObj = new URL(process.env.NEXTAUTH_URL || baseUrl);
 
-        if (urlObj.origin === baseUrlObj.origin) {
-          console.log("같은 origin 리다이렉트:", url);
-          return url;
-        }
-      } catch (error) {
-        console.error("URL 파싱 오류:", error);
-      }
+    //     if (urlObj.origin === baseUrlObj.origin) {
+    //       console.log("같은 origin 리다이렉트:", url);
+    //       return url;
+    //     }
+    //   } catch (error) {
+    //     console.error("URL 파싱 오류:", error);
+    //   }
 
-      // 기본값으로 NEXTAUTH_URL 사용
-      const defaultUrl = process.env.NEXTAUTH_URL || baseUrl;
-      console.log("기본 리다이렉트:", defaultUrl);
-      return defaultUrl;
-    },
+    //   // 기본값으로 NEXTAUTH_URL 사용
+    //   const defaultUrl = process.env.NEXTAUTH_URL || baseUrl;
+    //   console.log("기본 리다이렉트:", defaultUrl);
+    //   return defaultUrl;
+    // },
   },
   pages: {
     signIn: "/login", // 로그인 페이지 경로

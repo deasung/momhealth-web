@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import KakaoProvider from "next-auth/providers/kakao";
 import GoogleProvider from "next-auth/providers/google";
-import api from "@/lib/api";
 import axios from "axios";
 
 // 타입 정의
@@ -26,26 +25,7 @@ declare module "next-auth/jwt" {
   }
 }
 
-// 환경 변수 확인 로그
-console.log("NextAuth 환경 변수:", {
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-  NODE_ENV: process.env.NODE_ENV,
-  KAKAO_CLIENT_ID: process.env.KAKAO_CLIENT_ID ? "설정됨" : "설정되지 않음",
-  KAKAO_CLIENT_SECRET: process.env.KAKAO_CLIENT_SECRET
-    ? "설정됨"
-    : "설정되지 않음",
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "설정됨" : "설정되지 않음",
-  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET
-    ? "설정됨"
-    : "설정되지 않음",
-});
-
-// 환경별 콜백 URL 로깅
-const callbackUrls = {
-  kakao: `${process.env.NEXTAUTH_URL}/api/auth/callback/kakao`,
-  google: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,
-};
-console.log("OAuth 콜백 URL:", callbackUrls);
+// 환경 변수는 .env에서 주입됨
 
 export default NextAuth({
   providers: [
@@ -73,56 +53,62 @@ export default NextAuth({
         email: { label: "이메일", type: "text" },
         password: { label: "비밀번호", type: "password" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
         try {
-          // 실제 서버 API 호출
-          console.log("NextAuth에서 API 호출 시도:", {
-            email: credentials.email,
-            url: "/public/auth/token/login",
-          });
+          // 서버 사이드에서 백엔드 절대 URL로 직접 호출 (프록시, 인터셉터 우회)
+          const baseURL =
+            process.env.MOMHEALTH_API_URL ||
+            "https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production";
+          const apiKey =
+            process.env.MOMHEALTH_API_KEY ||
+            "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
 
-          const response = await api.post("/public/auth/token/login", {
-            email: credentials.email,
-            password: credentials.password,
-          });
-
-          if (response.status !== 200) {
-            console.error("Login API error:", response.data?.message);
-            return null;
-          }
+          const response = await axios.post(
+            `${baseURL}/public/auth/token/login`,
+            {
+              email: credentials.email,
+              password: credentials.password,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+              },
+              timeout: 10000,
+            }
+          );
 
           const data = response.data;
 
-          if (!data.success || !data.access_token) {
+          if (
+            response.status !== 200 ||
+            !data?.success ||
+            !data?.access_token
+          ) {
             return null;
           }
 
-          return {
+          const userObj: {
+            id: string;
+            name: string;
+            email: string;
+            nickname?: string;
+            token?: string;
+            refreshToken?: string;
+          } = {
             id: data.user?.id?.toString() || "1",
             name: data.user?.nickname || credentials.email,
             email: credentials.email,
             nickname: data.user?.nickname,
             token: data.access_token,
+            refreshToken: data.refresh_token,
           };
+          return userObj;
         } catch (error: unknown) {
-          console.error("Error during authentication:", error);
-
-          // API 에러 응답 처리
-          if (error && typeof error === "object" && "response" in error) {
-            const axiosError = error as {
-              response: { status: number; data?: { message?: string } };
-            };
-            const status = axiosError.response.status;
-            const message =
-              axiosError.response.data?.message ||
-              "로그인 API 오류가 발생했습니다.";
-            console.error("Login API error:", message);
-          }
-
           return null;
         }
       },
@@ -141,21 +127,17 @@ export default NextAuth({
         token.nickname = (user as { nickname?: string }).nickname;
         token.token = (user as { token?: string }).token;
         token.accessToken = (user as { token?: string }).token;
+        token.refreshToken = (user as { refreshToken?: string }).refreshToken;
 
         // 소셜 로그인인 경우 백엔드 API 호출
         if (account?.provider === "kakao" || account?.provider === "google") {
           try {
-            console.log("소셜 로그인 백엔드 API 호출:", {
-              provider: account.provider,
-              user: user.email,
-            });
-
             // 서버 사이드에서 직접 백엔드 API 호출
             const apiKey =
-              process.env.MOMHEATH_API_KEY ||
+              process.env.MOMHEALTH_API_KEY ||
               "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
             const baseURL =
-              process.env.MOMHEATH_API_URL ||
+              process.env.MOMHEALTH_API_URL ||
               "https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production";
 
             const response = await axios.post(
@@ -183,7 +165,6 @@ export default NextAuth({
               throw new Error(response.data.message || "소셜 로그인 실패");
             }
           } catch (error) {
-            console.error("소셜 로그인 API 호출 실패:", error);
             // 백엔드 API 실패 시 로컬 JWT 토큰 생성
             const { generateToken } = await import("@/lib/auth");
             token.token = generateToken({
@@ -247,9 +228,7 @@ export default NextAuth({
     //   return defaultUrl;
     // },
   },
-  pages: {
-    signIn: "/login", // 로그인 페이지 경로
-  },
+
   secret: process.env.NEXTAUTH_SECRET, // ✨ 이 부분이 .env.local과 연결됩니다.
   debug: process.env.NODE_ENV === "development",
   // JWT 에러 핸들링
@@ -257,23 +236,10 @@ export default NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30일
   },
   // 세션 에러 핸들링
-  events: {
-    async signOut({ token }) {
-      console.log("NextAuth signOut event:", token);
-    },
-    async signIn({ user, account, profile, isNewUser }) {
-      console.log("NextAuth signIn event:", {
-        user: user.email,
-        provider: account?.provider,
-      });
-    },
-    async signInError({ error, provider }) {
-      console.error("NextAuth signInError:", { error, provider });
-    },
-  },
+  events: {},
   // 에러 페이지 설정
   pages: {
-    signIn: "/login", // 로그인 페이지 경로
-    error: "/login", // 에러 발생 시 로그인 페이지로 리다이렉트
+    signIn: "/login",
+    error: "/login",
   },
 });

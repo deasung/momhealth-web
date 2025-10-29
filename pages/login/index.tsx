@@ -118,7 +118,7 @@ const LoginPage: NextPage = () => {
         if (session) {
           alert("로그인 성공! 환영합니다!");
           // 로그인 성공 후 리다이렉트 (선택적)
-          // router.push("/");
+          router.push("/");
         }
       }
     } catch (error: unknown) {

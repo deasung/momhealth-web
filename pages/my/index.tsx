@@ -246,7 +246,7 @@ export default function MyPage() {
           </div>
           <div>
             <Link
-              href="/support/inquiry"
+              href="/my/inquire"
               className="flex items-center justify-between p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-4">

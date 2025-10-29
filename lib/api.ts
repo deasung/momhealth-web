@@ -758,7 +758,7 @@ export const getInquiries = async (params?: {
   cursor?: string;
 }) => {
   try {
-    const response = await api.get("/private/inquiries", {
+    const response = await api.get("/private/inquiry", {
       params: {
         limit: params?.limit || 10,
         cursor: params?.cursor,

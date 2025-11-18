@@ -61,68 +61,78 @@ export default function HealthQuestionsList() {
   };
 
   // 질문 카드 컴포넌트
-  const QuestionCard = ({ question }: { question: HealthQuestionDetail }) => (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors duration-200">
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          {/* 왼쪽: 썸네일과 기본 정보 */}
-          <div className="flex items-start gap-4 flex-1">
-            {/* 썸네일 */}
-            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-              <img
-                src={question.thumbnailUrl}
-                alt={question.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
+  const QuestionCard = ({ question }: { question: HealthQuestionDetail }) => {
+    const [imageError, setImageError] = useState(false);
+    const hasThumbnail = question.thumbnailUrl && !imageError;
 
-            {/* 질문 정보 */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
-                {question.title}
-              </h3>
-              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                {question.description}
-              </p>
-
-              {/* 카테고리 태그 */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {question.primaryCategory && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
-                    {question.primaryCategory.name}
-                  </span>
-                )}
-                {question.secondaryCategory && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700">
-                    {question.secondaryCategory.name}
-                  </span>
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors duration-200">
+        <div className="p-6">
+          <div className="flex items-start justify-between">
+            {/* 왼쪽: 썸네일과 기본 정보 */}
+            <div className="flex items-start gap-4 flex-1">
+              {/* 썸네일 */}
+              <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                {hasThumbnail ? (
+                  <img
+                    src={question.thumbnailUrl}
+                    alt={question.title}
+                    className="w-full h-full object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="text-2xl">💊</div>
                 )}
               </div>
 
-              {/* 메타 정보 */}
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span>질문 {question.questionCount}개</span>
-                {question.durationSeconds && (
-                  <span>{question.durationSeconds}초</span>
-                )}
-                <span>조회 {question.viewCount}</span>
+              {/* 질문 정보 */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-2">
+                  {question.title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  {question.description}
+                </p>
+
+                {/* 카테고리 태그 */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {question.primaryCategory && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
+                      {question.primaryCategory.name}
+                    </span>
+                  )}
+                  {question.secondaryCategory && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700">
+                      {question.secondaryCategory.name}
+                    </span>
+                  )}
+                </div>
+
+                {/* 메타 정보 */}
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>질문 {question.questionCount}개</span>
+                  {question.durationSeconds && (
+                    <span>{question.durationSeconds}초</span>
+                  )}
+                  <span>조회 {question.viewCount}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 오른쪽: 시작 버튼 */}
-          <div className="ml-4 flex-shrink-0">
-            <Link
-              href={`/health-questions/${question.id}`}
-              className="inline-flex items-center justify-center px-6 py-3 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              시작하기
-            </Link>
+            {/* 오른쪽: 시작 버튼 */}
+            <div className="ml-4 flex-shrink-0">
+              <Link
+                href={`/health-questions/${question.id}`}
+                className="inline-flex items-center justify-center px-6 py-3 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                시작하기
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -180,9 +190,7 @@ export default function HealthQuestionsList() {
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            건강 질문
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">건강 질문</h1>
           <p className="text-gray-600">
             다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요.
           </p>

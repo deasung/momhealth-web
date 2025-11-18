@@ -37,16 +37,16 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
                 alt={question.title}
                 className="w-full h-48 object-cover"
               />
-              <div className="absolute top-3 left-3">
-                <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                  {question.type}
-                </span>
-              </div>
-              <div className="absolute top-3 right-3">
-                <span className="bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs">
-                  👁️ {question.viewCount}
-                </span>
-              </div>
+              {/*<div className="absolute top-3 left-3">*/}
+              {/*  <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">*/}
+              {/*    {question.type}*/}
+              {/*  </span>*/}
+              {/*</div>*/}
+              {/*<div className="absolute top-3 right-3">*/}
+              {/*  <span className="bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs">*/}
+              {/*    👁️ {question.viewCount}*/}
+              {/*  </span>*/}
+              {/*</div>*/}
             </div>
 
             <div className="p-4">

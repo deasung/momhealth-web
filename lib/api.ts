@@ -106,6 +106,7 @@ if (!process.env.MOMHEATH_API_KEY) {
 
 console.log("API 설정:", {
   BASE_URL: BASE_URL || "상대 경로 사용",
+  MOMHEATH_API_URL: process.env.MOMHEATH_API_URL,
   API_KEY: API_KEY ? "설정됨" : "설정되지 않음",
   NODE_ENV: process.env.NODE_ENV,
 });
@@ -792,6 +793,128 @@ export const createInquiry = async (data: {
     return response.data;
   } catch (error) {
     console.error("문의 등록 실패:", error);
+    throw error;
+  }
+};
+
+// 비밀번호 재설정 이메일 발송
+export const requestPasswordReset = async (email: string) => {
+  try {
+    const response = await api.post("/public/auth/password-reset", { email });
+    return response.data;
+  } catch (error) {
+    console.error("비밀번호 재설정 이메일 발송 실패:", error);
+    throw error;
+  }
+};
+
+// 웹 푸시 토큰 등록 (Web Push API 사용)
+export const registerWebPushToken = async (subscriptionData: {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}) => {
+  try {
+    if (typeof window === "undefined") {
+      throw new Error("브라우저 환경에서만 사용 가능합니다.");
+    }
+
+    const { getBrowserInfo, getInstallationId } = await import(
+      "./utils/browserInfo"
+    );
+    const { getBrowserInfo: getDeviceInfo } = await import(
+      "./utils/deviceInfo"
+    );
+
+    const browserInfo = getBrowserInfo();
+    const deviceInfo = getDeviceInfo();
+    const installationId = getInstallationId();
+
+    const payload = {
+      endpoint: subscriptionData.endpoint,
+      p256dh: subscriptionData.p256dh,
+      auth: subscriptionData.auth,
+      token: subscriptionData.endpoint, // endpoint와 동일
+      isPush: true,
+      isAllPush: true,
+      installationId,
+      // 브라우저 정보
+      userAgent: browserInfo.userAgent,
+      browserName: browserInfo.browserName,
+      browserVersion: browserInfo.browserVersion,
+      deviceType: browserInfo.deviceType,
+      screenWidth: browserInfo.screenWidth,
+      screenHeight: browserInfo.screenHeight,
+      language: browserInfo.language,
+      timezone: browserInfo.timezone,
+      // 디바이스 정보
+      deviceName: deviceInfo.deviceName,
+      modelName: deviceInfo.modelName,
+      osName: deviceInfo.osName,
+      osVersion: deviceInfo.osVersion,
+      brand: deviceInfo.brand,
+      manufacturer: deviceInfo.manufacturer,
+    };
+
+    const response = await api.post("/public/web-push-token", payload);
+    return response.data;
+  } catch (error) {
+    console.error("웹 푸시 토큰 등록 실패:", error);
+    throw error;
+  }
+};
+
+// 웹 푸시 토큰 해제
+export const unregisterWebPushToken = async (endpoint: string) => {
+  try {
+    const response = await api.delete("/public/web-push-token", {
+      data: {
+        endpoint,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("웹 푸시 토큰 해제 실패:", error);
+    throw error;
+  }
+};
+
+// 웹 푸시 토큰 상태 조회
+export const getWebPushTokenStatus = async (endpoint: string) => {
+  try {
+    const encodedEndpoint = encodeURIComponent(endpoint);
+    const response = await api.get(`/public/web-push-token/${encodedEndpoint}`);
+    return response.data;
+  } catch (error) {
+    console.error("웹 푸시 토큰 상태 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 웹 푸시 알림 상태 토글
+export const toggleWebPushStatus = async (
+  endpoint: string,
+  isPush: boolean
+) => {
+  try {
+    const response = await api.patch("/public/web-push-token/toggle", {
+      endpoint,
+      isPush,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("웹 푸시 상태 변경 실패:", error);
+    throw error;
+  }
+};
+
+// 사용자별 웹 푸시 토큰 조회
+export const getUserWebPushTokens = async () => {
+  try {
+    const response = await api.get("/public/web-push-tokens");
+    return response.data;
+  } catch (error) {
+    console.error("웹 푸시 토큰 조회 실패:", error);
     throw error;
   }
 };

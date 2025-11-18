@@ -856,7 +856,7 @@ export const registerWebPushToken = async (subscriptionData: {
       manufacturer: deviceInfo.manufacturer,
     };
 
-    const response = await api.post("/public/web-push-token", payload);
+    const response = await api.post("/public/push/web-push-token", payload);
     return response.data;
   } catch (error) {
     console.error("웹 푸시 토큰 등록 실패:", error);
@@ -867,7 +867,7 @@ export const registerWebPushToken = async (subscriptionData: {
 // 웹 푸시 토큰 해제
 export const unregisterWebPushToken = async (endpoint: string) => {
   try {
-    const response = await api.delete("/public/web-push-token", {
+    const response = await api.delete("/public/push/web-push-token", {
       data: {
         endpoint,
       },
@@ -883,7 +883,9 @@ export const unregisterWebPushToken = async (endpoint: string) => {
 export const getWebPushTokenStatus = async (endpoint: string) => {
   try {
     const encodedEndpoint = encodeURIComponent(endpoint);
-    const response = await api.get(`/public/web-push-token/${encodedEndpoint}`);
+    const response = await api.get(
+      `/public/push/web-push-token/${encodedEndpoint}`
+    );
     return response.data;
   } catch (error) {
     console.error("웹 푸시 토큰 상태 조회 실패:", error);
@@ -897,7 +899,7 @@ export const toggleWebPushStatus = async (
   isPush: boolean
 ) => {
   try {
-    const response = await api.patch("/public/web-push-token/toggle", {
+    const response = await api.patch("/public/push/web-push-token/toggle", {
       endpoint,
       isPush,
     });
@@ -911,7 +913,7 @@ export const toggleWebPushStatus = async (
 // 사용자별 웹 푸시 토큰 조회
 export const getUserWebPushTokens = async () => {
   try {
-    const response = await api.get("/public/web-push-tokens");
+    const response = await api.get("/public/push/web-push-tokens");
     return response.data;
   } catch (error) {
     console.error("웹 푸시 토큰 조회 실패:", error);

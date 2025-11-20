@@ -20,18 +20,18 @@ const nextConfig = {
   // 외부 이미지 도메인 설정
   images: {
     domains: [
-      //https://d2n4p0bysgra0c.cloudfront.net
       "d2n4p0bysgra0c.cloudfront.net", // CloudFront 도메인
+      "di7imxmn4pwuq.cloudfront.net", // CloudFront 도메인 (프로필 이미지 등)
     ],
   },
 
-  // 런타임 환경 변수 노출 (서버 사이드에서만 접근 가능)
-  // Next.js standalone 모드에서 런타임 환경 변수를 읽기 위해 필요
-  // env 설정은 빌드 타임에만 작동하지만, 서버 사이드 코드에서는 런타임에 process.env를 직접 읽을 수 있음
-  // 이 설정은 빌드 시점에 환경 변수 이름을 번들에 포함시켜 런타임에 읽을 수 있도록 함
+  // 런타임 환경 변수 선언
+  // Next.js standalone 모드에서 런타임 환경 변수를 읽기 위해 env 설정이 필요합니다.
+  // 빌드 시점에는 값이 없어도 되지만, 환경 변수 이름을 번들에 포함시켜야 런타임에 읽을 수 있습니다.
+  // docker run -e로 전달된 값이 이 설정을 덮어씁니다.
   env: {
-    MOMHEALTH_API_URL: process.env.MOMHEALTH_API_URL,
-    MOMHEALTH_API_KEY: process.env.MOMHEALTH_API_KEY,
+    MOMHEALTH_API_URL: process.env.MOMHEALTH_API_URL || "",
+    MOMHEALTH_API_KEY: process.env.MOMHEALTH_API_KEY || "",
   },
 
   // 클라이언트 사이드 하이드레이션 문제 방지

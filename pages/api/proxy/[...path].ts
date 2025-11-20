@@ -1,24 +1,49 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const { path } = req.query;
-  const apiPath = Array.isArray(path) ? path.join("/") : path;
-
-  // 서버 사이드에서만 접근 가능한 환경 변수 사용
-  // 런타임 환경 변수를 직접 읽기 (Next.js standalone 모드에서 동작)
+// 서버 시작 시 환경 변수 확인 (모듈 로드 시점에 실행)
+if (typeof process !== "undefined") {
   const baseURL = process.env.MOMHEALTH_API_URL;
   const apiKey = process.env.MOMHEALTH_API_KEY;
 
-  // 디버깅: 환경 변수 확인 (첫 요청 시에만 로그)
   if (!baseURL || !apiKey) {
-    console.error("❌ 환경변수 누락 (프록시):", {
+    console.error("❌ [프록시 API] 환경변수 누락 (서버 시작 시):", {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
       allEnvKeys: Object.keys(process.env).filter((key) =>
         key.includes("MOMHEALTH")
       ),
       nodeEnv: process.env.NODE_ENV,
+    });
+  } else {
+    console.log("✅ [프록시 API] 환경변수 확인 완료:", {
+      MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+      MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }
+}
+
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  const { path } = req.query;
+  const apiPath = Array.isArray(path) ? path.join("/") : path;
+
+  // 서버 사이드에서만 접근 가능한 환경 변수 사용
+  // 런타임 환경 변수를 직접 읽기 (Next.js standalone 모드에서 동작)
+  // process.env는 런타임에 Node.js에서 직접 읽을 수 있음
+  const baseURL = process.env.MOMHEALTH_API_URL;
+  const apiKey = process.env.MOMHEALTH_API_KEY;
+
+  // 디버깅: 환경 변수 확인
+  if (!baseURL || !apiKey) {
+    console.error("❌ 환경변수 누락 (프록시 요청 시):", {
+      MOMHEALTH_API_URL: baseURL || "undefined",
+      MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
+      allEnvKeys: Object.keys(process.env).filter((key) =>
+        key.includes("MOMHEALTH")
+      ),
+      nodeEnv: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
     });
     return res.status(500).json({
       error: "서버 설정 오류",

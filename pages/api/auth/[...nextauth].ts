@@ -27,6 +27,26 @@ declare module "next-auth/jwt" {
 
 // 환경 변수는 .env에서 주입됨
 
+// 서버 시작 시 환경 변수 확인 (모듈 로드 시점에 실행)
+if (typeof process !== "undefined") {
+  const baseURL = process.env.MOMHEALTH_API_URL;
+  const apiKey = process.env.MOMHEALTH_API_KEY;
+
+  if (!baseURL || !apiKey) {
+    console.error("❌ [NextAuth] 환경변수 누락 (서버 시작 시):", {
+      MOMHEALTH_API_URL: baseURL || "undefined",
+      MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
+      nodeEnv: process.env.NODE_ENV,
+    });
+  } else {
+    console.log("✅ [NextAuth] 환경변수 확인 완료:", {
+      MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+      MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }
+}
+
 export default NextAuth({
   providers: [
     KakaoProvider({

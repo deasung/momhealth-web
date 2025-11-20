@@ -12,6 +12,13 @@ RUN npm ci
 FROM node:20-slim AS builder
 WORKDIR /app
 
+# arm64 플랫폼에서 SWC 바이너리 로드를 위한 패키지 설치
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # NEXT_PUBLIC_ 환경변수들은 코드에 fallback 값이 있으므로
 # 빌드 시점에 전달하지 않아도 됩니다 (fallback 값이 번들에 포함됨)
 # 필요시 .env 파일을 복사하거나 빌드 시점에 환경변수를 전달할 수 있습니다
@@ -20,6 +27,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# arm64에서 SWC 바이너리 문제를 피하기 위해 환경변수 설정
+ENV NEXT_SWC_BINARY_PATH=""
 RUN npm run build
 
 # 3) runner

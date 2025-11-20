@@ -2,7 +2,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  swcMinify: false, // arm64 플랫폼 호환성을 위해 비활성화
   output: "standalone", // <- Docker 런타임에 필요한 standalone 산출물 생성
   poweredByHeader: false, // (옵션) 보안 헤더 숨김
   compress: true, // (옵션) 응답 압축
@@ -19,8 +19,8 @@ const nextConfig = {
 
   // 외부 이미지 도메인 설정
   images: {
-    domains: [
-      "di7imxmn4pwuq.cloudfront.net", // CloudFront 도메인
+    domains: [  //https://d2n4p0bysgra0c.cloudfront.net
+      "d2n4p0bysgra0c.cloudfront.net", // CloudFront 도메인
     ],
   },
 

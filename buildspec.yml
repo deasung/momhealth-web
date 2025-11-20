@@ -14,8 +14,8 @@ env:
 
     # --- 컨테이너 실행 옵션 ---
     CONTAINER_NAME: momhealth-web
-    HOST_PORT: "80"      # LB→EC2 외부 포트
-    APP_PORT: "3300"     # 컨테이너 내부 Next.js 포트
+    HOST_PORT: "80" # LB→EC2 외부 포트
+    APP_PORT: "3300" # 컨테이너 내부 Next.js 포트
 
 phases:
   install:
@@ -59,19 +59,30 @@ phases:
       - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
       - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
-      # ====== 데모용 값 (운영은 SSM SecureString으로 읽는 것을 권장) ======
-      - NEXTAUTH_URL_VALUE="https://medigen.ai.kr"   # 실제 서비스 도메인
-      - NEXTAUTH_SECRET_VALUE="92nkzVApA5J9Fne9s8XeQAGdEkOiTK+v+1cztN/eTok="
-      - MOMHEALTH_API_URL_VALUE="https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/dev"
-      - MOMHEALTH_API_KEY_VALUE="f5e60c40-5eb4-11ea-b4d7-0d9c1606f185"
-      - JWT_SECRET_VALUE="e4f5d620-bb7a-4f56-90c7-5a9e6b7b2d10\$momhealth2025!"  # $ 이스케이프
-      - CDN_URL_VALUE="https://d2n4p0bysgra0c.cloudfront.net"
-      - KAKAO_CLIENT_ID_VALUE="f8ac4eae134f37ea481b65f4e43ce54e"
-      - KAKAO_CLIENT_SECRET_VALUE="asdfasdfsafasfasfsdfsfsa121231231"
-      - GOOGLE_CLIENT_ID_VALUE="575173374427-t09ul9r8c0ckr2lp2r6bhfatksuru9ve.apps.googleusercontent.com"
-      - GOOGLE_CLIENT_SECRET_VALUE="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"
+      # ====== CodeBuild 환경변수에서 읽어오기 ======
+      # CodeBuild 콘솔에서 다음 환경변수들을 설정해야 합니다:
+      # - NEXTAUTH_URL_VALUE
+      # - NEXTAUTH_SECRET_VALUE
+      # - MOMHEALTH_API_URL_VALUE
+      # - MOMHEALTH_API_KEY_VALUE
+      # - JWT_SECRET_VALUE
+      # - CDN_URL_VALUE
+      # - KAKAO_CLIENT_ID_VALUE
+      # - KAKAO_CLIENT_SECRET_VALUE
+      # - GOOGLE_CLIENT_ID_VALUE
+      # - GOOGLE_CLIENT_SECRET_VALUE
+      - |
+        NEXTAUTH_URL_VALUE="${NEXTAUTH_URL_VALUE}"
+        NEXTAUTH_SECRET_VALUE="${NEXTAUTH_SECRET_VALUE}"
+        MOMHEALTH_API_URL_VALUE="${MOMHEALTH_API_URL_VALUE}"
+        MOMHEALTH_API_KEY_VALUE="${MOMHEALTH_API_KEY_VALUE}"
+        JWT_SECRET_VALUE="${JWT_SECRET_VALUE}"
+        CDN_URL_VALUE="${CDN_URL_VALUE}"
+        KAKAO_CLIENT_ID_VALUE="${KAKAO_CLIENT_ID_VALUE}"
+        KAKAO_CLIENT_SECRET_VALUE="${KAKAO_CLIENT_SECRET_VALUE}"
+        GOOGLE_CLIENT_ID_VALUE="${GOOGLE_CLIENT_ID_VALUE}"
+        GOOGLE_CLIENT_SECRET_VALUE="${GOOGLE_CLIENT_SECRET_VALUE}"
       # ===========================================================
-
       # SSM 파라미터 JSON을 jq로 생성 (IDE YAML 경고 X, 이스케이프 안전)
       - |
         jq -n \
@@ -91,6 +102,7 @@ phases:
           --arg ksec   "${KAKAO_CLIENT_SECRET_VALUE}" \
           --arg gid    "${GOOGLE_CLIENT_ID_VALUE}" \
           --arg gsec   "${GOOGLE_CLIENT_SECRET_VALUE}" \
+          --arg node_env "${NODE_ENV}" \
           '{
             commands: [
               "set -e",
@@ -104,7 +116,7 @@ phases:
               "docker pull ${IMAGE}:latest",
               "docker stop ${CONTAINER} || true",
               "docker rm ${CONTAINER} || true",
-              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE}:latest"
+              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE}:latest"
             ]
           }' > ssm-params.json
         echo "--- ssm-params.json ---"; cat ssm-params.json; echo "----------------------"

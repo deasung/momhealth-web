@@ -128,7 +128,9 @@ phases:
               "echo '===================================='",
               "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE}:latest",
               "echo '컨테이너 실행 완료. 환경변수 확인:'",
-              "docker exec ${CONTAINER} printenv | grep -E '(MOMHEALTH_API_URL|NODE_ENV)' || echo '컨테이너가 아직 시작 중입니다.'"
+              "sleep 2",
+              "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_URL || echo 'MOMHEALTH_API_URL 확인 실패'",
+              "docker exec ${CONTAINER} printenv | grep NODE_ENV || echo 'NODE_ENV 확인 실패'"
             ]
           }' > ssm-params.json
         echo "--- ssm-params.json ---"; cat ssm-params.json; echo "----------------------"

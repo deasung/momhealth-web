@@ -60,12 +60,16 @@ export default NextAuth({
 
         try {
           // 서버 사이드에서 백엔드 절대 URL로 직접 호출 (프록시, 인터셉터 우회)
-          const baseURL =
-            process.env.MOMHEALTH_API_URL ||
-            "https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production";
-          const apiKey =
-            process.env.MOMHEALTH_API_KEY ||
-            "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
+          const baseURL = process.env.MOMHEALTH_API_URL;
+          const apiKey = process.env.MOMHEALTH_API_KEY;
+
+          if (!baseURL || !apiKey) {
+            console.error("❌ 환경변수 누락:", {
+              MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+              MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+            });
+            return null;
+          }
 
           const response = await axios.post(
             `${baseURL}/public/auth/token/login`,
@@ -133,12 +137,16 @@ export default NextAuth({
         if (account?.provider === "kakao" || account?.provider === "google") {
           try {
             // 서버 사이드에서 직접 백엔드 API 호출
-            const apiKey =
-              process.env.MOMHEALTH_API_KEY ||
-              "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
-            const baseURL =
-              process.env.MOMHEALTH_API_URL ||
-              "https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production";
+            const apiKey = process.env.MOMHEALTH_API_KEY;
+            const baseURL = process.env.MOMHEALTH_API_URL;
+
+            if (!baseURL || !apiKey) {
+              console.error("❌ 환경변수 누락 (소셜 로그인):", {
+                MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+                MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+              });
+              throw new Error("환경변수가 설정되지 않았습니다.");
+            }
 
             const response = await axios.post(
               `${baseURL}/public/auth/social-login`,

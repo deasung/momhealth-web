@@ -6,9 +6,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apiPath = Array.isArray(path) ? path.join("/") : path;
 
   // 서버 사이드에서만 접근 가능한 환경 변수 사용
-  const baseURL = process.env.MOMHEATH_API_URL || "http://localhost:3000";
-  const apiKey =
-    process.env.MOMHEATH_API_KEY || "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
+  const baseURL = process.env.MOMHEALTH_API_URL;
+  const apiKey = process.env.MOMHEALTH_API_KEY;
+
+  if (!baseURL || !apiKey) {
+    console.error("❌ 환경변수 누락 (프록시):", {
+      MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+      MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+    });
+    return res.status(500).json({
+      error: "서버 설정 오류",
+      message: "환경변수가 설정되지 않았습니다.",
+    });
+  }
 
   // 클라이언트에서 전달된 토큰 및 refresh token 확인
   const clientToken = req.headers.authorization;

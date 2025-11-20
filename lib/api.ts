@@ -93,24 +93,6 @@ export const clearToken = () => {
   console.log("🗑️ 토큰 초기화");
 };
 
-// 환경 변수 검증
-if (!process.env.MOMHEATH_API_URL) {
-  console.warn(
-    "⚠️ MOMHEATH_API_URL 환경 변수가 설정되지 않았습니다. 기본값 http://localhost:8080을 사용합니다."
-  );
-}
-
-if (!process.env.MOMHEATH_API_KEY) {
-  console.warn("⚠️ MOMHEATH_ADMIN_API_KEY 환경 변수가 설정되지 않았습니다.");
-}
-
-console.log("API 설정:", {
-  BASE_URL: BASE_URL || "상대 경로 사용",
-  MOMHEATH_API_URL: process.env.MOMHEATH_API_URL,
-  API_KEY: API_KEY ? "설정됨" : "설정되지 않음",
-  NODE_ENV: process.env.NODE_ENV,
-});
-
 // axios 인스턴스 생성
 const api = axios.create({
   baseURL: BASE_URL,

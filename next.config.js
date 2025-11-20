@@ -34,7 +34,7 @@ const nextConfig = {
     MOMHEALTH_API_KEY: process.env.MOMHEALTH_API_KEY || "",
   },
 
-  // 클라이언트 사이드 하이드레이션 문제 방지
+  // 클라이언트 사이드 하이드레이션 문제 방지 및 런타임 환경 변수 주입
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
       config.resolve.fallback = {
@@ -42,6 +42,7 @@ const nextConfig = {
         fs: false,
       };
     }
+
     return config;
   },
 };

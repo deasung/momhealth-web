@@ -7,12 +7,32 @@
  * 런타임에 명시적으로 process.env를 참조합니다.
  */
 export function getEnvVar(key: string): string | undefined {
-  if (typeof process === "undefined" || !process.env) {
+  // Node.js 환경인지 확인
+  if (typeof process === "undefined") {
+    console.error(`[env.ts] process가 정의되지 않음: ${key}`);
+    return undefined;
+  }
+
+  if (!process.env) {
+    console.error(`[env.ts] process.env가 정의되지 않음: ${key}`);
     return undefined;
   }
 
   // 런타임에 명시적으로 process.env를 참조
-  const value = process.env[key];
+  // 여러 방법으로 시도하여 Next.js 최적화를 우회
+  const value =
+    process.env[key] ||
+    process.env[`${key}`] ||
+    (process.env as Record<string, string | undefined>)[key];
+
+  // 디버깅: 환경 변수가 없을 때만 로그 (너무 많은 로그 방지)
+  if (!value && (key === "MOMHEALTH_API_URL" || key === "MOMHEALTH_API_KEY")) {
+    console.warn(`[env.ts] 환경 변수 누락: ${key}`, {
+      allKeys: Object.keys(process.env).filter((k) => k.includes("MOMHEALTH")),
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }
+
   return value;
 }
 
@@ -28,9 +48,21 @@ export function getRequiredEnvVar(key: string): string {
 }
 
 // 환경 변수 접근 헬퍼
+// EC2/Docker 런타임에서 환경 변수를 읽기 위해 직접 process.env 참조
 export const env = {
-  MOMHEALTH_API_URL: () => getEnvVar("MOMHEALTH_API_URL"),
-  MOMHEALTH_API_KEY: () => getEnvVar("MOMHEALTH_API_KEY"),
+  MOMHEALTH_API_URL: () => {
+    // 런타임에 직접 process.env 참조 (Next.js 최적화 우회)
+    if (typeof process !== "undefined" && process.env) {
+      return process.env.MOMHEALTH_API_URL || process.env["MOMHEALTH_API_URL"];
+    }
+    return undefined;
+  },
+  MOMHEALTH_API_KEY: () => {
+    if (typeof process !== "undefined" && process.env) {
+      return process.env.MOMHEALTH_API_KEY || process.env["MOMHEALTH_API_KEY"];
+    }
+    return undefined;
+  },
   NEXTAUTH_URL: () => getEnvVar("NEXTAUTH_URL"),
   NEXTAUTH_SECRET: () => getEnvVar("NEXTAUTH_SECRET"),
   JWT_SECRET: () => getEnvVar("JWT_SECRET"),

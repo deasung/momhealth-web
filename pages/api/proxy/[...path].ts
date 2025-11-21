@@ -31,19 +31,36 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apiPath = Array.isArray(path) ? path.join("/") : path;
 
   // 서버 사이드에서만 접근 가능한 환경 변수 사용
-  // 런타임 환경 변수를 안전하게 읽기 위한 헬퍼 함수 사용
-  const baseURL = env.MOMHEALTH_API_URL();
-  const apiKey = env.MOMHEALTH_API_KEY();
+  // 런타임 환경 변수를 직접 읽기 (EC2/Docker에서 작동하도록)
+  // Next.js standalone 모드에서도 Node.js의 process.env는 런타임에 직접 읽을 수 있음
+  const baseURL =
+    process.env.MOMHEALTH_API_URL ||
+    process.env["MOMHEALTH_API_URL"] ||
+    env.MOMHEALTH_API_URL();
+  const apiKey =
+    process.env.MOMHEALTH_API_KEY ||
+    process.env["MOMHEALTH_API_KEY"] ||
+    env.MOMHEALTH_API_KEY();
 
   // 디버깅: 환경 변수 확인
   if (!baseURL || !apiKey) {
+    const allEnvKeys =
+      typeof process !== "undefined" && process.env
+        ? Object.keys(process.env).filter((key) => key.includes("MOMHEALTH"))
+        : [];
+
     console.error("❌ 환경변수 누락 (프록시 요청 시):", {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
-      allEnvKeys: Object.keys(process.env).filter((key) =>
-        key.includes("MOMHEALTH")
-      ),
-      nodeEnv: process.env.NODE_ENV,
+      allEnvKeys,
+      allProcessEnvKeys:
+        typeof process !== "undefined" && process.env
+          ? Object.keys(process.env).slice(0, 20)
+          : [],
+      nodeEnv:
+        typeof process !== "undefined" && process.env
+          ? process.env.NODE_ENV
+          : "unknown",
       timestamp: new Date().toISOString(),
     });
     return res.status(500).json({

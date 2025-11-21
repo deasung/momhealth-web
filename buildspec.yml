@@ -145,7 +145,18 @@ phases:
               "docker stop ${CONTAINER} || true",
               "docker rm ${CONTAINER} || true",
               "echo 새 컨테이너 실행 환경변수 직접 전달",
-              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
+              "export NEXTAUTH_URL='\''\($na_url)'\''",
+              "export NEXTAUTH_SECRET='\''\($na_sec)'\''",
+              "export MOMHEALTH_API_URL='\''\($mh_url)'\''",
+              "export MOMHEALTH_API_KEY='\''\($mh_key)'\''",
+              "export JWT_SECRET='\''\($jwt)'\''",
+              "export CDN_URL='\''\($cdn)'\''",
+              "export KAKAO_CLIENT_ID='\''\($kid)'\''",
+              "export KAKAO_CLIENT_SECRET='\''\($ksec)'\''",
+              "export GOOGLE_CLIENT_ID='\''\($gid)'\''",
+              "export GOOGLE_CLIENT_SECRET='\''\($gsec)'\''",
+              "export NODE_ENV='\''\($node_env)'\''",
+              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL=\"${NEXTAUTH_URL}\" -e NEXTAUTH_SECRET=\"${NEXTAUTH_SECRET}\" -e MOMHEALTH_API_URL=\"${MOMHEALTH_API_URL}\" -e MOMHEALTH_API_KEY=\"${MOMHEALTH_API_KEY}\" -e JWT_SECRET=\"${JWT_SECRET}\" -e CDN_URL=\"${CDN_URL}\" -e KAKAO_CLIENT_ID=\"${KAKAO_CLIENT_ID}\" -e KAKAO_CLIENT_SECRET=\"${KAKAO_CLIENT_SECRET}\" -e GOOGLE_CLIENT_ID=\"${GOOGLE_CLIENT_ID}\" -e GOOGLE_CLIENT_SECRET=\"${GOOGLE_CLIENT_SECRET}\" -e NODE_ENV=\"${NODE_ENV}\" -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
               "sleep 5",
               "echo 컨테이너 상태 확인",
               "docker ps -f name=${CONTAINER}",
@@ -153,11 +164,12 @@ phases:
               "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_URL || echo ERROR: MOMHEALTH_API_URL check failed",
               "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_KEY || echo ERROR: MOMHEALTH_API_KEY check failed",
               "docker exec ${CONTAINER} printenv | grep NODE_ENV || echo ERROR: NODE_ENV check failed",
+              "docker exec ${CONTAINER} printenv | head -20",
               "echo Next.js 로그 확인 디버깅",
               "docker logs ${CONTAINER} --tail 20"
             ]
           }' > ssm-params.json
-        echo "--- ssm-params.json ---"; cat ssm-params.json; echo "----------------------"
+        echo "--- ssm-params.json 생성 완료 (보안상 내용은 출력하지 않음) ---"
 
       - |
         COMMAND_ID=$(aws ssm send-command \

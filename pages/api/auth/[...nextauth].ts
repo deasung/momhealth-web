@@ -3,7 +3,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import KakaoProvider from "next-auth/providers/kakao";
 import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
-import { env } from "../../../lib/env";
 
 // 타입 정의
 declare module "next-auth" {
@@ -29,21 +28,22 @@ declare module "next-auth/jwt" {
 // 환경 변수는 .env에서 주입됨
 
 // 서버 시작 시 환경 변수 확인 (모듈 로드 시점에 실행)
-if (typeof process !== "undefined") {
-  const baseURL = env.MOMHEALTH_API_URL();
-  const apiKey = env.MOMHEALTH_API_KEY();
+// Next.js standalone 모드에서 런타임 환경 변수를 직접 읽기
+if (typeof process !== "undefined" && process.env) {
+  const baseURL = process.env.MOMHEALTH_API_URL;
+  const apiKey = process.env.MOMHEALTH_API_KEY;
 
   if (!baseURL || !apiKey) {
     console.error("❌ [NextAuth] 환경변수 누락 (서버 시작 시):", {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
-      nodeEnv: env.NODE_ENV(),
+      nodeEnv: process.env.NODE_ENV,
     });
   } else {
     console.log("✅ [NextAuth] 환경변수 확인 완료:", {
       MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
-      nodeEnv: env.NODE_ENV(),
+      nodeEnv: process.env.NODE_ENV,
     });
   }
 }
@@ -51,8 +51,8 @@ if (typeof process !== "undefined") {
 export default NextAuth({
   providers: [
     KakaoProvider({
-      clientId: env.KAKAO_CLIENT_ID()!,
-      clientSecret: env.KAKAO_CLIENT_SECRET()!,
+      clientId: process.env.KAKAO_CLIENT_ID!,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
       authorization: {
         params: {
           prompt: "select_account", // 카카오 로그인창 강제 표시
@@ -60,8 +60,8 @@ export default NextAuth({
       },
     }),
     GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID()!,
-      clientSecret: env.GOOGLE_CLIENT_SECRET()!,
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
           prompt: "select_account", // 구글 로그인창 강제 표시
@@ -81,8 +81,8 @@ export default NextAuth({
 
         try {
           // 서버 사이드에서 백엔드 절대 URL로 직접 호출 (프록시, 인터셉터 우회)
-          const baseURL = env.MOMHEALTH_API_URL();
-          const apiKey = env.MOMHEALTH_API_KEY();
+          const baseURL = process.env.MOMHEALTH_API_URL;
+          const apiKey = process.env.MOMHEALTH_API_KEY;
 
           if (!baseURL || !apiKey) {
             console.error("❌ 환경변수 누락:", {
@@ -158,8 +158,8 @@ export default NextAuth({
         if (account?.provider === "kakao" || account?.provider === "google") {
           try {
             // 서버 사이드에서 직접 백엔드 API 호출
-            const apiKey = env.MOMHEALTH_API_KEY();
-            const baseURL = env.MOMHEALTH_API_URL();
+            const apiKey = process.env.MOMHEALTH_API_KEY;
+            const baseURL = process.env.MOMHEALTH_API_URL;
 
             if (!baseURL || !apiKey) {
               console.error("❌ 환경변수 누락 (소셜 로그인):", {

@@ -1,27 +1,26 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
-import { env } from "../../../lib/env";
 
 // 서버 시작 시 환경 변수 확인 (모듈 로드 시점에 실행)
-if (typeof process !== "undefined") {
-  const baseURL = env.MOMHEALTH_API_URL();
-  const apiKey = env.MOMHEALTH_API_KEY();
+// Next.js standalone 모드에서 런타임 환경 변수를 직접 읽기
+if (typeof process !== "undefined" && process.env) {
+  const baseURL = process.env.MOMHEALTH_API_URL;
+  const apiKey = process.env.MOMHEALTH_API_KEY;
 
   if (!baseURL || !apiKey) {
     console.error("❌ [프록시 API] 환경변수 누락 (서버 시작 시):", {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
-      allEnvKeys:
-        typeof process !== "undefined" && process.env
-          ? Object.keys(process.env).filter((key) => key.includes("MOMHEALTH"))
-          : [],
-      nodeEnv: env.NODE_ENV(),
+      allEnvKeys: Object.keys(process.env).filter((key) =>
+        key.includes("MOMHEALTH")
+      ),
+      nodeEnv: process.env.NODE_ENV,
     });
   } else {
     console.log("✅ [프록시 API] 환경변수 확인 완료:", {
       MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
-      nodeEnv: env.NODE_ENV(),
+      nodeEnv: process.env.NODE_ENV,
     });
   }
 }
@@ -33,14 +32,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // 서버 사이드에서만 접근 가능한 환경 변수 사용
   // 런타임 환경 변수를 직접 읽기 (EC2/Docker에서 작동하도록)
   // Next.js standalone 모드에서도 Node.js의 process.env는 런타임에 직접 읽을 수 있음
-  const baseURL =
-    process.env.MOMHEALTH_API_URL ||
-    process.env["MOMHEALTH_API_URL"] ||
-    env.MOMHEALTH_API_URL();
-  const apiKey =
-    process.env.MOMHEALTH_API_KEY ||
-    process.env["MOMHEALTH_API_KEY"] ||
-    env.MOMHEALTH_API_KEY();
+  // env.ts 헬퍼를 사용하지 않고 직접 process.env 참조 (더 확실함)
+  const baseURL = process.env.MOMHEALTH_API_URL;
+  const apiKey = process.env.MOMHEALTH_API_KEY;
 
   // 디버깅: 환경 변수 확인
   if (!baseURL || !apiKey) {
@@ -49,7 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         ? Object.keys(process.env).filter((key) => key.includes("MOMHEALTH"))
         : [];
 
-    console.error("❌ 환경변수 누락 (프록시 요청 시):", {
+    const debugInfo = {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
       allEnvKeys,
@@ -62,13 +56,25 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           ? process.env.NODE_ENV
           : "unknown",
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    // 서버 로그에 기록 (Docker 컨테이너 로그에서 확인: docker logs momhealth-web)
+    console.error("❌ 환경변수 누락 (프록시 요청 시):", debugInfo);
+
+    // 개발 환경에서만 클라이언트에 디버깅 정보 전달 (보안상 프로덕션에서는 제외)
+    const isDev =
+      typeof process !== "undefined" &&
+      process.env &&
+      process.env.NODE_ENV === "development";
+
     return res.status(500).json({
       error: "서버 설정 오류",
       message: "환경변수가 설정되지 않았습니다.",
       details: {
         MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
         MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+        // 개발 환경에서만 디버깅 정보 포함 (프로덕션에서는 보안상 제외)
+        ...(isDev && { debug: debugInfo }),
       },
     });
   }

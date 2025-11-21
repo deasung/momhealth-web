@@ -19,9 +19,33 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# NEXT_PUBLIC_ 환경변수들은 코드에 fallback 값이 있으므로
-# 빌드 시점에 전달하지 않아도 됩니다 (fallback 값이 번들에 포함됨)
-# 필요시 .env 파일을 복사하거나 빌드 시점에 환경변수를 전달할 수 있습니다
+# 빌드 시점 환경 변수 (--build-arg로 전달)
+# 주의: 빌드 시점에 전달하면 이미지에 포함되므로 보안상 위험할 수 있습니다.
+# 런타임 환경 변수는 runner 단계에서 ENV로 선언하고 docker run -e로 전달하는 것이 더 안전합니다.
+ARG MOMHEALTH_API_URL=""
+ARG MOMHEALTH_API_KEY=""
+ARG NEXTAUTH_URL=""
+ARG NEXTAUTH_SECRET=""
+ARG JWT_SECRET=""
+ARG CDN_URL=""
+ARG KAKAO_CLIENT_ID=""
+ARG KAKAO_CLIENT_SECRET=""
+ARG GOOGLE_CLIENT_ID=""
+ARG GOOGLE_CLIENT_SECRET=""
+ARG NODE_ENV="production"
+
+# ARG를 ENV로 변환 (빌드 시점에 사용)
+ENV MOMHEALTH_API_URL=${MOMHEALTH_API_URL}
+ENV MOMHEALTH_API_KEY=${MOMHEALTH_API_KEY}
+ENV NEXTAUTH_URL=${NEXTAUTH_URL}
+ENV NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+ENV JWT_SECRET=${JWT_SECRET}
+ENV CDN_URL=${CDN_URL}
+ENV KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+ENV KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+ENV GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+ENV GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+ENV NODE_ENV=${NODE_ENV}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -37,8 +61,20 @@ WORKDIR /app
 ENV PORT=3300
 
 # 환경변수는 런타임에 docker run -e 옵션으로 전달됩니다.
-# NODE_ENV는 CodeBuild 환경변수에서 전달됩니다.
-# 기본값은 설정하지 않아 런타임 환경변수가 반드시 전달되도록 합니다.
+# ENV로 선언만 하면 런타임에 docker run -e로 전달된 값이 덮어씁니다.
+# Next.js standalone 모드에서 런타임 환경 변수를 읽기 위해 ENV 선언이 필요합니다.
+ENV MOMHEALTH_API_URL=""
+ENV MOMHEALTH_API_KEY=""
+ENV NEXTAUTH_URL=""
+ENV NEXTAUTH_SECRET=""
+ENV JWT_SECRET=""
+ENV CDN_URL=""
+ENV KAKAO_CLIENT_ID=""
+ENV KAKAO_CLIENT_SECRET=""
+ENV GOOGLE_CLIENT_ID=""
+ENV GOOGLE_CLIENT_SECRET=""
+ENV NODE_ENV="dev"
+ENV HOST="0.0.0.0"
 
 # standalone 산출물만 복사 → 경량
 COPY --from=builder /app/.next/standalone ./

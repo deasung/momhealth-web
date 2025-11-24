@@ -15,7 +15,10 @@ self.addEventListener("activate", (event) => {
 
 // 푸시 알림 수신 이벤트
 self.addEventListener("push", async (event) => {
-  console.log("[SW] 푸시 알림 수신:", event);
+  console.log("[SW] 🔔 푸시 알림 수신 이벤트 발생!");
+  console.log("[SW] 이벤트 타입:", event.type);
+  console.log("[SW] 이벤트 데이터 존재 여부:", !!event.data);
+  console.log("[SW] 이벤트 타임스탬프:", new Date().toISOString());
 
   let notificationData = {
     title: "새로운 알림",
@@ -30,63 +33,95 @@ self.addEventListener("push", async (event) => {
   if (event.data) {
     try {
       let data;
+      console.log("[SW] 푸시 데이터 파싱 시도 중...");
 
       // PushMessageData의 다양한 메서드 시도
       if (typeof event.data.json === "function") {
+        console.log("[SW] event.data.json() 메서드 사용");
         const jsonResult = event.data.json();
         // Promise인지 확인
         data = jsonResult instanceof Promise ? await jsonResult : jsonResult;
+        console.log("[SW] JSON 파싱 결과:", data);
       } else if (typeof event.data.text === "function") {
+        console.log("[SW] event.data.text() 메서드 사용");
         const textResult = event.data.text();
         const text =
           textResult instanceof Promise ? await textResult : textResult;
+        console.log("[SW] 텍스트 데이터:", text);
         data = JSON.parse(text);
+        console.log("[SW] 텍스트 파싱 결과:", data);
       } else if (typeof event.data.arrayBuffer === "function") {
+        console.log("[SW] event.data.arrayBuffer() 메서드 사용");
         const arrayBufferResult = event.data.arrayBuffer();
         const arrayBuffer =
           arrayBufferResult instanceof Promise
             ? await arrayBufferResult
             : arrayBufferResult;
         const text = new TextDecoder().decode(arrayBuffer);
+        console.log("[SW] ArrayBuffer 디코딩 결과:", text);
         data = JSON.parse(text);
+        console.log("[SW] ArrayBuffer 파싱 결과:", data);
+      } else {
+        console.warn("[SW] ⚠️ 알 수 없는 데이터 형식:", typeof event.data);
       }
 
       if (data) {
+        console.log("[SW] ✅ 파싱된 데이터:", data);
         notificationData = {
-          title: data.title || notificationData.title,
-          body: data.body || notificationData.body,
-          icon: data.icon || notificationData.icon,
+          title:
+            data.title || data.notification?.title || notificationData.title,
+          body: data.body || data.notification?.body || notificationData.body,
+          icon: data.icon || data.notification?.icon || notificationData.icon,
           badge: data.badge || notificationData.badge,
-          tag: data.tag || notificationData.tag,
-          data: data.data || notificationData.data,
+          tag: data.tag || data.data?.tag || notificationData.tag,
+          data: data.data || data || {},
         };
+        console.log("[SW] 최종 알림 데이터:", notificationData);
+      } else {
+        console.warn("[SW] ⚠️ 파싱된 데이터가 없습니다");
       }
     } catch (e) {
-      console.error("[SW] 푸시 데이터 파싱 실패:", e);
+      console.error("[SW] ❌ 푸시 데이터 파싱 실패:", e);
+      console.error("[SW] 에러 상세:", {
+        name: e.name,
+        message: e.message,
+        stack: e.stack,
+      });
       // JSON 파싱 실패 시 텍스트로 처리
       try {
         if (typeof event.data.text === "function") {
           const textResult = event.data.text();
-          notificationData.body =
+          const text =
             textResult instanceof Promise ? await textResult : textResult;
+          notificationData.body = text || notificationData.body;
+          console.log("[SW] 텍스트로 처리된 본문:", notificationData.body);
         }
       } catch (textError) {
         console.error("[SW] 텍스트 파싱도 실패:", textError);
       }
     }
+  } else {
+    console.warn(
+      "[SW] ⚠️ 푸시 이벤트에 데이터가 없습니다. 기본 알림을 표시합니다."
+    );
   }
 
   // 알림 표시 (에러 핸들링 포함)
   event.waitUntil(
     (async () => {
       try {
-        console.log("[SW] 알림 표시 시도:", notificationData);
+        console.log("[SW] 📢 알림 표시 시도 시작");
+        console.log(
+          "[SW] 알림 데이터:",
+          JSON.stringify(notificationData, null, 2)
+        );
 
         // Service Worker registration 확인
         if (!self.registration) {
-          console.error("[SW] Service Worker registration이 없습니다");
+          console.error("[SW] ❌ Service Worker registration이 없습니다");
           return;
         }
+        console.log("[SW] ✅ Service Worker registration 확인됨");
 
         // 알림 표시 옵션 준비
         const notificationOptions = {
@@ -101,9 +136,13 @@ self.addEventListener("push", async (event) => {
           renotify: true, // 같은 tag의 알림이 있어도 다시 표시
         };
 
-        console.log("[SW] 알림 옵션:", notificationOptions);
+        console.log(
+          "[SW] 알림 옵션:",
+          JSON.stringify(notificationOptions, null, 2)
+        );
 
         // 알림 표시
+        console.log("[SW] showNotification 호출 전...");
         const notificationPromise = self.registration.showNotification(
           notificationData.title,
           notificationOptions
@@ -111,7 +150,7 @@ self.addEventListener("push", async (event) => {
 
         // Promise 완료 대기
         await notificationPromise;
-        console.log("[SW] showNotification Promise 완료");
+        console.log("[SW] ✅ showNotification Promise 완료");
 
         // 약간의 지연 후 알림이 실제로 표시되었는지 확인
         await new Promise((resolve) => setTimeout(resolve, 100));

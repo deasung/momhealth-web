@@ -864,10 +864,9 @@ export const unregisterWebPushToken = async (endpoint: string) => {
 // 웹 푸시 토큰 상태 조회
 export const getWebPushTokenStatus = async (endpoint: string) => {
   try {
-    const encodedEndpoint = encodeURIComponent(endpoint);
-    const response = await api.get(
-      `/public/push/web-push-token/${encodedEndpoint}`
-    );
+    const response = await api.post(`/public/push/web-push-token-info`, {
+      endpoint: endpoint,
+    });
     return response.data;
   } catch (error) {
     console.error("웹 푸시 토큰 상태 조회 실패:", error);

@@ -123,6 +123,9 @@ self.addEventListener("push", async (event) => {
         }
         console.log("[SW] ✅ Service Worker registration 확인됨");
 
+        // 알림 권한 확인 (Service Worker에서는 직접 확인 불가하지만 로그만)
+        console.log("[SW] 알림 표시 권한 확인 중...");
+
         // 알림 표시 옵션 준비
         const notificationOptions = {
           body: notificationData.body,
@@ -130,7 +133,7 @@ self.addEventListener("push", async (event) => {
           badge: notificationData.badge,
           tag: notificationData.tag,
           data: notificationData.data,
-          requireInteraction: false,
+          requireInteraction: true, // ⚠️ true로 변경: 사용자가 클릭할 때까지 알림 유지
           silent: false,
           vibrate: [200, 100, 200], // 진동 추가 (지원되는 경우)
           renotify: true, // 같은 tag의 알림이 있어도 다시 표시
@@ -143,14 +146,28 @@ self.addEventListener("push", async (event) => {
 
         // 알림 표시
         console.log("[SW] showNotification 호출 전...");
-        const notificationPromise = self.registration.showNotification(
-          notificationData.title,
-          notificationOptions
-        );
+        try {
+          const notificationPromise = self.registration.showNotification(
+            notificationData.title,
+            notificationOptions
+          );
 
-        // Promise 완료 대기
-        await notificationPromise;
-        console.log("[SW] ✅ showNotification Promise 완료");
+          // Promise 완료 대기
+          await notificationPromise;
+          console.log("[SW] ✅ showNotification Promise 완료");
+
+          // 알림이 실제로 표시되었는지 확인
+          const notification = await notificationPromise;
+          console.log("[SW] 알림 객체:", notification);
+        } catch (showError) {
+          console.error("[SW] ❌ showNotification 호출 실패:", showError);
+          console.error("[SW] 에러 상세:", {
+            name: showError.name,
+            message: showError.message,
+            stack: showError.stack,
+          });
+          throw showError; // 에러를 다시 던져서 클라이언트에 알림
+        }
 
         // 약간의 지연 후 알림이 실제로 표시되었는지 확인
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -176,17 +193,35 @@ self.addEventListener("push", async (event) => {
         }
 
         // 클라이언트에게 알림 표시 성공 메시지 전송
-        const clients = await self.clients.matchAll();
+        const clients = await self.clients.matchAll({
+          includeUncontrolled: true,
+          type: "window",
+        });
+        console.log("[SW] 활성 클라이언트 수:", clients.length);
+
         if (clients.length > 0) {
           clients.forEach((client) => {
             client.postMessage({
               type: "NOTIFICATION_SHOWN",
               data: notificationData,
+              timestamp: Date.now(),
             });
           });
           console.log("[SW] 클라이언트에 알림 표시 메시지 전송 완료");
         } else {
           console.log("[SW] 활성 클라이언트가 없음 (백그라운드 모드)");
+        }
+
+        // 포그라운드에서도 알림을 표시하도록 클라이언트에 요청
+        if (clients.length > 0) {
+          clients.forEach((client) => {
+            client.postMessage({
+              type: "SHOW_NOTIFICATION",
+              data: notificationData,
+              timestamp: Date.now(),
+            });
+          });
+          console.log("[SW] 클라이언트에 포그라운드 알림 표시 요청 전송");
         }
       } catch (error) {
         console.error("[SW] 알림 표시 실패:", error);

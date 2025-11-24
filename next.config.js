@@ -25,14 +25,10 @@ const nextConfig = {
     ],
   },
 
-  // 런타임 환경 변수 선언
-  // Next.js standalone 모드에서 런타임 환경 변수를 읽기 위해 env 설정이 필요합니다.
-  // 빌드 시점에는 값이 없어도 되지만, 환경 변수 이름을 번들에 포함시켜야 런타임에 읽을 수 있습니다.
-  // docker run -e로 전달된 값이 이 설정을 덮어씁니다.
-  env: {
-    MOMHEALTH_API_URL: process.env.MOMHEALTH_API_URL || "",
-    MOMHEALTH_API_KEY: process.env.MOMHEALTH_API_KEY || "",
-  },
+  // ⚠️ Next.js standalone 모드에서는 env 설정을 제거해야 합니다.
+  // env 설정은 빌드 시점에 값을 번들에 포함시키므로, 런타임 환경 변수를 덮어씁니다.
+  // 런타임 환경 변수는 Node.js의 process.env로 직접 읽을 수 있습니다.
+  // API 라우트(pages/api/*)에서는 process.env를 직접 사용하면 됩니다.
 
   // 클라이언트 사이드 하이드레이션 문제 방지 및 런타임 환경 변수 주입
   webpack: (config, { dev, isServer }) => {

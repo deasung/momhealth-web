@@ -21,8 +21,6 @@ phases:
     commands:
       - echo "[install] docker version"
       - docker --version
-      # jq가 없는 커스텀 이미지라면 주석 해제
-      # - yum install -y jq
 
   pre_build:
     commands:
@@ -48,22 +46,9 @@ phases:
     commands:
       - echo "[buildx] build and push (${PLATFORM})"
       - |
-        # 빌드 시점에 환경 변수를 --build-arg로 전달
-        # 주의: 이렇게 하면 이미지에 환경 변수가 포함되므로 보안상 위험할 수 있습니다.
-        # 런타임에 docker run -e로 전달하는 것이 더 안전합니다.
+        # 💡 수정: --build-arg 모두 제거. 런타임 환경 변수는 런타임에만 주입합니다.
         docker buildx build \
           --platform "${PLATFORM}" \
-          --build-arg MOMHEALTH_API_URL="${MOMHEALTH_API_URL_VALUE}" \
-          --build-arg MOMHEALTH_API_KEY="${MOMHEALTH_API_KEY_VALUE}" \
-          --build-arg NEXTAUTH_URL="${NEXTAUTH_URL_VALUE}" \
-          --build-arg NEXTAUTH_SECRET="${NEXTAUTH_SECRET_VALUE}" \
-          --build-arg JWT_SECRET="${JWT_SECRET_VALUE}" \
-          --build-arg CDN_URL="${CDN_URL_VALUE}" \
-          --build-arg KAKAO_CLIENT_ID="${KAKAO_CLIENT_ID_VALUE}" \
-          --build-arg KAKAO_CLIENT_SECRET="${KAKAO_CLIENT_SECRET_VALUE}" \
-          --build-arg GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID_VALUE}" \
-          --build-arg GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET_VALUE}" \
-          --build-arg NODE_ENV="${NODE_ENV:-production}" \
           -t "${IMAGE}:${COMMIT}" \
           -t "${IMAGE}:${IMAGE_TAG}" \
           --push .
@@ -77,21 +62,7 @@ phases:
       - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
       - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
-      # ====== CodeBuild 환경변수에서 읽어오기 (변동 없음) ======
-      # CodeBuild 콘솔에서 다음 환경변수들을 설정해야 합니다:
-      # (NEXT_PUBLIC_ 환경변수들은 코드에 fallback 값이 있어 빌드 시점 전달 불필요)
-      #
-      # [런타임에 필요한 환경변수들]
-      # - NEXTAUTH_URL_VALUE
-      # - NEXTAUTH_SECRET_VALUE
-      # - MOMHEALTH_API_URL_VALUE
-      # - MOMHEALTH_API_KEY_VALUE
-      # - JWT_SECRET_VALUE
-      # - CDN_URL_VALUE
-      # - KAKAO_CLIENT_ID_VALUE
-      # - KAKAO_CLIENT_SECRET_VALUE
-      # - GOOGLE_CLIENT_ID_VALUE
-      # - GOOGLE_CLIENT_SECRET_VALUE
+      # ====== CodeBuild 환경변수에서 읽어오기 (유지) ======
       - |
         echo "=== 환경변수 확인 ==="
         echo "MOMHEALTH_API_URL_VALUE=${MOMHEALTH_API_URL_VALUE}"
@@ -108,7 +79,7 @@ phases:
         GOOGLE_CLIENT_ID_VALUE="${GOOGLE_CLIENT_ID_VALUE}"
         GOOGLE_CLIENT_SECRET_VALUE="${GOOGLE_CLIENT_SECRET_VALUE}"
       # ===========================================================
-      # SSM 파라미터 JSON을 jq로 생성 (docker run -e 옵션으로 변경됨)
+      # SSM 파라미터 JSON을 jq로 생성 (docker run -e 옵션 사용)
       - |
         jq -n \
           --arg region "${REGION}" \
@@ -144,19 +115,23 @@ phases:
               "echo 기존 컨테이너 중지 및 삭제",
               "docker stop ${CONTAINER} || true",
               "docker rm ${CONTAINER} || true",
+        
               "echo 새 컨테이너 실행 환경변수 직접 전달",
-              "export NEXTAUTH_URL='\''\($na_url)'\''",
-              "export NEXTAUTH_SECRET='\''\($na_sec)'\''",
-              "export MOMHEALTH_API_URL='\''\($mh_url)'\''",
-              "export MOMHEALTH_API_KEY='\''\($mh_key)'\''",
-              "export JWT_SECRET='\''\($jwt)'\''",
-              "export CDN_URL='\''\($cdn)'\''",
-              "export KAKAO_CLIENT_ID='\''\($kid)'\''",
-              "export KAKAO_CLIENT_SECRET='\''\($ksec)'\''",
-              "export GOOGLE_CLIENT_ID='\''\($gid)'\''",
-              "export GOOGLE_CLIENT_SECRET='\''\($gsec)'\''",
-              "export NODE_ENV='\''\($node_env)'\''",
-              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL=\"${NEXTAUTH_URL}\" -e NEXTAUTH_SECRET=\"${NEXTAUTH_SECRET}\" -e MOMHEALTH_API_URL=\"${MOMHEALTH_API_URL}\" -e MOMHEALTH_API_KEY=\"${MOMHEALTH_API_KEY}\" -e JWT_SECRET=\"${JWT_SECRET}\" -e CDN_URL=\"${CDN_URL}\" -e KAKAO_CLIENT_ID=\"${KAKAO_CLIENT_ID}\" -e KAKAO_CLIENT_SECRET=\"${KAKAO_CLIENT_SECRET}\" -e GOOGLE_CLIENT_ID=\"${GOOGLE_CLIENT_ID}\" -e GOOGLE_CLIENT_SECRET=\"${GOOGLE_CLIENT_SECRET}\" -e NODE_ENV=\"${NODE_ENV}\" -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
+              # 💡 수정: Environment Variables for Docker
+              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 \
+                -e NEXTAUTH_URL='\''\($na_url)'\'' \
+                -e NEXTAUTH_SECRET='\''\($na_sec)'\'' \
+                -e MOMHEALTH_API_URL='\''\($mh_url)'\'' \
+                -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' \
+                -e JWT_SECRET='\''\($jwt)'\'' \
+                -e CDN_URL='\''\($cdn)'\'' \
+                -e KAKAO_CLIENT_ID='\''\($kid)'\'' \
+                -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' \
+                -e GOOGLE_CLIENT_ID='\''\($gid)'\'' \
+                -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' \
+                -e NODE_ENV='\''\($node_env)'\'' \
+                -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
+
               "sleep 5",
               "echo 컨테이너 상태 확인",
               "docker ps -f name=${CONTAINER}",
@@ -191,4 +166,4 @@ phases:
 
 artifacts:
   files:
-    - imagedefinitions.json
+    - imagedefinitions.jsonㅌ

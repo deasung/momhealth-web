@@ -117,6 +117,9 @@ export default function App({
 }: AppProps) {
   const [mounted, setMounted] = useState(false);
 
+  // 서버 사이드에서는 항상 렌더링 (SEO를 위해)
+  const isServer = typeof window === "undefined";
+
   useEffect(() => {
     setMounted(true);
 
@@ -545,8 +548,9 @@ export default function App({
     }
   }, []);
 
-  // 클라이언트 사이드 하이드레이션 문제 방지
-  if (!mounted) {
+  // 서버 사이드에서는 항상 렌더링 (SEO를 위해)
+  // 클라이언트 사이드에서는 mounted 체크로 하이드레이션 문제 방지
+  if (!isServer && !mounted) {
     return null;
   }
 

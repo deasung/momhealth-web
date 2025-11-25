@@ -39,6 +39,8 @@ export default function Home() {
     fetchHomeData();
   }, [isTokenSynced]);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -46,6 +48,8 @@ export default function Home() {
           title="홈"
           description="건강한 하루를 위한 맞춤형 건강 관리 서비스입니다. 건강 질문, 커뮤니티, 친구와의 건강 공유를 통해 더 나은 건강을 만들어보세요."
           keywords="건강 관리, 건강 질문, 건강 커뮤니티, 건강 공유"
+          ogImage={`${siteUrl}/og-image.png`}
+          ogUrl={siteUrl}
         />
         <Header />
         <main className="container mx-auto px-4 py-16">
@@ -107,9 +111,8 @@ export default function Home() {
         keywords={metadata.keywords}
         ogTitle={metadata.ogTitle}
         ogDescription={metadata.ogDescription}
-        ogUrl={`${
-          process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr"
-        }`}
+        ogImage={`${siteUrl}/og-image.png`}
+        ogUrl={siteUrl}
       />
 
       <Header />

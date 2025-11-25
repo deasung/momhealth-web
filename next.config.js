@@ -19,10 +19,18 @@ const nextConfig = {
 
   // 외부 이미지 도메인 설정
   images: {
-    domains: [
-      "d2n4p0bysgra0c.cloudfront.net", // CloudFront 도메인
-      "di7imxmn4pwuq.cloudfront.net", // CloudFront 도메인 (프로필 이미지 등)
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "d2n4p0bysgra0c.cloudfront.net",
+      },
+      {
+        protocol: "https",
+        hostname: "di7imxmn4pwuq.cloudfront.net",
+      },
     ],
+    // CloudFront 이미지 최적화 비활성화 (403 에러 방지)
+    unoptimized: false,
   },
 
   // ⚠️ Next.js standalone 모드에서는 env 설정을 제거해야 합니다.

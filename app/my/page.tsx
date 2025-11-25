@@ -122,6 +122,7 @@ export default function MyPage() {
                   width={80}
                   height={80}
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <span className="text-3xl">👤</span>

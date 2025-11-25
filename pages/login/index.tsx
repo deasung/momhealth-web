@@ -1,8 +1,8 @@
 import type { NextPage } from "next";
-import Head from "next/head";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { signIn, getSession } from "next-auth/react";
+import SEO from "../components/SEO";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useLogout } from "@/lib/hooks/useLogout";
 
@@ -138,21 +138,30 @@ const LoginPage: NextPage = () => {
   // 로딩 중이거나 이미 인증된 경우 로딩 표시
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
+      <div className="min-h-screen bg-gray-50">
+        <SEO
+          title="로그인"
+          description="오늘의 건강에 로그인하여 건강 관리 서비스를 이용해보세요."
+          noindex={true}
+        />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">로딩 중...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <Head>
-        <title>로그인 | 오늘의 건강</title>
-      </Head>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="로그인"
+        description="오늘의 건강에 로그인하여 건강 관리 서비스를 이용해보세요."
+        noindex={true}
+      />
+      <div className="flex items-center justify-center min-h-screen px-4 py-12">
         <div className="w-full max-w-md">
           {/* 헤더 섹션 */}
           <div className="text-center mb-10">
@@ -422,7 +431,7 @@ const LoginPage: NextPage = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

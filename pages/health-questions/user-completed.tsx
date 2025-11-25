@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { getUserCompletedQuestions } from "../../lib/api";
 
@@ -222,9 +222,11 @@ export default function UserCompletedPage() {
   if (error && !refreshing) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>건강 질문 내역 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="건강 질문 내역 오류"
+          description="건강 질문 내역을 불러오는 중 오류가 발생했습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-12">
           <div className="text-center">
@@ -250,9 +252,11 @@ export default function UserCompletedPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>{displayName}의 건강 질문 내역 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title={`${displayName}의 건강 질문 내역`}
+        description={`${displayName}님이 완료한 건강 질문 내역을 확인하세요.`}
+        noindex={true}
+      />
 
       <Header />
 

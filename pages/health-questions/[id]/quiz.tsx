@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 import { getQuizItems, submitQuizAnswers } from "../../../lib/api";
 import { QuizData, QuizAnswer } from "../../../types/health-questions";
 
@@ -119,10 +119,17 @@ const QuizPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">퀴즈 문항을 불러오는 중...</p>
+      <div className="min-h-screen bg-white">
+        <SEO
+          title="건강 질문 퀴즈"
+          description="건강 질문 퀴즈를 진행 중입니다."
+          noindex={true}
+        />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">퀴즈 문항을 불러오는 중...</p>
+          </div>
         </div>
       </div>
     );
@@ -130,15 +137,22 @@ const QuizPage = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">퀴즈 문항이 없습니다.</p>
-          <button
-            onClick={() => router.back()}
-            className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-          >
-            돌아가기
-          </button>
+      <div className="min-h-screen bg-white">
+        <SEO
+          title="퀴즈 오류"
+          description="퀴즈 문항이 없습니다."
+          noindex={true}
+        />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">퀴즈 문항이 없습니다.</p>
+            <button
+              onClick={() => router.back()}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+            >
+              돌아가기
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -146,17 +160,24 @@ const QuizPage = () => {
 
   if (!currentItem) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">
-            퀴즈 문항 정보를 불러올 수 없습니다.
-          </p>
-          <button
-            onClick={() => router.back()}
-            className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-          >
-            돌아가기
-          </button>
+      <div className="min-h-screen bg-white">
+        <SEO
+          title="퀴즈 오류"
+          description="퀴즈 문항 정보를 불러올 수 없습니다."
+          noindex={true}
+        />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">
+              퀴즈 문항 정보를 불러올 수 없습니다.
+            </p>
+            <button
+              onClick={() => router.back()}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+            >
+              돌아가기
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -164,9 +185,11 @@ const QuizPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>건강 질문 퀴즈</title>
-      </Head>
+      <SEO
+        title="건강 질문 퀴즈"
+        description="건강 질문 퀴즈를 진행해보세요."
+        noindex={true}
+      />
 
       {/* 공통 헤더 */}
       <Header />

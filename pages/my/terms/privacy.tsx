@@ -1,6 +1,6 @@
-import Head from "next/head";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 import { useEffect, useState, useCallback } from "react";
 import { getPrivacyPolicy } from "../../../lib/api";
 
@@ -34,9 +34,11 @@ export default function PrivacyPolicyPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>개인정보 처리방침 | 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="개인정보 처리방침"
+        description="오늘의 건강 개인정보 처리방침을 확인하실 수 있습니다."
+        keywords="개인정보 처리방침, 개인정보보호, 프라이버시"
+      />
 
       <Header />
 

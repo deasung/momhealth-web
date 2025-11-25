@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Head from "next/head";
 import Link from "next/link";
 import SEO from "../components/SEO";
 import { requestPasswordReset } from "../lib/api";

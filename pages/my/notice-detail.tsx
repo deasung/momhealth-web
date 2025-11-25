@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { getNoticeDetail } from "../../lib/api";
 
 interface Notice {
@@ -75,9 +75,11 @@ export default function NoticeDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>공지사항 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="공지사항"
+          description="공지사항을 불러오는 중입니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-12">
           <div className="text-center">
@@ -93,9 +95,11 @@ export default function NoticeDetailPage() {
   if (error || !notice) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>공지사항 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="공지사항 오류"
+          description="공지사항을 찾을 수 없습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-12">
           <div className="text-center">
@@ -121,9 +125,15 @@ export default function NoticeDetailPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>{notice.title} - 공지사항 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title={`${notice.title} - 공지사항`}
+        description={
+          notice.content.length > 150
+            ? notice.content.substring(0, 150) + "..."
+            : notice.content
+        }
+        noindex={true}
+      />
 
       <Header />
 

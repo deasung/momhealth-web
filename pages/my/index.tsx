@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
 import { getUserProfile } from "../../lib/api";
@@ -50,6 +50,11 @@ export default function MyPage() {
     if (!mounted) {
       return (
         <div className="min-h-screen bg-white flex items-center justify-center">
+          <SEO
+            title="마이페이지"
+            description="나의 건강 정보와 활동 내역을 확인하고 관리해보세요."
+            noindex={true}
+          />
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
         </div>
       );
@@ -57,9 +62,11 @@ export default function MyPage() {
 
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>마이페이지 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="마이페이지"
+          description="나의 건강 정보와 활동 내역을 확인하고 관리해보세요."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
           <div className="mb-8">
@@ -85,9 +92,11 @@ export default function MyPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Head>
-        <title>마이페이지 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="마이페이지"
+        description="나의 건강 정보와 활동 내역을 확인하고 관리해보세요."
+        noindex={true}
+      />
 
       <Header />
 

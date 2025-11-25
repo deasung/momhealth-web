@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import Head from "next/head";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { getHealthQuestions } from "../../lib/api";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
+import { generatePageMetadata } from "../../lib/metadata";
 
 export default function HealthQuestionsList() {
   const [questions, setQuestions] = useState<HealthQuestionDetail[]>([]);
@@ -137,10 +138,11 @@ export default function HealthQuestionsList() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>질문목록 | 오늘의 건강</title>
-          <meta name="description" content="건강 관련 질문목록을 확인하세요" />
-        </Head>
+        <SEO
+          title="건강 질문"
+          description="다양한 건강 질문을 통해 나의 건강 상태를 확인해보세요."
+          keywords="건강 질문, 건강 체크, 건강 상태 확인"
+        />
         <Header />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center">
@@ -148,6 +150,7 @@ export default function HealthQuestionsList() {
             <p className="mt-4 text-gray-600">질문목록을 불러오는 중...</p>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -155,9 +158,11 @@ export default function HealthQuestionsList() {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>질문목록 | 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="질문 오류"
+          description="질문목록을 불러오는 중 오류가 발생했습니다."
+          noindex={true}
+        />
         <Header />
         <main className="container mx-auto px-4 py-8">
           <div className="text-center">
@@ -174,16 +179,36 @@ export default function HealthQuestionsList() {
             </button>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
 
+  // 동적 메타데이터 생성
+  const metadata = generatePageMetadata("health-questions", {
+    title:
+      questions.length > 0
+        ? `건강 질문 - ${questions.length}개의 질문이 있습니다`
+        : undefined,
+    description:
+      questions.length > 0
+        ? `${questions.length}개의 건강 질문을 통해 나의 건강 상태를 확인해보세요.`
+        : undefined,
+  });
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
+
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>질문목록 | 오늘의 건강</title>
-        <meta name="description" content="건강 관련 질문목록을 확인하세요" />
-      </Head>
+      <SEO
+        title={metadata.title}
+        description={metadata.description}
+        keywords={metadata.keywords}
+        ogTitle={metadata.ogTitle}
+        ogDescription={metadata.ogDescription}
+        ogUrl={`${siteUrl}/health-questions/list`}
+        canonical={`${siteUrl}/health-questions/list`}
+      />
 
       <Header />
 

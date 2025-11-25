@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { getMappedUsers, getFriendRequestCounts } from "../../lib/api";
 
@@ -82,9 +82,11 @@ export default function FriendsPage() {
   if (!isLoading && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>친구 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="친구"
+          description="친구와 함께 건강을 관리하고 서로의 건강 상태를 공유해보세요."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center py-16">
@@ -111,9 +113,11 @@ export default function FriendsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>친구 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="친구"
+          description="친구 목록을 불러오는 중입니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -131,10 +135,11 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>친구 - 오늘의 건강</title>
-        <meta name="description" content="친구 목록을 확인하세요" />
-      </Head>
+      <SEO
+        title="친구"
+        description="친구와 함께 건강을 관리하고 서로의 건강 상태를 공유해보세요."
+        noindex={true}
+      />
 
       <Header />
 

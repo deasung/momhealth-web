@@ -1,12 +1,14 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { getHealthQuestions } from "../../lib/api";
-import type { HealthQuestionDetail } from "../../types/health-questions";
-import { useTokenSync } from "../../lib/hooks/useTokenSync";
-import { generatePageMetadata } from "../../lib/metadata";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { getHealthQuestions } from "../../../lib/api";
+import type { HealthQuestionDetail } from "../../../types/health-questions";
+import { useTokenSync } from "../../../lib/hooks/useTokenSync";
+import { generatePageMetadata } from "../../../lib/metadata";
 
 export default function HealthQuestionsList() {
   const [questions, setQuestions] = useState<HealthQuestionDetail[]>([]);

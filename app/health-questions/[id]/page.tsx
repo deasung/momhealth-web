@@ -1,17 +1,20 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { getHealthQuestionDetail, resetQuizProgress } from "../../lib/api";
-import { useAuth } from "../../lib/hooks/useAuth";
-import type { HealthQuestionDetail } from "../../types/health-questions";
-import { generateHealthQuestionMetadata } from "../../lib/metadata";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { getHealthQuestionDetail, resetQuizProgress } from "../../../lib/api";
+import { useAuth } from "../../../lib/hooks/useAuth";
+import type { HealthQuestionDetail } from "../../../types/health-questions";
+import { generateHealthQuestionMetadata } from "../../../lib/metadata";
 
 const HealthQuestionDetail = () => {
   const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const id = params?.id as string;
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [question, setQuestion] = useState<HealthQuestionDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +24,7 @@ const HealthQuestionDetail = () => {
   const fetchQuestionDetail = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getHealthQuestionDetail(id as string);
+      const data = await getHealthQuestionDetail(id);
       setQuestion(data);
     } catch (err) {
       setError("질문 정보를 불러올 수 없습니다.");

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { SessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
 import {
   registerServiceWorker,
   getCurrentSubscription,
@@ -112,8 +114,10 @@ const showInPageNotification = (
 
 export default function ClientProviders({
   children,
+  session,
 }: {
   children: React.ReactNode;
+  session: Session | null;
 }) {
   useEffect(() => {
     // Service Worker 등록 및 푸시 구독 초기화
@@ -541,6 +545,5 @@ export default function ClientProviders({
     }
   }, []);
 
-  return <>{children}</>;
+  return <SessionProvider session={session}>{children}</SessionProvider>;
 }
-

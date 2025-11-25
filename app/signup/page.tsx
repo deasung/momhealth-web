@@ -1,8 +1,10 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import SEO from "../components/SEO";
-import api from "../lib/api";
+import { useRouter } from "next/navigation";
+import SEO from "../../components/SEO";
+import api from "../../lib/api";
 
 // 간단한 유효성 규칙
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -128,9 +130,6 @@ export default function SignupPage() {
   return (
     <>
       <SEO title="회원가입" description="오늘의 건강 회원가입" />
-      <Head>
-        <title>회원가입 | 오늘의 건강</title>
-      </Head>
 
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">

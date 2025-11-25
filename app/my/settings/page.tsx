@@ -1,16 +1,18 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useRouter } from "next/router";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { useAuth } from "../../lib/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { useAuth } from "../../../lib/hooks/useAuth";
 import {
   getUserProfile,
   updateUserProfile,
   uploadThumbnail,
-} from "../../lib/api";
-import type { UserProfile } from "../../types/user";
+} from "../../../lib/api";
+import type { UserProfile } from "../../../types/user";
 
 export default function MySettingsPage() {
   const router = useRouter();
@@ -122,9 +124,11 @@ export default function MySettingsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>내 정보 설정 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="내 정보 설정"
+          description="내 정보를 설정하고 관리할 수 있습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
           <div className="mb-8">
@@ -151,9 +155,11 @@ export default function MySettingsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>내 정보 설정 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="내 정보 설정"
+          description="내 정보를 설정하고 관리할 수 있습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -172,9 +178,11 @@ export default function MySettingsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>내 정보 설정 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="내 정보 설정"
+        description="내 정보를 설정하고 관리할 수 있습니다."
+        noindex={true}
+      />
 
       <Header />
 
@@ -338,3 +346,4 @@ export default function MySettingsPage() {
     </div>
   );
 }
+

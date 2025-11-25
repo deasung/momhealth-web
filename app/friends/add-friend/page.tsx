@@ -1,9 +1,11 @@
+"use client";
+
 import { useCallback, useMemo, useState } from "react";
-import { useRouter } from "next/router";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { useAuth } from "../../lib/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { useAuth } from "../../../lib/hooks/useAuth";
 import Image from "next/image";
 import {
   searchUsers,
@@ -11,7 +13,7 @@ import {
   cancelFriendRequestByMappingId,
   inviteFriendByEmail,
   type SearchUsersResponse,
-} from "../../lib/api";
+} from "../../../lib/api";
 
 export default function AddFriendPage() {
   const router = useRouter();

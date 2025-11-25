@@ -147,13 +147,13 @@ self.addEventListener("push", async (event) => {
         // 알림 표시
         console.log("[SW] showNotification 호출 전...");
         try {
-          const notificationPromise = self.registration.showNotification(
-            notificationData.title,
-            notificationOptions
-          );
+        const notificationPromise = self.registration.showNotification(
+          notificationData.title,
+          notificationOptions
+        );
 
-          // Promise 완료 대기
-          await notificationPromise;
+        // Promise 완료 대기
+        await notificationPromise;
           console.log("[SW] ✅ showNotification Promise 완료");
 
           // 알림이 실제로 표시되었는지 확인

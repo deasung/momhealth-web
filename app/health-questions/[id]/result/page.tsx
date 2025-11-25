@@ -1,18 +1,14 @@
-import { useRouter } from "next/router";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
+"use client";
 
-// 정적 생성에서 제외하고 동적으로 렌더링
-export const getServerSideProps = async () => {
-  return {
-    props: {},
-  };
-};
+import { useRouter, useParams } from "next/navigation";
+import Header from "../../../../components/Header";
+import Footer from "../../../../components/Footer";
+import SEO from "../../../../components/SEO";
 
 const ResultPage = () => {
   const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const id = params?.id as string;
 
   const handleRetake = () => {
     router.push(`/health-questions/${id}/quiz`);

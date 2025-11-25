@@ -1,12 +1,13 @@
-import type { NextPage } from "next";
+"use client";
+
 import { useState, useMemo } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { signIn, getSession } from "next-auth/react";
 import SEO from "../../components/SEO";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useLogout } from "@/lib/hooks/useLogout";
 
-const LoginPage: NextPage = () => {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -72,13 +73,6 @@ const LoginPage: NextPage = () => {
     setPassword(text);
     if (passwordError) setPasswordError("");
   };
-
-  // 이미 로그인된 사용자 리다이렉트 (선택적)
-  // useEffect(() => {
-  //   if (!isLoading && isAuthenticated) {
-  //     router.push("/");
-  //   }
-  // }, [isAuthenticated, isLoading, router]);
 
   // 이메일/비밀번호 로그인
   const handleLogin = async () => {
@@ -433,6 +427,4 @@ const LoginPage: NextPage = () => {
       )}
     </div>
   );
-};
-
-export default LoginPage;
+}

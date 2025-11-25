@@ -1,11 +1,13 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/router";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { useAuth } from "../../lib/hooks/useAuth";
-import { getUserCompletedQuestions } from "../../lib/api";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { useAuth } from "../../../lib/hooks/useAuth";
+import { getUserCompletedQuestions } from "../../../lib/api";
 
 interface UserCompletedResult {
   id: string;
@@ -114,8 +116,10 @@ const CompletedQuestionCard = ({
 
 export default function UserCompletedPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
-  const { userId, userName } = router.query;
+  const userId = searchParams?.get("userId");
+  const userName = searchParams?.get("userName");
 
   const [completedQuestions, setCompletedQuestions] = useState<
     UserCompletedResult[]
@@ -325,3 +329,4 @@ export default function UserCompletedPage() {
     </div>
   );
 }
+

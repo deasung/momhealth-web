@@ -1,11 +1,13 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { useAuth } from "../../lib/hooks/useAuth";
-import { getMappedUsers } from "../../lib/api";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { useAuth } from "../../../lib/hooks/useAuth";
+import { getMappedUsers } from "../../../lib/api";
 
 interface Friend {
   mappingId: number;
@@ -48,9 +50,11 @@ export default function EditFriendsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>친구 관리 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="친구 관리"
+          description="친구를 관리하고 삭제할 수 있습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
           <div className="text-gray-400 text-6xl mb-4">👥</div>
@@ -65,9 +69,11 @@ export default function EditFriendsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>친구 관리 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="친구 관리"
+        description="친구를 관리하고 삭제할 수 있습니다."
+        noindex={true}
+      />
 
       <Header />
 

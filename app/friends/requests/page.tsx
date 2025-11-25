@@ -1,16 +1,18 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { useAuth } from "../../lib/hooks/useAuth";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { useAuth } from "../../../lib/hooks/useAuth";
 import {
   getSentRequests,
   getReceivedRequests,
   acceptFriendRequest,
   cancelFriendRequest,
-} from "../../lib/api";
+} from "../../../lib/api";
 
 interface FriendRequest {
   id: number;
@@ -169,7 +171,6 @@ export default function FriendRequestsPage() {
   };
 
   // 요청 취소
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleCancelRequest = (requestId: number) => {
     const request = sentRequests.find((req) => req.id === requestId);
     if (request) {
@@ -223,9 +224,11 @@ export default function FriendRequestsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>친구 요청 - 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="친구 요청"
+          description="친구 요청을 확인하고 관리할 수 있습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
           <div className="text-gray-400 text-6xl mb-4">👥</div>
@@ -243,9 +246,11 @@ export default function FriendRequestsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>친구 요청 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="친구 요청"
+        description="친구 요청을 확인하고 관리할 수 있습니다."
+        noindex={true}
+      />
 
       <Header />
 

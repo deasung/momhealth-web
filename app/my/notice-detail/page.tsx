@@ -1,9 +1,11 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { getNoticeDetail } from "../../lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import { getNoticeDetail } from "../../../lib/api";
 
 interface Notice {
   id: string;
@@ -19,7 +21,8 @@ interface NoticeDetailResponse {
 
 export default function NoticeDetailPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const searchParams = useSearchParams();
+  const id = searchParams?.get("id");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

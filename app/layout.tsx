@@ -1,5 +1,4 @@
-import type { Metadata } from "next";
-import { SessionProvider } from "next-auth/react";
+import type { Metadata, Viewport } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../lib/auth";
 import ClientProviders from "./components/ClientProviders";
@@ -52,11 +51,12 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#ff5b24",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-  },
 };
 
 export default async function RootLayout({
@@ -69,9 +69,7 @@ export default async function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <SessionProvider session={session}>
-          <ClientProviders>{children}</ClientProviders>
-        </SessionProvider>
+        <ClientProviders session={session}>{children}</ClientProviders>
       </body>
     </html>
   );

@@ -1,7 +1,9 @@
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
-import SEO from "../components/SEO";
-import { requestPasswordReset } from "../lib/api";
+import SEO from "../../components/SEO";
+import { requestPasswordReset } from "../../lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -49,9 +51,6 @@ export default function ForgotPasswordPage() {
         title="비밀번호 찾기"
         description="비밀번호를 잊으셨나요? 가입하신 이메일로 비밀번호 재설정 링크를 보내드립니다."
       />
-      <Head>
-        <title>비밀번호 찾기 | 오늘의 건강</title>
-      </Head>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           {/* 헤더 */}

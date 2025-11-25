@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { clearToken, getGuestToken } from "../api";
 import { TOKEN_KEYS } from "../constants";

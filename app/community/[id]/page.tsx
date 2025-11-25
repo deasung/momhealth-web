@@ -1,10 +1,12 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import CommunityWriteModal from "../../components/CommunityWriteModal";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
+import CommunityWriteModal from "../../../components/CommunityWriteModal";
 import {
   getCommunityPostDetail,
   updateCommunityPost,
@@ -13,16 +15,17 @@ import {
   createComment,
   deleteComment,
   updateComment,
-} from "../../lib/api";
-import type { CommunityPostDetail } from "../../types/community";
-import { useTokenSync } from "../../lib/hooks/useTokenSync";
-import { useAuth } from "../../lib/hooks/useAuth";
-import type { UserProfile } from "../../types/user";
-import { generateCommunityPostMetadata } from "../../lib/metadata";
+} from "../../../lib/api";
+import type { CommunityPostDetail } from "../../../types/community";
+import { useTokenSync } from "../../../lib/hooks/useTokenSync";
+import { useAuth } from "../../../lib/hooks/useAuth";
+import type { UserProfile } from "../../../types/user";
+import { generateCommunityPostMetadata } from "../../../lib/metadata";
 
 const CommunityPostDetailPage = () => {
   const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const id = params?.id as string;
   const { isTokenSynced } = useTokenSync();
   const { isAuthenticated } = useAuth();
   const [post, setPost] = useState<CommunityPostDetail | null>(null);
@@ -41,7 +44,7 @@ const CommunityPostDetailPage = () => {
   const fetchPostDetail = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getCommunityPostDetail(id as string);
+      const data = await getCommunityPostDetail(id);
       setPost(data);
     } catch (err) {
       setError("게시글 정보를 불러올 수 없습니다.");
@@ -69,7 +72,7 @@ const CommunityPostDetailPage = () => {
 
     try {
       setSubmitting(true);
-      await deleteCommunityPost(id as string);
+      await deleteCommunityPost(id);
       alert("게시글이 삭제되었습니다.");
       router.push("/community/list");
     } catch (err) {
@@ -86,7 +89,7 @@ const CommunityPostDetailPage = () => {
   }) => {
     try {
       setSubmitting(true);
-      await updateCommunityPost(id as string, data);
+      await updateCommunityPost(id, data);
       alert("게시글이 수정되었습니다.");
       setShowEditModal(false);
       // 게시글 정보 새로고침
@@ -104,7 +107,7 @@ const CommunityPostDetailPage = () => {
 
     try {
       setIsSubmittingComment(true);
-      await createComment(id as string, commentText.trim());
+      await createComment(id, commentText.trim());
       setCommentText("");
       // 게시글 정보 새로고침
       await fetchPostDetail();
@@ -120,7 +123,7 @@ const CommunityPostDetailPage = () => {
     if (!confirm("정말로 이 댓글을 삭제하시겠습니까?")) return;
 
     try {
-      await deleteComment(id as string, commentId);
+      await deleteComment(id, commentId);
       alert("댓글이 삭제되었습니다.");
       // 게시글 정보 새로고침
       await fetchPostDetail();
@@ -149,11 +152,7 @@ const CommunityPostDetailPage = () => {
     if (!editingCommentText.trim() || !editingCommentId) return;
 
     try {
-      await updateComment(
-        id as string,
-        editingCommentId,
-        editingCommentText.trim()
-      );
+      await updateComment(id, editingCommentId, editingCommentText.trim());
       alert("댓글이 수정되었습니다.");
       setEditingCommentId(null);
       setEditingCommentText("");

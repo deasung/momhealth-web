@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
-import Head from "next/head";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 
 // 정적 생성에서 제외하고 동적으로 렌더링
 export const getServerSideProps = async () => {
@@ -24,9 +24,11 @@ const ResultPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>퀴즈 결과</title>
-      </Head>
+      <SEO
+        title="퀴즈 결과"
+        description="건강 질문 퀴즈 결과를 확인하세요."
+        noindex={true}
+      />
 
       {/* 공통 헤더 */}
       <Header />

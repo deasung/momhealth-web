@@ -122,11 +122,16 @@ export function generateHealthQuestionMetadata(question: {
   description: string;
   category: string;
 }) {
+  const truncatedDescription =
+    question.description.length > 150
+      ? question.description.substring(0, 150) + "..."
+      : question.description;
+
   return {
     title: question.title,
-    description: question.description || question.title,
+    description: truncatedDescription || question.title,
     keywords: `건강 질문, ${question.category}, 건강 체크`,
     ogTitle: question.title,
-    ogDescription: question.description || question.title,
+    ogDescription: truncatedDescription || question.title,
   };
 }

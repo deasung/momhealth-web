@@ -1,18 +1,16 @@
-import Head from "next/head";
 import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 
 export default function TermsIndexPage() {
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>약관 및 정책 | 오늘의 건강</title>
-        <meta
-          name="description"
-          content="서비스 이용약관 및 개인정보 처리방침"
-        />
-      </Head>
+      <SEO
+        title="약관 및 정책"
+        description="서비스 이용약관 및 개인정보 처리방침을 확인하실 수 있습니다."
+        keywords="서비스 이용약관, 개인정보 처리방침, 약관, 정책"
+      />
 
       <Header />
 

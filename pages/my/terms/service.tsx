@@ -1,6 +1,6 @@
-import Head from "next/head";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 import { useCallback, useEffect, useState } from "react";
 import { getServiceTerms } from "../../../lib/api";
 
@@ -33,9 +33,11 @@ export default function ServiceTermsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>서비스 이용약관 | 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="서비스 이용약관"
+        description="오늘의 건강 서비스 이용약관을 확인하실 수 있습니다."
+        keywords="서비스 이용약관, 이용약관, 약관"
+      />
 
       <Header />
 

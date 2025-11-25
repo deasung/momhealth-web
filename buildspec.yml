@@ -115,22 +115,9 @@ phases:
               "echo 기존 컨테이너 중지 및 삭제",
               "docker stop ${CONTAINER} || true",
               "docker rm ${CONTAINER} || true",
-        
+
               "echo 새 컨테이너 실행 환경변수 직접 전달",
-              # 💡 수정: Environment Variables for Docker
-              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 \
-                -e NEXTAUTH_URL='\''\($na_url)'\'' \
-                -e NEXTAUTH_SECRET='\''\($na_sec)'\'' \
-                -e MOMHEALTH_API_URL='\''\($mh_url)'\'' \
-                -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' \
-                -e JWT_SECRET='\''\($jwt)'\'' \
-                -e CDN_URL='\''\($cdn)'\'' \
-                -e KAKAO_CLIENT_ID='\''\($kid)'\'' \
-                -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' \
-                -e GOOGLE_CLIENT_ID='\''\($gid)'\'' \
-                -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' \
-                -e NODE_ENV='\''\($node_env)'\'' \
-                -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
+              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
 
               "sleep 5",
               "echo 컨테이너 상태 확인",

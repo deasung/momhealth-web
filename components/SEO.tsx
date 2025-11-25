@@ -21,7 +21,7 @@ export default function SEO({
   keywords = "건강, 의료, 질문, 커뮤니티, 건강관리",
   ogTitle,
   ogDescription,
-  ogImage = "/og-image.jpg",
+  ogImage = "/og-image.png",
   ogUrl,
   twitterTitle,
   twitterDescription,

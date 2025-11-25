@@ -32,6 +32,13 @@ export default function SEO({
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
   const fullTitle = title === "오늘의 건강" ? title : `${title} | 오늘의 건강`;
 
+  // OG 이미지 URL 생성 및 인코딩
+  const fullOgImage = ogImage.startsWith("http")
+    ? ogImage
+    : `${siteUrl}${ogImage}`;
+  // URL 인코딩 처리 (공백 등 특수문자 처리)
+  const encodedOgImage = fullOgImage.replace(/\s/g, "%20");
+
   return (
     <Head>
       {/* 기본 메타 태그 */}
@@ -45,10 +52,10 @@ export default function SEO({
       <meta property="og:type" content="website" />
       <meta property="og:title" content={ogTitle || fullTitle} />
       <meta property="og:description" content={ogDescription || description} />
-      <meta
-        property="og:image"
-        content={ogImage.startsWith("http") ? ogImage : `${siteUrl}${ogImage}`}
-      />
+      <meta property="og:image" content={encodedOgImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:type" content="image/png" />
       <meta property="og:url" content={ogUrl || siteUrl} />
       <meta property="og:site_name" content="오늘의 건강" />
       <meta property="og:locale" content="ko_KR" />
@@ -66,9 +73,7 @@ export default function SEO({
       <meta
         name="twitter:image"
         content={
-          twitterImage || ogImage.startsWith("http")
-            ? ogImage
-            : `${siteUrl}${ogImage}`
+          twitterImage ? twitterImage.replace(/\s/g, "%20") : encodedOgImage
         }
       />
 

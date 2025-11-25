@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/router";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -8,6 +8,7 @@ import { useLogout } from "../lib/hooks/useLogout";
 
 const Header = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -39,20 +40,11 @@ const Header = () => {
     };
   }, [openDropdown, isClient]);
 
+  // App Router에서는 pathname이 변경될 때마다 실행
   useEffect(() => {
-    const handleRouteChange = () => {
-      setOpenDropdown(null);
-      setIsMobileMenuOpen(false);
-    };
-    if (isClient) {
-      router.events.on("routeChangeStart", handleRouteChange);
-    }
-    return () => {
-      if (isClient) {
-        router.events.off("routeChangeStart", handleRouteChange);
-      }
-    };
-  }, [router, isClient]);
+    setOpenDropdown(null);
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   type NavItem = {
     label: string;
@@ -81,10 +73,11 @@ const Header = () => {
       {/* 메인 헤더 */}
       <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between max-w-6xl mx-auto">
         {/* 로고 */}
-        <Link href="/" legacyBehavior>
-          <a className="font-bold text-xl md:text-2xl cursor-pointer text-gray-900 hover:text-orange-500 transition-colors whitespace-nowrap">
-            오늘의 건강
-          </a>
+        <Link
+          href="/"
+          className="font-bold text-xl md:text-2xl cursor-pointer text-gray-900 hover:text-orange-500 transition-colors whitespace-nowrap"
+        >
+          오늘의 건강
         </Link>
 
         {/* 데스크톱 네비게이션 */}
@@ -95,18 +88,17 @@ const Header = () => {
               if (item.children) {
                 return item.children.some(
                   (child) =>
-                    router.pathname === child.path ||
-                    router.pathname.startsWith(child.path + "/")
+                    pathname === child.path ||
+                    pathname.startsWith(child.path + "/")
                 );
               }
               if (item.path) {
                 // 홈 페이지는 정확히 일치해야 함
                 if (item.path === "/") {
-                  return router.pathname === "/";
+                  return pathname === "/";
                 }
                 return (
-                  router.pathname === item.path ||
-                  router.pathname.startsWith(item.path + "/")
+                  pathname === item.path || pathname.startsWith(item.path + "/")
                 );
               }
               return false;
@@ -162,7 +154,7 @@ const Header = () => {
                               key={child.path}
                               href={child.path}
                               className={`block px-4 py-2 text-sm transition-colors duration-150 ${
-                                router.pathname === child.path
+                                pathname === child.path
                                   ? "bg-orange-50 text-orange-500 font-semibold"
                                   : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                               }`}
@@ -294,18 +286,18 @@ const Header = () => {
                 if (item.children) {
                   return item.children.some(
                     (child) =>
-                      router.pathname === child.path ||
-                      router.pathname.startsWith(child.path + "/")
+                      pathname === child.path ||
+                      pathname.startsWith(child.path + "/")
                   );
                 }
                 if (item.path) {
                   // 홈 페이지는 정확히 일치해야 함
                   if (item.path === "/") {
-                    return router.pathname === "/";
+                    return pathname === "/";
                   }
                   return (
-                    router.pathname === item.path ||
-                    router.pathname.startsWith(item.path + "/")
+                    pathname === item.path ||
+                    pathname.startsWith(item.path + "/")
                   );
                 }
                 return false;
@@ -356,7 +348,7 @@ const Header = () => {
                               key={child.path}
                               href={child.path}
                               className={`block px-3 py-2 text-sm text-gray-600 rounded-lg transition-colors duration-150 ${
-                                router.pathname === child.path
+                                pathname === child.path
                                   ? "bg-orange-50 text-orange-500 font-semibold"
                                   : "hover:bg-gray-100 hover:text-gray-900"
                               }`}

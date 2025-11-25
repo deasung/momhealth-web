@@ -1,14 +1,15 @@
-import type { AppProps } from "next/app";
-import { SessionProvider } from "next-auth/react";
+"use client";
+
 import { useEffect } from "react";
+import { SessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
 import {
   registerServiceWorker,
   getCurrentSubscription,
   subscribeToPush,
   requestNotificationPermission,
-} from "../lib/webPush";
-import { registerWebPushToken } from "../lib/api";
-import "../styles/globals.css";
+} from "../../lib/webPush";
+import { registerWebPushToken } from "../../lib/api";
 
 // 페이지 내 알림 표시 함수
 const showInPageNotification = (
@@ -111,10 +112,13 @@ const showInPageNotification = (
   }, 5000);
 };
 
-export default function App({
-  Component,
-  pageProps: { session, ...pageProps },
-}: AppProps) {
+export default function ClientProviders({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session: Session | null;
+}) {
   useEffect(() => {
     // Service Worker 등록 및 푸시 구독 초기화
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
@@ -143,7 +147,7 @@ export default function App({
             // 기존 구독이 있으면 백엔드에 등록되어 있는지 확인 및 등록
             console.log("🔍 [웹 푸시 초기화] 백엔드 등록 상태 확인 중...");
             try {
-              const { getWebPushTokenStatus } = await import("../lib/api");
+              const { getWebPushTokenStatus } = await import("../../lib/api");
               const status = await getWebPushTokenStatus(
                 existingSubscription.endpoint
               );
@@ -541,9 +545,5 @@ export default function App({
     }
   }, []);
 
-  return (
-    <SessionProvider session={session}>
-      <Component {...pageProps} />
-    </SessionProvider>
-  );
+  return <SessionProvider session={session}>{children}</SessionProvider>;
 }

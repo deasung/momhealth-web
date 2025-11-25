@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { isTokenExpired } from "@/lib/auth";
 import { TOKEN_KEYS } from "../constants";
 

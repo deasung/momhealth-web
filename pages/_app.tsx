@@ -1,6 +1,6 @@
 import type { AppProps } from "next/app";
 import { SessionProvider } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   registerServiceWorker,
   getCurrentSubscription,
@@ -115,14 +115,7 @@ export default function App({
   Component,
   pageProps: { session, ...pageProps },
 }: AppProps) {
-  const [mounted, setMounted] = useState(false);
-
-  // 서버 사이드에서는 항상 렌더링 (SEO를 위해)
-  const isServer = typeof window === "undefined";
-
   useEffect(() => {
-    setMounted(true);
-
     // Service Worker 등록 및 푸시 구독 초기화
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       const initializeWebPush = async () => {
@@ -547,12 +540,6 @@ export default function App({
       console.log("ℹ️ [웹 푸시 초기화] Service Worker를 지원하지 않는 환경");
     }
   }, []);
-
-  // 서버 사이드에서는 항상 렌더링 (SEO를 위해)
-  // 클라이언트 사이드에서는 mounted 체크로 하이드레이션 문제 방지
-  if (!isServer && !mounted) {
-    return null;
-  }
 
   return (
     <SessionProvider session={session}>

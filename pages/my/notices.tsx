@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { getNotices } from "../../lib/api";
 
 interface Notice {
@@ -108,9 +108,11 @@ export default function NoticesPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>공지사항 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="공지사항"
+        description="서비스 소식을 알립니다."
+        noindex={true}
+      />
 
       <Header />
 

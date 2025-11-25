@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
 import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";

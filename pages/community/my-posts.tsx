@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
 import Image from "next/image";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import CommunityWriteModal from "../../components/CommunityWriteModal";
 import {
   getMyCommunityPosts,
@@ -161,9 +161,11 @@ const MyPostsPage = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>내가 쓴 글 | 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="내가 쓴 글"
+          description="내가 작성한 커뮤니티 게시글을 확인하세요."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -190,9 +192,11 @@ const MyPostsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>내가 쓴 글 | 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="내가 쓴 글"
+          description="내가 작성한 커뮤니티 게시글을 불러오는 중입니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -208,9 +212,11 @@ const MyPostsPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        <Head>
-          <title>내가 쓴 글 | 오늘의 건강</title>
-        </Head>
+        <SEO
+          title="내가 쓴 글 오류"
+          description="게시글을 불러오는 중 오류가 발생했습니다."
+          noindex={true}
+        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center">
@@ -234,10 +240,11 @@ const MyPostsPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>내가 쓴 글 | 오늘의 건강</title>
-        <meta name="description" content="내가 작성한 커뮤니티 게시글 목록" />
-      </Head>
+      <SEO
+        title="내가 쓴 글"
+        description="내가 작성한 커뮤니티 게시글 목록을 확인하세요."
+        noindex={true}
+      />
 
       <Header />
 

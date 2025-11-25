@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import Image from "next/image";
 import {
@@ -183,9 +183,11 @@ export default function AddFriendPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>친구 추가 - 오늘의 건강</title>
-      </Head>
+      <SEO
+        title="친구 추가"
+        description="새로운 친구를 추가하고 함께 건강을 관리해보세요."
+        noindex={true}
+      />
 
       <Header />
 

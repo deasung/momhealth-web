@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import {
   getUserProfile,

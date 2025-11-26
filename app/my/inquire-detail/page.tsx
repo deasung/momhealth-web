@@ -1,14 +1,17 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import SEO from "../../components/SEO";
-import { getInquiryDetail } from "../../../lib/api";
-import { useAuth } from "../../../lib/hooks/useAuth";
-import { useTokenSync } from "../../../lib/hooks/useTokenSync";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../../lib/auth";
+import {
+  getInquiryDetailServer,
+  getServerToken,
+} from "../../../lib/api-server";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
 // 문의 상태 타입 정의
 type InquiryStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
@@ -56,42 +59,86 @@ const formatDate = (dateString: string): string => {
   return `${year}.${month}.${day} ${hours}:${minutes}`;
 };
 
-export default function InquiryDetailPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const id = searchParams?.get("id");
-  const { isAuthenticated, isLoading } = useAuth();
-  const { isTokenSynced } = useTokenSync();
-  const [inquiry, setInquiry] = useState<InquiryDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// ✅ SEO: 동적 메타데이터 생성
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}): Promise<Metadata> {
+  const id = searchParams?.id;
 
-  // 문의 상세 정보 가져오기
-  const fetchInquiryDetail = useCallback(async () => {
-    if (!id || !isAuthenticated || isLoading || !isTokenSynced) return;
+  if (!id) {
+    return {
+      title: "문의 오류",
+      description: "문의를 찾을 수 없습니다.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
 
-    try {
-      setLoading(true);
-      setError(null);
-      const response: InquiryDetailResponse = await getInquiryDetail(
-        Number(id)
-      );
-      setInquiry(response.data.inquiry);
-    } catch (err) {
-      setError("문의 내용을 불러올 수 없습니다.");
-    } finally {
-      setLoading(false);
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return {
+        title: "1:1 문의 상세",
+        description: "문의 내용을 확인하려면 로그인이 필요합니다.",
+      };
     }
-  }, [id, isAuthenticated, isLoading, isTokenSynced]);
 
-  useEffect(() => {
-    if (isAuthenticated && !isLoading && isTokenSynced && id) {
-      fetchInquiryDetail();
-    }
-  }, [isAuthenticated, isLoading, isTokenSynced, id, fetchInquiryDetail]);
+    const token = await getServerToken();
+    const response: InquiryDetailResponse = await getInquiryDetailServer(
+      Number(id),
+      token
+    );
+    const inquiry = response.data.inquiry;
+
+    return {
+      title: `${inquiry.title} - 1:1 문의`,
+      description:
+        inquiry.content.length > 150
+          ? inquiry.content.substring(0, 150) + "..."
+          : inquiry.content,
+      openGraph: {
+        title: `${inquiry.title} - 1:1 문의`,
+        description:
+          inquiry.content.length > 150
+            ? inquiry.content.substring(0, 150) + "..."
+            : inquiry.content,
+        url: `${siteUrl}/my/inquire-detail?id=${id}`,
+      },
+      alternates: {
+        canonical: `${siteUrl}/my/inquire-detail?id=${id}`,
+      },
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  } catch (error) {
+    return {
+      title: "문의 오류",
+      description: "문의를 찾을 수 없습니다.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+}
+
+// ✅ Server Component: 서버에서 데이터 가져오기
+export default async function InquiryDetailPage({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}) {
+  const id = searchParams?.id;
+  const session = await getServerSession(authOptions);
 
   // 로그인 확인
-  if (!isAuthenticated && !isLoading) {
+  if (!session) {
     return (
       <div className="min-h-screen bg-white">
         <SEO
@@ -121,27 +168,24 @@ export default function InquiryDetailPage() {
     );
   }
 
-  // 로딩 화면
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <SEO
-          title="1:1 문의 상세"
-          description="문의 내용을 불러오는 중입니다."
-        />
-        <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-16">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">문의 내용을 불러오는 중...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  if (!id || typeof id !== "string") {
+    notFound();
   }
 
-  // 에러 화면
+  const token = await getServerToken();
+  let inquiry: InquiryDetail | null = null;
+  let error: string | null = null;
+
+  try {
+    const response: InquiryDetailResponse = await getInquiryDetailServer(
+      Number(id),
+      token
+    );
+    inquiry = response.data.inquiry;
+  } catch (e) {
+    error = "문의 내용을 불러올 수 없습니다.";
+  }
+
   if (error || !inquiry) {
     return (
       <div className="min-h-screen bg-white">
@@ -160,12 +204,13 @@ export default function InquiryDetailPage() {
             <p className="text-gray-600 mb-4">
               {error || "존재하지 않는 문의입니다."}
             </p>
-            <button
-              onClick={() => router.back()}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            <Link
+              href="/my/inquire"
+              className="inline-block px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              aria-label="문의 목록으로 돌아가기"
             >
-              뒤로가기
-            </button>
+              목록으로 돌아가기
+            </Link>
           </div>
         </main>
         <Footer />
@@ -173,8 +218,13 @@ export default function InquiryDetailPage() {
     );
   }
 
+  // ✅ 성능: 한 번만 계산
   const displayStatus = mapInquiryStatus(inquiry.status);
   const isAnswered = displayStatus === "답변완료";
+  const formattedCreatedAt = formatDate(inquiry.createdAt);
+  const formattedRepliedAt = inquiry.repliedAt
+    ? formatDate(inquiry.repliedAt)
+    : null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -189,18 +239,20 @@ export default function InquiryDetailPage() {
 
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-        {/* 뒤로가기 버튼 */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-8">
+        {/* ✅ UX & 반응형: 뒤로가기 버튼 터치 영역 확대 */}
         <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          <Link
+            href="/my/inquire"
+            className="inline-flex items-center gap-2 px-3 py-2 -ml-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base"
+            aria-label="문의 목록으로 돌아가기"
           >
             <svg
               className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -209,93 +261,126 @@ export default function InquiryDetailPage() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            뒤로가기
-          </button>
+            <span>뒤로가기</span>
+          </Link>
         </div>
 
-        {/* 제목 및 메타 정보 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4 leading-relaxed">
-            {inquiry.title}
-          </h1>
-
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              {isAnswered ? (
-                <svg
-                  className="w-3 h-3 text-green-500"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              )}
-              <span
-                className={`font-medium ${
-                  isAnswered ? "text-green-600" : "text-orange-600"
+        {/* ✅ SEO: 의미론적 HTML 구조 */}
+        <article className="space-y-4 md:space-y-6">
+          {/* ✅ 디자인: 제목 및 메타 정보 카드 - 상태 배지 강조 */}
+          <header className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-relaxed flex-1">
+                {inquiry.title}
+              </h1>
+              {/* ✅ UX & 디자인: 상태 배지 강조 */}
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                  isAnswered
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-orange-50 text-orange-700 border border-orange-200"
                 }`}
               >
-                {displayStatus}
-              </span>
-            </div>
-            <span className="text-gray-500">
-              {formatDate(inquiry.createdAt)}
-            </span>
-          </div>
-        </div>
-
-        {/* 질문 내용 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              <span className="text-2xl font-bold text-gray-900">Q.</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-lg text-gray-800 leading-relaxed whitespace-pre-wrap">
-                {inquiry.content}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 답변 내용 (답변완료인 경우에만 표시) */}
-        {isAnswered && inquiry.replyContent && (
-          <div className="bg-orange-50 rounded-lg border border-orange-200 p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <span className="text-2xl font-bold text-orange-600">A.</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-lg text-gray-800 leading-relaxed whitespace-pre-wrap mb-4">
-                  {inquiry.replyContent}
-                </p>
-                {inquiry.repliedAt && (
-                  <p className="text-sm text-gray-500 font-medium">
-                    답변일: {formatDate(inquiry.repliedAt)}
-                  </p>
+                {isAnswered ? (
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
                 )}
+                <span>{displayStatus}</span>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* 답변 대기 중인 경우 안내 메시지 */}
-        {!isAnswered && (
-          <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-              <p className="text-blue-800 font-medium">
-                답변을 준비 중입니다. 빠른 시일 내에 답변드리겠습니다.
-              </p>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <time dateTime={inquiry.createdAt}>{formattedCreatedAt}</time>
             </div>
-          </div>
-        )}
+          </header>
+
+          {/* ✅ 디자인: 질문 내용 - 시각적 구분 강화 */}
+          <section
+            className="bg-white rounded-lg shadow-sm border-2 border-gray-100 p-4 md:p-6"
+            aria-labelledby="question-heading"
+          >
+            <h2 id="question-heading" className="sr-only">
+              질문 내용
+            </h2>
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="flex-shrink-0">
+                <span className="inline-flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg md:text-xl">
+                  Q
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-base md:text-lg text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
+                  {inquiry.content}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ✅ 디자인: 답변 내용 - 배경색 대비 강화 */}
+          {isAnswered && inquiry.replyContent && (
+            <section
+              className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200 p-4 md:p-6"
+              aria-labelledby="answer-heading"
+            >
+              <h2 id="answer-heading" className="sr-only">
+                답변 내용
+              </h2>
+              <div className="flex items-start gap-3 md:gap-4">
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-orange-500 text-white font-bold text-lg md:text-xl">
+                    A
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base md:text-lg text-gray-800 leading-relaxed whitespace-pre-wrap break-words mb-4">
+                    {inquiry.replyContent}
+                  </p>
+                  {formattedRepliedAt && (
+                    <p className="text-sm text-gray-600 font-medium">
+                      <time dateTime={inquiry.repliedAt}>
+                        답변일: {formattedRepliedAt}
+                      </time>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ✅ UX & 디자인: 답변 대기 중 안내 메시지 개선 */}
+          {!isAnswered && (
+            <section
+              className="bg-blue-50 rounded-lg border-2 border-blue-200 p-4 md:p-6"
+              aria-live="polite"
+            >
+              <div className="flex items-start gap-3 md:gap-4">
+                <div className="flex-shrink-0 pt-0.5">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm md:text-base text-blue-800 font-medium leading-relaxed">
+                    답변을 준비 중입니다. 빠른 시일 내에 답변드리겠습니다.
+                  </p>
+                  <p className="text-xs md:text-sm text-blue-600 mt-2">
+                    일반적으로 1-2일 내에 답변드립니다.
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+        </article>
       </main>
 
       <Footer />

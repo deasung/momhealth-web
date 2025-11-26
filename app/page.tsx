@@ -1,194 +1,87 @@
-"use client";
-
-import { useState, useEffect, useMemo } from "react";
+import type { Metadata } from "next";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import SEO from "./components/SEO";
 import PopularQuestions from "./components/PopularQuestions";
 import RecommendedQuestions from "./components/RecommendedQuestions";
 import CommunityPosts from "./components/CommunityPosts";
-import { getHomeData } from "../lib/api";
+import { getHomeDataServer } from "../lib/api-server";
 import { HomeData } from "./types/home";
-import { useTokenSync } from "../lib/hooks/useTokenSync";
 import { generatePageMetadata } from "../lib/metadata";
 
-export default function Home() {
-  const [homeData, setHomeData] = useState<HomeData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-  // NextAuth 세션과 localStorage 토큰 동기화
-  const { isTokenSynced } = useTokenSync();
-
-  useEffect(() => {
-    // 토큰 동기화가 완료된 후에만 API 요청
-    if (!isTokenSynced) return;
-
-    const fetchHomeData = async () => {
-      try {
-        setLoading(true);
-        setError(null); // ✅ UX: 재시도 시 이전 에러 초기화
-
-        // 토큰은 인터셉터에서 자동으로 처리되므로 getHomeData 호출만 하면 됨
-        const data = await getHomeData();
-        setHomeData(data);
-      } catch (err) {
-        setError("데이터를 불러오는데 실패했습니다.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHomeData();
-  }, [isTokenSynced]);
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
-
-  // ✅ 성능: 메타데이터 메모이제이션
-  const metadata = useMemo(() => {
-    return generatePageMetadata("home", {
-      title: homeData
-        ? `오늘의 건강 - ${homeData.popularQuestions.length}개 인기 질문, ${homeData.communityPosts.length}개 커뮤니티 게시글`
-        : undefined,
-      description: homeData
-        ? `인기 질문 ${homeData.popularQuestions.length}개, 추천 질문 ${homeData.recommendedQuestions.length}개, 커뮤니티 게시글 ${homeData.communityPosts.length}개가 있는 건강 관리 플랫폼입니다.`
-        : undefined,
+// ✅ SEO: 동적 메타데이터 생성
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const homeData = await getHomeDataServer();
+    const metadata = generatePageMetadata("home", {
+      title: `오늘의 건강 - ${homeData.popularQuestions.length}개 인기 질문, ${homeData.communityPosts.length}개 커뮤니티 게시글`,
+      description: `인기 질문 ${homeData.popularQuestions.length}개, 추천 질문 ${homeData.recommendedQuestions.length}개, 커뮤니티 게시글 ${homeData.communityPosts.length}개가 있는 건강 관리 플랫폼입니다.`,
     });
-  }, [homeData]);
 
-  // ✅ UX: 통계 데이터 메모이제이션
-  const stats = useMemo(() => {
-    if (!homeData) return null;
     return {
-      popular: homeData.popularQuestions.length,
-      recommended: homeData.recommendedQuestions.length,
-      community: homeData.communityPosts.length,
+      title: metadata.title,
+      description: metadata.description,
+      keywords: metadata.keywords,
+      openGraph: {
+        title: metadata.ogTitle || metadata.title,
+        description: metadata.ogDescription || metadata.description,
+        images: [
+          {
+            url: `${siteUrl}/og-image.png`,
+            width: 1200,
+            height: 630,
+            type: "image/png",
+            alt: "오늘의 건강 - 건강한 하루를 위한 맞춤형 건강 관리 서비스",
+          },
+        ],
+        url: siteUrl,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: metadata.ogTitle || metadata.title,
+        description: metadata.ogDescription || metadata.description,
+        images: [`${siteUrl}/og-image.png`],
+      },
     };
-  }, [homeData]);
+  } catch (error) {
+    // 에러 발생 시 기본 메타데이터 반환
+    return {
+      title: "오늘의 건강",
+      description:
+        "건강한 하루를 위한 맞춤형 건강 관리 서비스입니다. 건강 질문, 커뮤니티, 친구와의 건강 공유를 통해 더 나은 건강을 만들어보세요.",
+    };
+  }
+}
 
-  // ✅ UX: 스켈레톤 UI 컴포넌트
-  const SkeletonCard = () => (
-    <div className="animate-pulse">
-      <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-      <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-    </div>
-  );
+// ✅ Server Component: 서버에서 데이터 가져오기
+export default async function Home() {
+  let homeData: HomeData | null = null;
+  let error: string | null = null;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <SEO
-          title="홈"
-          description="건강한 하루를 위한 맞춤형 건강 관리 서비스입니다. 건강 질문, 커뮤니티, 친구와의 건강 공유를 통해 더 나은 건강을 만들어보세요."
-          keywords="건강 관리, 건강 질문, 건강 커뮤니티, 건강 공유"
-          ogImage={`${siteUrl}/og-image.png`}
-          ogUrl={siteUrl}
-        />
-        <Header />
-        <main className="container mx-auto px-4 py-8 md:py-16">
-          {/* ✅ UX: 스켈레톤 UI로 개선 */}
-          <div className="max-w-6xl mx-auto">
-            {/* 히어로 섹션 스켈레톤 */}
-            <div className="text-center mb-12">
-              <div className="h-10 bg-gray-200 rounded w-64 mx-auto mb-4 animate-pulse"></div>
-              <div className="h-6 bg-gray-200 rounded w-96 mx-auto mb-8 animate-pulse"></div>
-
-              {/* ✅ 반응형: 모바일에서도 통계 카드 표시 */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto mb-16">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-gray-50 rounded-xl p-6 sm:p-8 text-center"
-                  >
-                    <div className="h-8 bg-gray-200 rounded w-16 mx-auto mb-2 animate-pulse"></div>
-                    <div className="h-5 bg-gray-200 rounded w-24 mx-auto animate-pulse"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 섹션 스켈레톤 */}
-            <div className="space-y-12">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  try {
+    // 서버에서 데이터 가져오기
+    homeData = await getHomeDataServer();
+  } catch (err) {
+    console.error("홈 데이터 로딩 실패:", err);
+    error = "데이터를 불러오는데 실패했습니다.";
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white">
-        <SEO
-          title="홈 오류"
-          description="홈페이지에서 오류가 발생했습니다."
-          noindex={true}
-        />
-        <Header />
-        <main className="container mx-auto px-4 py-16">
-          <div className="max-w-md mx-auto text-center">
-            {/* ✅ UX: 에러 상태 개선 */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-8 mb-6">
-              <div className="text-red-500 text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                데이터를 불러올 수 없습니다
-              </h2>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                >
-                  새로고침
-                </button>
-                <button
-                  onClick={() => {
-                    setError(null);
-                    setLoading(true);
-                    // 재시도 로직
-                    if (isTokenSynced) {
-                      getHomeData()
-                        .then(setHomeData)
-                        .catch(() =>
-                          setError("데이터를 불러오는데 실패했습니다.")
-                        )
-                        .finally(() => setLoading(false));
-                    }
-                  }}
-                  className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  다시 시도
-                </button>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  // 통계 데이터 계산
+  const stats = homeData
+    ? {
+        popular: homeData.popularQuestions.length,
+        recommended: homeData.recommendedQuestions.length,
+        community: homeData.communityPosts.length,
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-white">
-      <SEO
-        title={metadata.title}
-        description={metadata.description}
-        keywords={metadata.keywords}
-        ogTitle={metadata.ogTitle}
-        ogDescription={metadata.ogDescription}
-        ogImage={`${siteUrl}/og-image.png`}
-        ogUrl={siteUrl}
-      />
-
       <Header />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
-        {/* ✅ SEO & UX: 히어로 섹션 개선 - h1 태그 복원 */}
+        {/* ✅ SEO & UX: 히어로 섹션 - h1 태그 */}
         <section className="text-center mb-12 md:mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 md:mb-6">
             오늘의 건강
@@ -197,7 +90,7 @@ export default function Home() {
             당신의 건강을 위한 맞춤형 건강 관리 플랫폼
           </p>
 
-          {/* ✅ 반응형 & 디자인: 통계 카드 개선 - 모바일에서도 표시 */}
+          {/* ✅ 반응형 & 디자인: 통계 카드 */}
           {stats && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto mb-12 md:mb-16">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 sm:p-8 text-center shadow-sm hover:shadow-md transition-shadow">
@@ -228,7 +121,20 @@ export default function Home() {
           )}
         </section>
 
-        {/* ✅ SEO: 시맨틱 HTML 구조 개선 */}
+        {/* ✅ 에러 상태 */}
+        {error && (
+          <div className="max-w-md mx-auto text-center mb-12">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+              <div className="text-red-500 text-5xl mb-4">⚠️</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                데이터를 불러올 수 없습니다
+              </h2>
+              <p className="text-gray-600">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ SEO: 시맨틱 HTML 구조 */}
         {/* 인기 질문 섹션 */}
         {homeData?.popularQuestions && homeData.popularQuestions.length > 0 && (
           <section aria-label="인기 건강 질문" className="mb-12 md:mb-16">
@@ -251,7 +157,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* ✅ UX: 빈 상태 처리 */}
+        {/* ✅ 빈 상태 처리 */}
         {homeData &&
           (!homeData.popularQuestions?.length ||
             !homeData.recommendedQuestions?.length ||

@@ -1,19 +1,29 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
+
+// ✅ SEO: 메타데이터
+export const metadata: Metadata = {
+  title: "약관 및 정책",
+  description: "서비스 이용약관 및 개인정보 처리방침을 확인하실 수 있습니다.",
+  keywords: "서비스 이용약관, 개인정보 처리방침, 약관, 정책",
+  openGraph: {
+    title: "약관 및 정책 - 오늘의 건강",
+    description: "서비스 이용약관 및 개인정보 처리방침을 확인하실 수 있습니다.",
+    url: `${siteUrl}/my/terms`,
+  },
+  alternates: {
+    canonical: `${siteUrl}/my/terms`,
+  },
+};
+
+// ✅ Server Component: 정적 페이지
 export default function TermsIndexPage() {
   return (
     <div className="min-h-screen bg-white">
-      <SEO
-        title="약관 및 정책"
-        description="서비스 이용약관 및 개인정보 처리방침을 확인하실 수 있습니다."
-        keywords="서비스 이용약관, 개인정보 처리방침, 약관, 정책"
-      />
-
       <Header />
 
       <main className="max-w-3xl mx-auto px-4 md:px-6 py-10">

@@ -1,142 +1,123 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
-import { getHealthQuestionDetail, resetQuizProgress } from "../../../lib/api";
-import { useAuth } from "../../../lib/hooks/useAuth";
+import HealthQuestionActions from "../../components/HealthQuestionActions";
+import {
+  getHealthQuestionDetailServer,
+  getServerToken,
+} from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generateHealthQuestionMetadata } from "../../../lib/metadata";
 
-const HealthQuestionDetail = () => {
-  const router = useRouter();
-  const params = useParams();
-  const id = params?.id as string;
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [question, setQuestion] = useState<HealthQuestionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [resetting, setResetting] = useState(false);
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-  const fetchQuestionDetail = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getHealthQuestionDetail(id);
-      setQuestion(data);
-    } catch (err) {
-      setError("질문 정보를 불러올 수 없습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+// ✅ SEO: 동적 메타데이터 생성
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  try {
+    const token = await getServerToken();
+    const question = await getHealthQuestionDetailServer(params.id, token);
+    const metadata = generateHealthQuestionMetadata({
+      title: question.title,
+      description: question.description || question.title,
+      category: question.primaryCategory.name,
+    });
 
-  useEffect(() => {
-    if (id) {
-      fetchQuestionDetail();
-    }
-  }, [id, fetchQuestionDetail]);
+    const ogImage =
+      question.detailThumbnailUrl || question.thumbnailUrl || "/og-image.png";
+    const fullOgImage = ogImage.startsWith("http")
+      ? ogImage
+      : `${siteUrl}${ogImage}`;
+    const canonicalUrl = `${siteUrl}/health-questions/${question.id}`;
 
-  const handleStartQuestion = () => {
-    // 로그인 여부 확인
-    if (!isAuthenticated) {
-      // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
-      router.push("/login");
-      return;
-    }
+    return {
+      title: metadata.title,
+      description: metadata.description,
+      keywords: metadata.keywords,
+      openGraph: {
+        title: metadata.ogTitle || metadata.title,
+        description: metadata.ogDescription || metadata.description,
+        images: [
+          {
+            url: fullOgImage,
+            width: 1200,
+            height: 630,
+            type: "image/png",
+            alt: question.title,
+          },
+        ],
+        url: canonicalUrl,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: metadata.ogTitle || metadata.title,
+        description: metadata.ogDescription || metadata.description,
+        images: [fullOgImage],
+      },
+      alternates: {
+        canonical: canonicalUrl,
+      },
+    };
+  } catch (error) {
+    return {
+      title: "건강 질문",
+      description: "건강 질문 정보를 불러오는 중입니다.",
+    };
+  }
+}
 
-    if (question?.id) {
-      router.push(`/health-questions/${question.id}/quiz`);
-    }
-  };
+// ✅ Server Component: 서버에서 데이터 가져오기
+export default async function HealthQuestionDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  let question: HealthQuestionDetail | null = null;
+  let error: string | null = null;
 
-  const handleResetQuestion = async () => {
-    if (!question?.id || !isAuthenticated) return;
-
-    try {
-      setResetting(true);
-      // 진행상태 리셋 API 호출
-      await resetQuizProgress(question.id);
-
-      // 성공 후 퀴즈 페이지로 이동
-      router.push(`/health-questions/${question.id}/quiz`);
-    } catch (error) {
-      console.error("퀴즈 리셋 실패:", error);
-      alert("퀴즈 리셋에 실패했습니다.");
-    } finally {
-      setResetting(false);
-    }
-  };
-
-  if (loading || authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <SEO
-          title="건강 질문"
-          description="건강 질문 정보를 불러오는 중입니다."
-        />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">질문 정보를 불러오는 중...</p>
-          </div>
-        </div>
-      </div>
-    );
+  try {
+    const token = await getServerToken();
+    question = await getHealthQuestionDetailServer(params.id, token);
+  } catch (err) {
+    console.error("질문 상세 로딩 실패:", err);
+    error = "질문 정보를 불러올 수 없습니다.";
   }
 
   if (error || !question) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <SEO
-          title="질문 오류"
-          description="질문을 찾을 수 없습니다."
-          noindex={true}
-        />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">
-              {error || "질문을 찾을 수 없습니다."}
-            </p>
-            <button
-              onClick={() => router.back()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              돌아가기
-            </button>
+        <Header />
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+              <div className="text-red-500 text-5xl mb-4">⚠️</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                질문을 찾을 수 없습니다
+              </h2>
+              <p className="text-gray-600 mb-6">
+                {error || "질문을 찾을 수 없습니다."}
+              </p>
+              <Link
+                href="/health-questions/list"
+                className="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+              >
+                질문 목록으로
+              </Link>
+            </div>
           </div>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
-  // 동적 메타데이터 생성
-  const metadata = generateHealthQuestionMetadata({
-    title: question.title,
-    description: question.description || question.title,
-    category: question.primaryCategory.name,
-  });
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
-  const ogImage = question.detailThumbnailUrl || question.thumbnailUrl;
-  const canonicalUrl = `${siteUrl}/health-questions/${question.id}`;
-
   return (
     <div className="min-h-screen bg-white">
-      <SEO
-        title={metadata.title}
-        description={metadata.description}
-        keywords={metadata.keywords}
-        ogTitle={metadata.ogTitle}
-        ogDescription={metadata.ogDescription}
-        ogImage={ogImage.startsWith("http") ? ogImage : `${siteUrl}${ogImage}`}
-        ogUrl={canonicalUrl}
-        canonical={canonicalUrl}
-      />
-
-      {/* 공통 헤더 */}
       <Header />
 
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
@@ -159,9 +140,9 @@ const HealthQuestionDetail = () => {
         </div>
 
         {/* 제목 */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
           {question.title}
-        </h2>
+        </h1>
 
         {/* 메타 정보 */}
         <div className="flex items-center text-gray-600 mb-6">
@@ -177,6 +158,7 @@ const HealthQuestionDetail = () => {
             width={800}
             height={256}
             className="w-full h-64 object-cover rounded-lg shadow-md"
+            unoptimized
           />
         </div>
 
@@ -192,9 +174,9 @@ const HealthQuestionDetail = () => {
 
         {/* 질문 목록 미리보기 */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
             질문 미리보기
-          </h3>
+          </h2>
           <div className="space-y-3">
             {question.items.slice(0, 3).map((item) => (
               <div key={item.id} className="flex items-start">
@@ -242,46 +224,16 @@ const HealthQuestionDetail = () => {
           </div>
         </div>
 
-        {/* 버튼 영역 */}
+        {/* 버튼 영역 - Client Component */}
         <div className="text-center">
-          {/* 진행상태가 완료이고 로그인된 경우 */}
-          {isAuthenticated && question.userProgress?.isCompleted ? (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleResetQuestion}
-                disabled={resetting}
-                className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-gray-500 hover:bg-gray-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {resetting ? "리셋 중..." : "다시 풀기"}
-              </button>
-              <button
-                onClick={() =>
-                  router.push(`/health-questions/${question.id}/result`)
-                }
-                className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                결과 보기
-              </button>
-            </div>
-          ) : (
-            /* 진행중이거나 로그인 안된 경우 */
-            <button
-              onClick={handleStartQuestion}
-              className={`font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg ${
-                isAuthenticated
-                  ? "bg-orange-500 hover:bg-orange-600 text-white"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
-            >
-              {isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
-            </button>
-          )}
+          <HealthQuestionActions
+            questionId={question.id}
+            isCompleted={question.userProgress?.isCompleted || false}
+          />
         </div>
       </div>
 
       <Footer />
     </div>
   );
-};
-
-export default HealthQuestionDetail;
+}

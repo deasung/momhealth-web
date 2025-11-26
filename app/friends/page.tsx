@@ -37,7 +37,7 @@ export default async function FriendsPage() {
   // 로그인 확인
   if (!session) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <SEO
           title="친구"
           description="친구와 함께 건강을 관리하고 서로의 건강 상태를 공유해보세요."
@@ -100,7 +100,7 @@ export default async function FriendsPage() {
     friendRequestCounts.receivedCount + friendRequestCounts.sentCount;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <SEO
         title="친구"
         description="친구와 함께 건강을 관리하고 서로의 건강 상태를 공유해보세요."
@@ -109,15 +109,15 @@ export default async function FriendsPage() {
 
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* 페이지 헤더 */}
-        <div className="mb-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (건강 질문 리스트와 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                 친구
               </h1>
-              <p className="text-sm md:text-base text-gray-600">
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
                 친구와 함께 건강을 관리해보세요.
               </p>
             </div>
@@ -150,7 +150,7 @@ export default async function FriendsPage() {
               </Link>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* 친구 요청 섹션 */}
         {totalRequestCount > 0 && (

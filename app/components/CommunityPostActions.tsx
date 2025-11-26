@@ -2,24 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  updateCommunityPost,
-  deleteCommunityPost,
-  getCommunityPostDetail,
-} from "../../lib/api";
+import { updateCommunityPost, deleteCommunityPost } from "../../lib/api";
 import type { CommunityPostDetail } from "../types/community";
 import CommunityWriteModal from "./CommunityWriteModal";
 
 interface CommunityPostActionsProps {
   post: CommunityPostDetail;
   currentUserId: string | number | null;
-  onUpdate: () => void;
 }
 
 export default function CommunityPostActions({
   post,
   currentUserId,
-  onUpdate,
 }: CommunityPostActionsProps) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -59,7 +53,8 @@ export default function CommunityPostActions({
       await updateCommunityPost(post.id, data);
       alert("게시글이 수정되었습니다.");
       setShowEditModal(false);
-      onUpdate();
+      // App Router: 서버 컴포넌트 데이터 새로고침
+      router.refresh();
     } catch (err) {
       alert("게시글 수정에 실패했습니다.");
     } finally {

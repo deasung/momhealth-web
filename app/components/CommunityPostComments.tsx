@@ -16,17 +16,15 @@ import type { UserProfile } from "../types/user";
 interface CommunityPostCommentsProps {
   postId: string;
   initialComments: CommunityPostDetail["comments"];
-  onUpdate: () => void;
 }
 
 export default function CommunityPostComments({
   postId,
   initialComments,
-  onUpdate,
 }: CommunityPostCommentsProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [comments, setComments] = useState(initialComments);
+  const [comments] = useState(initialComments);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -49,7 +47,8 @@ export default function CommunityPostComments({
       setIsSubmittingComment(true);
       await createComment(postId, commentText.trim());
       setCommentText("");
-      onUpdate(); // 부모 컴포넌트에서 게시글 새로고침
+      // 서버 컴포넌트 데이터 새로고침
+      router.refresh();
     } catch (err) {
       alert("댓글 등록에 실패했습니다.");
     } finally {
@@ -63,7 +62,7 @@ export default function CommunityPostComments({
     try {
       await deleteComment(postId, commentId);
       alert("댓글이 삭제되었습니다.");
-      onUpdate();
+      router.refresh();
     } catch (err) {
       alert("댓글 삭제에 실패했습니다.");
     }
@@ -90,7 +89,7 @@ export default function CommunityPostComments({
       alert("댓글이 수정되었습니다.");
       setEditingCommentId(null);
       setEditingCommentText("");
-      onUpdate();
+      router.refresh();
     } catch (err) {
       alert("댓글 수정에 실패했습니다.");
     }

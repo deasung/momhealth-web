@@ -60,23 +60,31 @@ export default async function CommunityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (건강 질문 / 친구 화면과 톤 통일) */}
+
+
+        {/* ✅ 에러 상태 */}
         {error ? (
-          <div className="text-center py-12">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              오류가 발생했습니다
-            </h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+          <div className="max-w-md mx-auto text-center mb-12">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
+              <div className="text-red-500 text-5xl mb-4">⚠️</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                오류가 발생했습니다
+              </h2>
+              <p className="text-gray-600 mb-6">{error}</p>
+            </div>
           </div>
         ) : (
-          <CommunityListClient
-            initialPosts={posts}
-            initialNextCursor={nextCursor}
-          />
+          <section aria-label="커뮤니티 게시글 목록">
+            <CommunityListClient
+              initialPosts={posts}
+              initialNextCursor={nextCursor}
+            />
+          </section>
         )}
       </main>
 

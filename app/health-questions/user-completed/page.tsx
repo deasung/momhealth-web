@@ -1,13 +1,14 @@
-"use client";
-
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import SEO from "../../components/SEO";
-import { useAuth } from "../../../lib/hooks/useAuth";
-import { getUserCompletedQuestions } from "../../../lib/api";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../../lib/auth";
+import {
+  getServerToken,
+  getUserCompletedQuestionsServer,
+} from "../../../lib/api-server";
 
 interface UserCompletedResult {
   id: string;
@@ -46,17 +47,20 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
+interface UserCompletedResponse {
+  data: {
+    results: UserCompletedResult[];
+    pagination: PaginationInfo;
+  };
+}
+
 const LIMIT = 10;
 
 interface CompletedQuestionCardProps {
   item: UserCompletedResult;
-  onPress: () => void;
 }
 
-const CompletedQuestionCard = ({
-  item,
-  onPress,
-}: CompletedQuestionCardProps) => {
+const CompletedQuestionCard = ({ item }: CompletedQuestionCardProps) => {
   const categoryName = item.question.primaryCategory?.name || "생활습관";
 
   const completedDate = (() => {
@@ -68,12 +72,9 @@ const CompletedQuestionCard = ({
   })();
 
   return (
-    <button
-      onClick={onPress}
-      className="w-full flex items-start gap-6 p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all"
-    >
+    <article className="w-full flex items-start gap-4 md:gap-6 p-4 md:p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
       {/* 썸네일 */}
-      <div className="w-20 h-20 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
+      <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
         <Image
           src={item.question.thumbnailUrl || "/placeholder.png"}
           alt={item.question.title}
@@ -89,7 +90,7 @@ const CompletedQuestionCard = ({
           {categoryName}
         </span>
 
-        <h3 className="font-medium text-gray-900 text-base mb-2 line-clamp-2">
+        <h3 className="font-medium text-gray-900 text-sm md:text-base mb-2 line-clamp-2">
           {item.question.title}
         </h3>
 
@@ -99,6 +100,7 @@ const CompletedQuestionCard = ({
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -110,141 +112,49 @@ const CompletedQuestionCard = ({
           <span>완료일: {completedDate}</span>
         </div>
       </div>
-    </button>
+    </article>
   );
 };
 
-export default function UserCompletedPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
-  const userId = searchParams?.get("userId");
-  const userName = searchParams?.get("userName");
+export default async function UserCompletedPage({
+  searchParams,
+}: {
+  searchParams: { userId?: string; userName?: string; page?: string };
+}) {
+  const session = await getServerSession(authOptions);
+  const userId = searchParams?.userId;
+  const userName = searchParams?.userName || "";
+  const pageParam = searchParams?.page;
+  const currentPage =
+    typeof pageParam === "string" && !Number.isNaN(Number(pageParam))
+      ? Math.max(1, Number(pageParam))
+      : 1;
 
-  const [completedQuestions, setCompletedQuestions] = useState<
-    UserCompletedResult[]
-  >([]);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const loadingMoreRef = useRef(false);
-
-  const loadData = useCallback(
-    async (initialLoad = false) => {
-      if (!userId || typeof userId !== "string") return;
-
-      if (loading || (!initialLoad && !pagination?.hasNextPage)) {
-        return;
-      }
-
-      if (!initialLoad) setLoading(true);
-      setError(null);
-
-      try {
-        const currentPage = initialLoad
-          ? 1
-          : (pagination?.currentPage || 1) + 1;
-
-        const response = await getUserCompletedQuestions({
-          userId: userId,
-          page: currentPage,
-          limit: LIMIT,
-        });
-
-        if (initialLoad) {
-          setCompletedQuestions(response.data?.results || []);
-          setPagination(response.data?.pagination || null);
-        } else {
-          const newResults = response.data?.results || [];
-          if (newResults.length > 0) {
-            setCompletedQuestions((prev) => [...prev, ...newResults]);
-            setPagination(response.data?.pagination || null);
-          }
-        }
-      } catch (e: unknown) {
-        let errorMessage = "데이터를 불러오는 중 오류가 발생했습니다.";
-
-        if (e && typeof e === "object" && "response" in e) {
-          const apiError = e as { response?: { status?: number } };
-          if (apiError.response?.status === 401) {
-            errorMessage = "인증이 필요합니다. 다시 로그인해주세요.";
-          } else if (apiError.response?.status === 404) {
-            errorMessage = "사용자를 찾을 수 없습니다.";
-          } else if (apiError.response?.status === 403) {
-            errorMessage = "접근 권한이 없습니다.";
-          }
-        }
-
-        setError(errorMessage);
-        if (initialLoad) {
-          setCompletedQuestions([]);
-          setPagination(null);
-        }
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-        loadingMoreRef.current = false;
-      }
-    },
-    [loading, pagination, userId]
-  );
-
-  useEffect(() => {
-    if (userId && isAuthenticated) {
-      loadData(true);
-    }
-  }, [userId, isAuthenticated, loadData]);
-
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const target = e.currentTarget;
-      const isNearBottom =
-        target.scrollHeight - target.scrollTop - target.clientHeight < 300;
-
-      if (
-        isNearBottom &&
-        !loadingMoreRef.current &&
-        !loading &&
-        pagination?.hasNextPage
-      ) {
-        loadingMoreRef.current = true;
-        loadData(false);
-      }
-    },
-    [loading, pagination?.hasNextPage, loadData]
-  );
-
-  const handleQuestionPress = (questionId: string) => {
-    router.push(`/health-questions/${questionId}/result`);
-  };
-
-  const handleBackPress = useCallback(() => {
-    router.back();
-  }, [router]);
-
-  if (error && !refreshing) {
+  // 로그인 확인
+  if (!session) {
     return (
       <div className="min-h-screen bg-white">
         <SEO
-          title="건강 질문 내역 오류"
-          description="건강 질문 내역을 불러오는 중 오류가 발생했습니다."
+          title="건강 질문 내역"
+          description="건강 질문 내역을 확인하려면 로그인이 필요합니다."
           noindex={true}
         />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-12">
-          <div className="text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              오류가 발생했습니다
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12 text-center">
+          <div className="mb-8">
+            <div className="text-gray-400 text-6xl mb-4">👤</div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              로그인이 필요합니다
             </h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <button
-              onClick={() => loadData(true)}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            <p className="text-gray-600 mb-8">
+              건강 질문 내역을 확인하려면 로그인해주세요.
+            </p>
+            <Link
+              href="/login"
+              className="inline-block px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
             >
-              다시 시도
-            </button>
+              로그인하기
+            </Link>
           </div>
         </main>
         <Footer />
@@ -252,7 +162,83 @@ export default function UserCompletedPage() {
     );
   }
 
+  if (!userId || typeof userId !== "string") {
+    return (
+      <div className="min-h-screen bg-white">
+        <SEO
+          title="건강 질문 내역 오류"
+          description="사용자 정보를 찾을 수 없습니다."
+          noindex={true}
+        />
+        <Header />
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+          <div className="text-center">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              사용자 정보를 찾을 수 없습니다
+            </h2>
+            <p className="text-gray-600 mb-6">
+              올바르지 않은 접근이거나 사용자 정보가 없습니다.
+            </p>
+            <Link
+              href="/my"
+              className="inline-block px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              마이페이지로 돌아가기
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const token = await getServerToken();
+  let completedQuestions: UserCompletedResult[] = [];
+  let pagination: PaginationInfo | null = null;
+  let error: string | null = null;
+
+  try {
+    const response: UserCompletedResponse =
+      await getUserCompletedQuestionsServer(
+        {
+          userId,
+          page: currentPage,
+          limit: LIMIT,
+        },
+        token
+      );
+    completedQuestions = response.data?.results || [];
+    pagination = response.data?.pagination || null;
+  } catch (e: unknown) {
+    let errorMessage = "데이터를 불러오는 중 오류가 발생했습니다.";
+
+    if (e && typeof e === "object" && "response" in e) {
+      const apiError = e as { response?: { status?: number } };
+      if (apiError.response?.status === 401) {
+        errorMessage = "인증이 필요합니다. 다시 로그인해주세요.";
+      } else if (apiError.response?.status === 404) {
+        errorMessage = "사용자를 찾을 수 없습니다.";
+      } else if (apiError.response?.status === 403) {
+        errorMessage = "접근 권한이 없습니다.";
+      }
+    }
+
+    error = errorMessage;
+  }
+
   const displayName = (typeof userName === "string" && userName) || "사용자";
+
+  const buildPageUrl = (page: number) => {
+    const params = new URLSearchParams();
+    params.set("userId", userId);
+    if (userName) params.set("userName", userName);
+    if (page > 1) params.set("page", String(page));
+    return `/health-questions/user-completed?${params.toString()}`;
+  };
+
+  const hasPrev = pagination?.hasPrevPage && currentPage > 1;
+  const hasNext = pagination?.hasNextPage;
 
   return (
     <div className="min-h-screen bg-white">
@@ -264,18 +250,20 @@ export default function UserCompletedPage() {
 
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-8">
         {/* 페이지 헤더 */}
-        <div className="mb-8">
-          <button
-            onClick={handleBackPress}
-            className="mb-4 text-gray-600 hover:text-gray-900"
+        <header className="mb-6 md:mb-8">
+          <Link
+            href="/my"
+            className="inline-flex items-center gap-2 px-3 py-2 -ml-3 mb-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base"
+            aria-label="마이페이지로 돌아가기"
           >
             <svg
-              className="w-6 h-6"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -284,49 +272,119 @@ export default function UserCompletedPage() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {displayName}의 건강 질문 내역
-          </h1>
-        </div>
+            <span>뒤로가기</span>
+          </Link>
 
-        {/* 질문 목록 */}
-        <div
-          className="space-y-4 overflow-y-auto"
-          style={{ maxHeight: "calc(100vh - 300px)" }}
-          onScroll={handleScroll}
-        >
-          {completedQuestions.length === 0 && !loading ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <div className="text-gray-400 text-6xl mb-4">📋</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                질문이 없습니다
-              </h3>
-              <p className="text-gray-600">완료한 건강 질문이 없습니다.</p>
-            </div>
-          ) : (
-            <>
-              {completedQuestions.map((item) => (
-                <CompletedQuestionCard
-                  key={`completed-${item.id}`}
-                  item={item}
-                  onPress={() => handleQuestionPress(item.questionId)}
-                />
-              ))}
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              {displayName}의 건강 질문 내역
+            </h1>
+            <p className="text-sm md:text-base text-gray-600 mt-2">
+              완료한 건강 질문 결과를 다시 확인해보세요.
+            </p>
+          </div>
+        </header>
 
-              {loading && (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">로딩 중...</p>
+        {/* 에러 상태 */}
+        {error ? (
+          <section
+            className="bg-white rounded-lg shadow-sm border-2 border-red-100 p-8 md:p-12 text-center"
+            aria-live="polite"
+          >
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
+              오류가 발생했습니다
+            </h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Link
+              href={buildPageUrl(1)}
+              className="inline-block px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              다시 시도
+            </Link>
+          </section>
+        ) : (
+          <>
+            {/* 질문 목록 */}
+            <section
+              aria-label="완료한 건강 질문 목록"
+              className="space-y-4 md:space-y-5"
+            >
+              {completedQuestions.length === 0 ? (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                  <div className="text-gray-400 text-6xl mb-4">📋</div>
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
+                    질문이 없습니다
+                  </h3>
+                  <p className="text-gray-600 text-sm md:text-base">
+                    완료한 건강 질문이 없습니다.
+                  </p>
                 </div>
+              ) : (
+                <>
+                  <ul className="space-y-4 md:space-y-5" role="list">
+                    {completedQuestions.map((item) => (
+                      <li key={`completed-${item.id}`}>
+                        <Link
+                          href={`/health-questions/${item.questionId}/result`}
+                          className="block group"
+                          aria-label={`${item.question.title} 결과 다시 보기`}
+                        >
+                          <CompletedQuestionCard item={item} />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* 페이지네이션 */}
+                  {(hasPrev || hasNext) && (
+                    <nav
+                      className="flex items-center justify-between mt-6"
+                      aria-label="페이지 탐색"
+                    >
+                      <div>
+                        {hasPrev ? (
+                          <Link
+                            href={buildPageUrl(currentPage - 1)}
+                            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                          >
+                            이전
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center px-4 py-2 border border-gray-100 rounded-lg text-sm text-gray-300 bg-gray-50 cursor-not-allowed">
+                            이전
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs md:text-sm text-gray-500">
+                        {pagination
+                          ? `${pagination.currentPage} / ${pagination.totalPages}`
+                          : null}
+                      </p>
+                      <div>
+                        {hasNext ? (
+                          <Link
+                            href={buildPageUrl(currentPage + 1)}
+                            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                          >
+                            다음
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center px-4 py-2 border border-gray-100 rounded-lg text-sm text-gray-300 bg-gray-50 cursor-not-allowed">
+                            다음
+                          </span>
+                        )}
+                      </div>
+                    </nav>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
+            </section>
+          </>
+        )}
       </main>
 
       <Footer />
     </div>
   );
 }
-

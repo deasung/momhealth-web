@@ -177,6 +177,29 @@ export async function getServiceTermsServer() {
 }
 
 /**
+ * 사용자의 완료한 건강 질문 조회 (인증 필요)
+ */
+export async function getUserCompletedQuestionsServer(
+  params: {
+    userId: string;
+    page?: number;
+    limit?: number;
+  },
+  token?: string | null
+) {
+  try {
+    const api = createServerApi(token);
+    const response = await api.get("/private/health.questions/user/completed", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("사용자의 완료한 건강 질문 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
  * 공지사항 목록 가져오기 (공개 API)
  */
 export async function getNoticesServer(params?: {
@@ -205,6 +228,34 @@ export async function getNoticeDetailServer(id: string) {
     return response.data;
   } catch (error) {
     console.error("공지사항 상세 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 매핑된 사용자 목록 조회 (친구 목록, 인증 필요)
+ */
+export async function getMappedUsersServer(token?: string | null) {
+  try {
+    const api = createServerApi(token);
+    const response = await api.get("/private/register/mapped-users");
+    return response.data;
+  } catch (error) {
+    console.error("매핑된 사용자 목록 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 친구 요청 카운트 조회 (인증 필요)
+ */
+export async function getFriendRequestCountsServer(token?: string | null) {
+  try {
+    const api = createServerApi(token);
+    const response = await api.get("/private/register/friend-requests");
+    return response.data;
+  } catch (error) {
+    console.error("친구 요청 카운트 조회 실패:", error);
     throw error;
   }
 }
@@ -260,8 +311,11 @@ export async function getServerToken(): Promise<string | null> {
     if (!session) return null;
 
     // NextAuth 세션에서 토큰 추출
-    const token =
-      (session as any)?.token || (session as any)?.accessToken || null;
+    const typedSession = session as {
+      token?: string | null;
+      accessToken?: string | null;
+    };
+    const token = typedSession.token || typedSession.accessToken || null;
     return token;
   } catch (error) {
     console.error("서버 토큰 가져오기 실패:", error);

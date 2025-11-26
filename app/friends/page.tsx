@@ -1,13 +1,15 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import SEO from "../components/SEO";
-import { useAuth } from "../../lib/hooks/useAuth";
-import { getMappedUsers, getFriendRequestCounts } from "../../lib/api";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../lib/auth";
+import {
+  getFriendRequestCountsServer,
+  getMappedUsersServer,
+  getServerToken,
+} from "../../lib/api-server";
 
 interface Friend {
   mappingId: number;
@@ -29,59 +31,11 @@ interface FriendRequestCounts {
   totalCount: number;
 }
 
-export default function FriendsPage() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [friendRequestCounts, setFriendRequestCounts] =
-    useState<FriendRequestCounts>({
-      receivedCount: 0,
-      sentCount: 0,
-      totalCount: 0,
-    });
-  const [loading, setLoading] = useState(true);
-
-  // 친구 목록 가져오기
-  const fetchFriends = async () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await getMappedUsers();
-      setFriends(response.data.friends || []);
-    } catch (error) {
-      setFriends([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 친구 요청 카운트 가져오기
-  const fetchFriendRequestCounts = async () => {
-    if (!isAuthenticated) return;
-    try {
-      const response = await getFriendRequestCounts();
-      setFriendRequestCounts(response);
-    } catch (error) {
-      setFriendRequestCounts({ receivedCount: 0, sentCount: 0, totalCount: 0 });
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      fetchFriends();
-      fetchFriendRequestCounts();
-    } else if (!isAuthenticated && !isLoading) {
-      setFriends([]);
-      setFriendRequestCounts({ receivedCount: 0, sentCount: 0, totalCount: 0 });
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isLoading]);
+export default async function FriendsPage() {
+  const session = await getServerSession(authOptions);
 
   // 로그인 확인
-  if (!isLoading && !isAuthenticated) {
+  if (!session) {
     return (
       <div className="min-h-screen bg-white">
         <SEO
@@ -90,7 +44,7 @@ export default function FriendsPage() {
           noindex={true}
         />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
           <div className="text-center py-16">
             <div className="text-gray-400 text-6xl mb-4">👥</div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
@@ -112,24 +66,34 @@ export default function FriendsPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <SEO
-          title="친구"
-          description="친구 목록을 불러오는 중입니다."
-          noindex={true}
-        />
-        <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">친구 목록을 불러오는 중...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  const token = await getServerToken();
+  let friends: Friend[] = [];
+  let friendRequestCounts: FriendRequestCounts = {
+    receivedCount: 0,
+    sentCount: 0,
+    totalCount: 0,
+  };
+
+  try {
+    const [friendsResponse, countsResponse] = await Promise.all([
+      getMappedUsersServer(token),
+      getFriendRequestCountsServer(token),
+    ]);
+
+    friends = friendsResponse.data?.friends || [];
+    friendRequestCounts = {
+      receivedCount: countsResponse.receivedCount ?? 0,
+      sentCount: countsResponse.sentCount ?? 0,
+      totalCount:
+        (countsResponse.receivedCount ?? 0) + (countsResponse.sentCount ?? 0),
+    };
+  } catch {
+    friends = [];
+    friendRequestCounts = {
+      receivedCount: 0,
+      sentCount: 0,
+      totalCount: 0,
+    };
   }
 
   const totalRequestCount =
@@ -145,13 +109,17 @@ export default function FriendsPage() {
 
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* 페이지 헤더 */}
         <div className="mb-8">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">친구</h1>
-              <p className="text-gray-600">친구와 함께 건강을 관리해보세요.</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                친구
+              </h1>
+              <p className="text-sm md:text-base text-gray-600">
+                친구와 함께 건강을 관리해보세요.
+              </p>
             </div>
             <div className="flex gap-2">
               <Link
@@ -169,6 +137,7 @@ export default function FriendsPage() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -185,7 +154,7 @@ export default function FriendsPage() {
 
         {/* 친구 요청 섹션 */}
         {totalRequestCount > 0 && (
-          <div className="mb-8">
+          <section className="mb-8" aria-label="친구 요청">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium text-gray-400">친구 요청</h2>
             </div>
@@ -210,6 +179,7 @@ export default function FriendsPage() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -220,11 +190,11 @@ export default function FriendsPage() {
                 </svg>
               </div>
             </Link>
-          </div>
+          </section>
         )}
 
         {/* 친구 목록 */}
-        <div>
+        <section aria-label="친구 목록">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-gray-400">
               친구 ({friends.length})
@@ -237,18 +207,22 @@ export default function FriendsPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 친구가 없습니다
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-6 text-sm md:text-base">
                 친구를 추가하여 건강 질문에 답하고 함께 건강을 챙겨요
               </p>
               <p className="text-sm text-gray-500 mb-6">
                 가족, 친구를 초대하여 건강 설문을 풀고 서로 공유해보아요!
               </p>
-              <button className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors inline-flex items-center gap-2">
+              <Link
+                href="/friends/add-friend"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
                 <svg
                   className="w-5 h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -258,7 +232,7 @@ export default function FriendsPage() {
                   />
                 </svg>
                 친구 초대하기
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">
@@ -266,9 +240,7 @@ export default function FriendsPage() {
                 <div
                   key={friend.mappingId}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-gray-300 transition-colors cursor-pointer"
-                  onClick={() => {
-                    // TODO: 친구의 건강 질문 화면으로 이동
-                  }}
+                  // TODO: 친구의 건강 질문 화면으로 이동
                 >
                   <div className="flex items-center gap-4">
                     {/* 프로필 이미지 */}
@@ -291,7 +263,7 @@ export default function FriendsPage() {
                       <h3 className="font-semibold text-gray-900 text-lg mb-1">
                         {friend.friend.nickname}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
                         {friend.questionCount > 0 && (
                           <>
                             <span className="text-orange-500 font-medium">
@@ -318,6 +290,7 @@ export default function FriendsPage() {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -331,7 +304,7 @@ export default function FriendsPage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
       </main>
 
       <Footer />

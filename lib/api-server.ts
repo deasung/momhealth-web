@@ -177,6 +177,81 @@ export async function getServiceTermsServer() {
 }
 
 /**
+ * 공지사항 목록 가져오기 (공개 API)
+ */
+export async function getNoticesServer(params?: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}) {
+  try {
+    const api = createServerApi();
+    const response = await api.get("/public/notice/list", { params });
+    return response.data;
+  } catch (error) {
+    console.error("공지사항 목록 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 공지사항 상세 가져오기 (공개 API)
+ */
+export async function getNoticeDetailServer(id: string) {
+  try {
+    const api = createServerApi();
+    const response = await api.get(`/public/notice/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("공지사항 상세 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 문의 목록 가져오기 (인증 필요)
+ */
+export async function getInquiriesServer(
+  params?: {
+    limit?: number;
+    cursor?: string;
+  },
+  token?: string | null
+) {
+  try {
+    const api = createServerApi(token);
+    const response = await api.get("/private/inquiry", {
+      params: {
+        limit: params?.limit || 10,
+        cursor: params?.cursor,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("문의 목록 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 문의 상세 가져오기 (인증 필요)
+ */
+export async function getInquiryDetailServer(
+  id: number,
+  token?: string | null
+) {
+  try {
+    const api = createServerApi(token);
+    const response = await api.get(`/private/inquiry/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("문의 상세 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
  * NextAuth 세션에서 토큰 가져오기
  */
 export async function getServerToken(): Promise<string | null> {

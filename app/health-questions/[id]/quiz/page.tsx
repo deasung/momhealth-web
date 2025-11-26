@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Header from "../../../../components/Header";
-import Footer from "../../../../components/Footer";
-import SEO from "../../../../components/SEO";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 import { getQuizItems, submitQuizAnswers } from "../../../../lib/api";
-import { QuizData, QuizAnswer } from "../../../../types/health-questions";
+import { QuizData, QuizAnswer } from "../../../types/health-questions";
 
 const QuizPage = () => {
   const router = useRouter();

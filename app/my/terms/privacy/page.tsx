@@ -1,15 +1,17 @@
+"use client";
+
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import SEO from "../../../components/SEO";
-import { useCallback, useEffect, useState } from "react";
-import { getServiceTerms } from "../../../lib/api";
+import { useEffect, useState, useCallback } from "react";
+import { getPrivacyPolicy } from "../../../../lib/api";
 
 interface PolicyData {
   title: string;
   content: string;
 }
 
-export default function ServiceTermsPage() {
+export default function PrivacyPolicyPage() {
   const [policy, setPolicy] = useState<PolicyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,8 @@ export default function ServiceTermsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await getServiceTerms();
+      const res = await getPrivacyPolicy();
+      // 백엔드 응답에서 실제 데이터 필드를 추출 (response.data 형태 가정)
       setPolicy(res?.data ?? res);
     } catch (e) {
       setError("약관을 불러올 수 없습니다.");
@@ -34,16 +37,16 @@ export default function ServiceTermsPage() {
   return (
     <div className="min-h-screen bg-white">
       <SEO
-        title="서비스 이용약관"
-        description="오늘의 건강 서비스 이용약관을 확인하실 수 있습니다."
-        keywords="서비스 이용약관, 이용약관, 약관"
+        title="개인정보 처리방침"
+        description="오늘의 건강 개인정보 처리방침을 확인하실 수 있습니다."
+        keywords="개인정보 처리방침, 개인정보보호, 프라이버시"
       />
 
       <Header />
 
       <main className="max-w-3xl mx-auto px-4 md:px-6 py-10">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-          서비스 이용약관
+          개인정보 처리방침
         </h1>
 
         {loading ? (
@@ -65,10 +68,11 @@ export default function ServiceTermsPage() {
             </button>
           </div>
         ) : (
-          <article className="prose max-w-none">
+          <article className="prose max-w-none prose-p:leading-7 prose-headings:scroll-mt-20">
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4">
               {policy.title}
             </h2>
+            {/* 백엔드에서 content가 HTML인지 텍스트인지에 따라 처리 */}
             {typeof policy.content === "string" ? (
               <div className="whitespace-pre-wrap text-gray-800">
                 {policy.content}

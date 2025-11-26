@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import SEO from "../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { getMappedUsers, getFriendRequestCounts } from "../../lib/api";
 

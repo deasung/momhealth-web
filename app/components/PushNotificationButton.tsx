@@ -1,27 +1,28 @@
 import { useState } from "react";
-import { useWebPush } from "../lib/hooks/useWebPush";
+import { usePushNotification } from "../../lib/hooks/usePushNotification";
 
-interface WebPushButtonProps {
+interface PushNotificationButtonProps {
   className?: string;
 }
 
 /**
- * Web Push API를 사용한 푸시 알림 버튼 컴포넌트
+ * 푸시 알림 권한 요청 및 토큰 등록 버튼 컴포넌트
  */
-export default function WebPushButton({ className = "" }: WebPushButtonProps) {
+export default function PushNotificationButton({
+  className = "",
+}: PushNotificationButtonProps) {
   const {
-    subscription,
     permission,
     isSupported,
     isLoading,
     error,
-    isRegistered,
     requestPermission,
-    subscribe,
-    unsubscribe,
-  } = useWebPush();
+    registerToken,
+    unregisterToken,
+    token,
+  } = usePushNotification();
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   if (!isSupported) {
     return (
@@ -32,27 +33,23 @@ export default function WebPushButton({ className = "" }: WebPushButtonProps) {
   }
 
   const handleClick = async () => {
-    if (permission === "granted" && subscription && isRegistered) {
+    if (permission === "granted" && token) {
       // 이미 등록된 경우 해제
-      setIsProcessing(true);
-      await unsubscribe();
-      setIsProcessing(false);
+      await unregisterToken();
     } else if (permission === "granted") {
-      // 권한은 있지만 구독이 없는 경우 구독
-      setIsProcessing(true);
-      await subscribe();
-      setIsProcessing(false);
+      // 권한은 있지만 토큰이 없는 경우 등록
+      setIsRegistering(true);
+      await registerToken();
+      setIsRegistering(false);
     } else {
       // 권한 요청
       await requestPermission();
-      // 권한이 승인되면 자동으로 구독 (requestPermission 내부에서 처리됨)
     }
   };
 
   const getButtonText = () => {
-    if (isLoading || isProcessing) return "처리 중...";
-    if (permission === "granted" && subscription && isRegistered)
-      return "푸시 알림 해제";
+    if (isLoading || isRegistering) return "처리 중...";
+    if (permission === "granted" && token) return "푸시 알림 해제";
     if (permission === "granted") return "푸시 알림 등록";
     if (permission === "denied") return "알림 권한 필요 (설정에서 허용)";
     return "푸시 알림 활성화";
@@ -62,9 +59,9 @@ export default function WebPushButton({ className = "" }: WebPushButtonProps) {
     <div className={className}>
       <button
         onClick={handleClick}
-        disabled={isLoading || isProcessing || permission === "denied"}
+        disabled={isLoading || isRegistering || permission === "denied"}
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-          permission === "granted" && subscription && isRegistered
+          permission === "granted" && token
             ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
             : "bg-blue-500 text-white hover:bg-blue-600"
         } disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -72,7 +69,7 @@ export default function WebPushButton({ className = "" }: WebPushButtonProps) {
         {getButtonText()}
       </button>
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-      {permission === "granted" && subscription && isRegistered && (
+      {permission === "granted" && token && (
         <p className="mt-2 text-sm text-green-600">
           ✅ 푸시 알림이 활성화되어 있습니다.
         </p>

@@ -3,16 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
-import CommunityWriteModal from "../../../components/CommunityWriteModal";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
+import CommunityWriteModal from "../../components/CommunityWriteModal";
 import {
   getMyCommunityPosts,
   deleteCommunityPost,
   updateCommunityPost,
 } from "../../../lib/api";
-import type { CommunityPost } from "../../../types/community";
+import type { CommunityPost } from "../../types/community";
 import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 import { useAuth } from "../../../lib/hooks/useAuth";
 

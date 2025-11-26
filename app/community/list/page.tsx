@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
-import CommunityWriteModal from "../../../components/CommunityWriteModal";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
+import CommunityWriteModal from "../../components/CommunityWriteModal";
 import { getCommunityPosts, createCommunityPost } from "../../../lib/api";
 import { useAuth } from "../../../lib/hooks/useAuth";
-import type {
-  CommunityPost,
-  CommunityResponse,
-} from "../../../types/community";
+import type { CommunityPost, CommunityResponse } from "../../types/community";
 import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 
 export default function CommunityPage() {

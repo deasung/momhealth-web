@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import SEO from "../../components/SEO";
+import SEO from "../components/SEO";
 import api from "../../lib/api";
 
 // 간단한 유효성 규칙

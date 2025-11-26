@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import Header from "../../../../components/Header";
-import Footer from "../../../../components/Footer";
-import SEO from "../../../../components/SEO";
+import Header from "../../../components/Header";
+import Footer from "../../../components/Footer";
+import SEO from "../../../components/SEO";
 
 const ResultPage = () => {
   const router = useRouter();

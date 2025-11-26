@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { getHealthQuestionDetail, resetQuizProgress } from "../../../lib/api";
 import { useAuth } from "../../../lib/hooks/useAuth";
-import type { HealthQuestionDetail } from "../../../types/health-questions";
+import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generateHealthQuestionMetadata } from "../../../lib/metadata";
 
 const HealthQuestionDetail = () => {

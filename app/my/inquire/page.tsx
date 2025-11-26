@@ -1,12 +1,14 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import SEO from "../../components/SEO";
-import { getInquiries } from "../../lib/api";
-import { useAuth } from "../../lib/hooks/useAuth";
-import { useTokenSync } from "../../lib/hooks/useTokenSync";
+import { getInquiries } from "../../../lib/api";
+import { useAuth } from "../../../lib/hooks/useAuth";
+import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 
 // 문의 상태 타입 정의
 type InquiryStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
@@ -101,11 +103,6 @@ export default function InquirePage() {
     },
     [isAuthenticated, isLoading, isTokenSynced, nextCursor]
   );
-
-  // 새로고침 (현재는 사용하지 않지만 향후 구현을 위해 유지)
-  // const handleRefresh = () => {
-  //   fetchInquiries(true);
-  // };
 
   // 다음 페이지 로드
   const loadMore = () => {

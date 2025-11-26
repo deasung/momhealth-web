@@ -346,6 +346,25 @@ export const getCommunityPostDetail = async (postId: string) => {
   }
 };
 
+// 커뮤니티 게시글 등록
+export const createCommunityPost = async (data: {
+  title: string;
+  content: string;
+  type: "건강질문" | "리뷰";
+}) => {
+  try {
+    const response = await api.post(`/private/community`, {
+      title: data.title,
+      content: data.content,
+      type: data.type === "건강질문" ? "QUESTION" : "REVIEW",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("커뮤니티 게시글 등록 실패:", error);
+    throw error;
+  }
+};
+
 // 커뮤니티 게시글 수정
 export const updateCommunityPost = async (
   postId: string,

@@ -213,14 +213,7 @@ export default async function CommunityPostDetailPage({
               </div>
 
               {/* 본인 글인 경우 수정/삭제 버튼 - Client Component */}
-              <CommunityPostActions
-                post={post}
-                currentUserId={currentUserId}
-                onUpdate={async () => {
-                  // 클라이언트에서 새로고침
-                  window.location.reload();
-                }}
-              />
+              <CommunityPostActions post={post} currentUserId={currentUserId} />
             </div>
 
             {/* 게시글 내용 */}
@@ -259,10 +252,6 @@ export default async function CommunityPostDetailPage({
         <CommunityPostComments
           postId={post.id}
           initialComments={post.comments}
-          onUpdate={() => {
-            // 클라이언트에서 새로고침
-            window.location.reload();
-          }}
         />
       </main>
 

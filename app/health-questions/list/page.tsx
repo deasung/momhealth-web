@@ -82,7 +82,7 @@ export default async function HealthQuestionsList() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* ✅ SEO & 디자인: 헤더 섹션 */}
         <section className="mb-8 md:mb-12">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
             건강 질문
           </h1>
           <p className="text-gray-600 text-base sm:text-lg leading-relaxed">

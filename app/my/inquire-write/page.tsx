@@ -1,12 +1,14 @@
+"use client";
+
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import SEO from "../../components/SEO";
-import { createInquiry } from "../../lib/api";
-import { useAuth } from "../../lib/hooks/useAuth";
-import { useTokenSync } from "../../lib/hooks/useTokenSync";
+import { createInquiry } from "../../../lib/api";
+import { useAuth } from "../../../lib/hooks/useAuth";
+import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 
 const TITLE_MAX = 100;
 const CONTENT_MAX = 2000;

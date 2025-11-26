@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../../lib/hooks/useAuth";
 import { getUserCompletedQuestions } from "../../../lib/api";
 

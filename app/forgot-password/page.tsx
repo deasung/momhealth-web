@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import SEO from "../../components/SEO";
+import SEO from "../components/SEO";
 import { requestPasswordReset } from "../../lib/api";
 
 export default function ForgotPasswordPage() {

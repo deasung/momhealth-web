@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
-import CommunityWriteModal from "../../../components/CommunityWriteModal";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
+import CommunityWriteModal from "../../components/CommunityWriteModal";
 import {
   getCommunityPostDetail,
   updateCommunityPost,
@@ -16,10 +16,10 @@ import {
   deleteComment,
   updateComment,
 } from "../../../lib/api";
-import type { CommunityPostDetail } from "../../../types/community";
+import type { CommunityPostDetail } from "../../types/community";
 import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 import { useAuth } from "../../../lib/hooks/useAuth";
-import type { UserProfile } from "../../../types/user";
+import type { UserProfile } from "../../types/user";
 import { generateCommunityPostMetadata } from "../../../lib/metadata";
 
 const CommunityPostDetailPage = () => {

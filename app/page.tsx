@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import SEO from "../components/SEO";
-import PopularQuestions from "../components/PopularQuestions";
-import RecommendedQuestions from "../components/RecommendedQuestions";
-import CommunityPosts from "../components/CommunityPosts";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import SEO from "./components/SEO";
+import PopularQuestions from "./components/PopularQuestions";
+import RecommendedQuestions from "./components/RecommendedQuestions";
+import CommunityPosts from "./components/CommunityPosts";
 import { getHomeData } from "../lib/api";
-import { HomeData } from "../types/home";
+import { HomeData } from "./types/home";
 import { useTokenSync } from "../lib/hooks/useTokenSync";
 import { generatePageMetadata } from "../lib/metadata";
 

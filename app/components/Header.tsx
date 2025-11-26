@@ -4,7 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useLogout } from "../lib/hooks/useLogout";
+import { useLogout } from "../../lib/hooks/useLogout";
 
 const Header = () => {
   const router = useRouter();

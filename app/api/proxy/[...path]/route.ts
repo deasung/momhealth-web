@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
 // 서버 시작 시 환경 변수 확인 (모듈 로드 시점에 실행)
@@ -25,14 +25,16 @@ if (typeof process !== "undefined" && process.env) {
   }
 }
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const { path } = req.query;
-  const apiPath = Array.isArray(path) ? path.join("/") : path;
+// 모든 HTTP 메서드를 처리하는 공통 핸들러
+async function handleRequest(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
+  const apiPath = params.path.join("/");
 
   // 서버 사이드에서만 접근 가능한 환경 변수 사용
   // 런타임 환경 변수를 직접 읽기 (EC2/Docker에서 작동하도록)
   // Next.js standalone 모드에서도 Node.js의 process.env는 런타임에 직접 읽을 수 있음
-  // env.ts 헬퍼를 사용하지 않고 직접 process.env 참조 (더 확실함)
   const baseURL = process.env.MOMHEALTH_API_URL;
   const apiKey = process.env.MOMHEALTH_API_KEY;
 
@@ -67,21 +69,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       process.env &&
       process.env.NODE_ENV === "development";
 
-    return res.status(500).json({
-      error: "서버 설정 오류",
-      message: "환경변수가 설정되지 않았습니다.",
-      details: {
-        MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
-        MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
-        // 개발 환경에서만 디버깅 정보 포함 (프로덕션에서는 보안상 제외)
-        ...(isDev && { debug: debugInfo }),
+    return NextResponse.json(
+      {
+        error: "서버 설정 오류",
+        message: "환경변수가 설정되지 않았습니다.",
+        details: {
+          MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+          MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+          // 개발 환경에서만 디버깅 정보 포함 (프로덕션에서는 보안상 제외)
+          ...(isDev && { debug: debugInfo }),
+        },
       },
-    });
+      { status: 500 }
+    );
   }
 
   // 클라이언트에서 전달된 토큰 및 refresh token 확인
-  const clientToken = req.headers.authorization;
-  const clientRefreshToken = req.headers["x-refresh-token"] as string;
+  const clientToken = request.headers.get("authorization");
+  const clientRefreshToken = request.headers.get("x-refresh-token");
   let finalToken = clientToken;
 
   // 토큰이 없는 경우 게스트 토큰 발급
@@ -109,7 +114,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
   }
 
-  const requestHeaders = {
+  const requestHeaders: Record<string, string> = {
     "x-api-key": apiKey,
     ...(finalToken && { Authorization: finalToken }),
   };
@@ -138,15 +143,34 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   );
 
   try {
-    const response = await axiosInstance({
-      method: req.method,
-      url: `${baseURL}/${apiPath}`,
-      headers: requestHeaders,
-      data: req.body,
-      params: req.query,
+    // 요청 본문 파싱 (GET 요청이 아닌 경우)
+    let requestBody = undefined;
+    const method = request.method;
+    if (method !== "GET" && method !== "HEAD") {
+      try {
+        requestBody = await request.json();
+      } catch {
+        // JSON 파싱 실패 시 빈 객체
+        requestBody = {};
+      }
+    }
+
+    // URL 쿼리 파라미터 추출
+    const url = new URL(request.url);
+    const queryParams: Record<string, string> = {};
+    url.searchParams.forEach((value, key) => {
+      queryParams[key] = value;
     });
 
-    res.status(response.status).json(response.data);
+    const response = await axiosInstance({
+      method: method,
+      url: `${baseURL}/${apiPath}`,
+      headers: requestHeaders,
+      data: requestBody,
+      params: queryParams,
+    });
+
+    return NextResponse.json(response.data, { status: response.status });
   } catch (error: any) {
     // 401 에러인 경우 - refresh token으로 재발급 시도
     if (error.response?.status === 401 && clientRefreshToken) {
@@ -167,22 +191,49 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         if (refreshResponse.data?.access_token) {
           // 새 토큰으로 원래 요청 재시도
+          const method = request.method;
+          let requestBody = undefined;
+          if (method !== "GET" && method !== "HEAD") {
+            try {
+              requestBody = await request.json();
+            } catch {
+              requestBody = {};
+            }
+          }
+
+          const url = new URL(request.url);
+          const queryParams: Record<string, string> = {};
+          url.searchParams.forEach((value, key) => {
+            queryParams[key] = value;
+          });
+
           const retryResponse = await axiosInstance({
-            method: req.method,
+            method: method,
             url: `${baseURL}/${apiPath}`,
             headers: {
               "x-api-key": apiKey,
               Authorization: `Bearer ${refreshResponse.data.access_token}`,
             },
-            data: req.body,
-            params: req.query,
+            data: requestBody,
+            params: queryParams,
           });
 
-          // 새 토큰을 클라이언트에 전달 (쿠키 또는 헤더로)
-          return res.status(retryResponse.status).json({
-            ...retryResponse.data,
-            _newAccessToken: refreshResponse.data.access_token, // 클라이언트가 토큰 갱신할 수 있도록
-          });
+          // 새 토큰을 클라이언트에 전달 (헤더로)
+          const nextResponse = NextResponse.json(
+            {
+              ...retryResponse.data,
+              _newAccessToken: refreshResponse.data.access_token, // 클라이언트가 토큰 갱신할 수 있도록
+            },
+            { status: retryResponse.status }
+          );
+
+          // 새 토큰을 헤더에 포함 (선택적)
+          nextResponse.headers.set(
+            "x-new-access-token",
+            refreshResponse.data.access_token
+          );
+
+          return nextResponse;
         }
       } catch (refreshError: any) {
         console.error("[API 프록시] refresh token 재발급 실패:", {
@@ -195,18 +246,31 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // 401 에러인 경우 - 인증 에러로 명확히 전달
     if (error.response?.status === 401) {
-      return res.status(401).json({
-        error: "Unauthorized",
-        message: "인증이 필요합니다.",
-        requiresAuth: true,
-      });
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          message: "인증이 필요합니다.",
+          requiresAuth: true,
+        },
+        { status: 401 }
+      );
     }
 
-    res.status(error.response?.status || 500).json({
-      error: error.message,
-      details: error.response?.data,
-    });
+    return NextResponse.json(
+      {
+        error: error.message,
+        details: error.response?.data,
+      },
+      { status: error.response?.status || 500 }
+    );
   }
-};
+}
 
-export default handler;
+// 모든 HTTP 메서드에 대해 동일한 핸들러 사용
+export const GET = handleRequest;
+export const POST = handleRequest;
+export const PUT = handleRequest;
+export const DELETE = handleRequest;
+export const PATCH = handleRequest;
+export const HEAD = handleRequest;
+export const OPTIONS = handleRequest;

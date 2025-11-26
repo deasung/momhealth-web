@@ -3,16 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Header from "../../../components/Header";
-import Footer from "../../../components/Footer";
-import SEO from "../../../components/SEO";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import SEO from "../../components/SEO";
 import { useAuth } from "../../../lib/hooks/useAuth";
 import {
   getUserProfile,
   updateUserProfile,
   uploadThumbnail,
 } from "../../../lib/api";
-import type { UserProfile } from "../../../types/user";
+import type { UserProfile } from "../../types/user";
 
 export default function MySettingsPage() {
   const router = useRouter();

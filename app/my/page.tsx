@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import SEO from "../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
 import { getUserProfile } from "../../lib/api";
-import type { UserProfile } from "../../types/user";
+import type { UserProfile } from "../types/user";
 
 export default function MyPage() {
   const { isAuthenticated, isLoading } = useAuth();

@@ -4,10 +4,7 @@ import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import HealthQuestionActions from "../../components/HealthQuestionActions";
-import {
-  getHealthQuestionDetailServer,
-  getServerToken,
-} from "../../../lib/api-server";
+import { getHealthQuestionDetailServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generateHealthQuestionMetadata } from "../../../lib/metadata";
 
@@ -20,8 +17,13 @@ export async function generateMetadata({
   params: { id: string };
 }): Promise<Metadata> {
   try {
-    const token = await getServerToken();
-    const question = await getHealthQuestionDetailServer(params.id, token);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+    const question = await getHealthQuestionDetailServer(
+      params.id,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
     const metadata = generateHealthQuestionMetadata({
       title: question.title,
       description: question.description || question.title,
@@ -81,10 +83,28 @@ export default async function HealthQuestionDetailPage({
   let error: string | null = null;
 
   try {
-    const token = await getServerToken();
-    question = await getHealthQuestionDetailServer(params.id, token);
-  } catch (err) {
-    console.error("질문 상세 로딩 실패:", err);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+    question = await getHealthQuestionDetailServer(
+      params.id,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+      };
+    };
+    console.error("❌ [HealthQuestionDetailPage] 질문 상세 로딩 실패:", {
+      message: axiosError.message,
+      status: axiosError.response?.status,
+      statusText: axiosError.response?.statusText,
+      data: axiosError.response?.data,
+    });
     error = "질문 정보를 불러올 수 없습니다.";
   }
 

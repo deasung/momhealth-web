@@ -140,13 +140,13 @@ export default async function InquiryDetailPage({
   // 로그인 확인
   if (!session) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <SEO
           title="1:1 문의 상세"
           description="문의 내용을 확인하려면 로그인이 필요합니다."
         />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 text-center">
           <div className="mb-8">
             <div className="text-gray-400 text-6xl mb-4">❓</div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
@@ -188,14 +188,14 @@ export default async function InquiryDetailPage({
 
   if (error || !inquiry) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <SEO
           title="문의 오류"
           description="문의를 찾을 수 없습니다."
           noindex={true}
         />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-16">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="text-center">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -227,7 +227,7 @@ export default async function InquiryDetailPage({
     : null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <SEO
         title={`${inquiry.title} - 1:1 문의`}
         description={
@@ -239,31 +239,41 @@ export default async function InquiryDetailPage({
 
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-8">
-        {/* ✅ UX & 반응형: 뒤로가기 버튼 터치 영역 확대 */}
-        <div className="mb-6">
-          <Link
-            href="/my/inquire"
-            className="inline-flex items-center gap-2 px-3 py-2 -ml-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base"
-            aria-label="문의 목록으로 돌아가기"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (친구 화면과 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                1:1 문의 상세
+              </h1>
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+                문의 내용과 답변을 확인하세요
+              </p>
+            </div>
+            <Link
+              href="/my/inquire"
+              className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base"
+              aria-label="문의 목록으로 돌아가기"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            <span>뒤로가기</span>
-          </Link>
-        </div>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              <span>뒤로가기</span>
+            </Link>
+          </div>
+        </section>
 
         {/* ✅ SEO: 의미론적 HTML 구조 */}
         <article className="space-y-4 md:space-y-6">

@@ -39,13 +39,21 @@ export default async function PrivacyPolicyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-3xl mx-auto px-4 md:px-6 py-10">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-          개인정보 처리방침
-        </h1>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (친구 화면과 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+              개인정보 처리방침
+            </h1>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              개인정보 수집 및 이용에 관한 정책을 확인하세요
+            </p>
+          </div>
+        </section>
 
         {error || !policy ? (
           <div className="text-center py-16">

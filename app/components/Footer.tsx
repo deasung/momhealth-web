@@ -22,7 +22,13 @@ const Footer = () => {
               만들어 보세요
             </p>
             {/* 앱 다운로드 배너 */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <a
+              href="https://play.google.com/store/apps/details?id=com.gimmihui68.momhealthapp"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all"
+              aria-label="Google Play Store에서 앱 다운로드"
+            >
               <p className="text-xs text-gray-500 mb-2">
                 앱에서 더 많은 기능을 만나보세요
               </p>
@@ -44,7 +50,7 @@ const Footer = () => {
                   앱 다운로드
                 </span>
               </div>
-            </div>
+            </a>
           </div>
 
           {/* 건강질문 섹션 */}

@@ -23,19 +23,21 @@ export const metadata: Metadata = {
 // ✅ Server Component: 정적 페이지
 export default function TermsIndexPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 md:py-10">
-        {/* ✅ UX & 반응형: 페이지 헤더 개선 */}
-        <header className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 md:mb-4">
-            약관 및 정책
-          </h1>
-          <p className="text-sm md:text-base text-gray-600 leading-relaxed">
-            서비스 이용약관과 개인정보 처리방침을 확인하실 수 있어요.
-          </p>
-        </header>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (친구 화면과 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+              약관 및 정책
+            </h1>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              서비스 이용약관과 개인정보 처리방침을 확인하실 수 있어요.
+            </p>
+          </div>
+        </section>
 
         {/* ✅ SEO & 디자인: 약관 목록 개선 */}
         <nav aria-label="약관 및 정책 메뉴">

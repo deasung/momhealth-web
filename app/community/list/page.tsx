@@ -81,16 +81,6 @@ export default async function CommunityPage() {
       <Header />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        {/* ✅ SEO & 디자인: 헤더 섹션 (건강 질문 / 친구 화면과 톤 통일) */}
-        <section className="mb-8 md:mb-12">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-            커뮤니티
-          </h1>
-          <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-            건강에 대한 다양한 이야기와 경험을 공유해보세요.
-          </p>
-        </section>
-
         {/* ✅ 에러 상태 */}
         {error ? (
           <div className="max-w-md mx-auto text-center mb-12">

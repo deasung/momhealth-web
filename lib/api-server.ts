@@ -155,17 +155,82 @@ export async function getHealthQuestionsServer(
 
 /**
  * 건강 질문 상세 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
  */
 export async function getHealthQuestionDetailServer(
   id: string,
-  token?: string | null
+  token?: string | null,
+  refreshToken?: string | null
 ) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
   try {
-    const api = createServerApi(token);
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getHealthQuestionDetailServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
     const response = await api.get(`/private/health.questions/${id}`);
     return response.data;
-  } catch (error) {
-    console.error("질문 상세 가져오기 실패:", error);
+  } catch (error: unknown) {
+    const axiosError = error as {
+      message?: string;
+      response?: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+      };
+    };
+
+    // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
+    if (axiosError.response?.status === 401 && currentRefreshToken) {
+      console.log(
+        "🔄 [getHealthQuestionDetailServer] 401 에러 발생, refresh_token으로 토큰 갱신 시도"
+      );
+
+      try {
+        const newTokens = await refreshAccessToken(currentRefreshToken);
+        if (newTokens) {
+          console.log(
+            "✅ [getHealthQuestionDetailServer] 토큰 갱신 성공, 재시도"
+          );
+
+          // 갱신된 토큰으로 재시도
+          const api = createServerApi(newTokens.accessToken);
+          const retryResponse = await api.get(
+            `/private/health.questions/${id}`
+          );
+          return retryResponse.data;
+        }
+      } catch (refreshError) {
+        console.error(
+          "❌ [getHealthQuestionDetailServer] 토큰 갱신 실패:",
+          refreshError
+        );
+      }
+    }
+
+    console.error(
+      "❌ [getHealthQuestionDetailServer] 질문 상세 가져오기 실패:",
+      {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      }
+    );
     throw error;
   }
 }

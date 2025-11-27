@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { isTokenExpired } from "@/lib/auth";
 import { TOKEN_KEYS } from "../constants";
 
@@ -18,6 +19,7 @@ export function useAuth(): UseAuthReturn {
   const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
 
   // 로그아웃 함수
   const logout = useCallback(async () => {
@@ -54,19 +56,41 @@ export function useAuth(): UseAuthReturn {
     return true;
   }, []);
 
-  // localStorage 기반 인증 상태 관리
+  // NextAuth 세션 및 localStorage 기반 인증 상태 관리
   useEffect(() => {
     const initializeAuth = () => {
+      // NextAuth 세션 로딩 중이면 대기
+      if (sessionStatus === "loading") {
+        return;
+      }
+
       try {
+        // 1. NextAuth 세션이 있으면 인증된 상태로 처리
+        if (session) {
+          const userToken =
+            (session as { token?: string; accessToken?: string })?.token ||
+            (session as { token?: string; accessToken?: string })?.accessToken;
+
+          if (userToken) {
+            setToken(userToken);
+            setIsGuest(false);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // 2. NextAuth 세션이 없으면 localStorage 확인
         const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
-        const isGuest = localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
+        const storedIsGuest =
+          localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
 
         if (storedToken) {
           if (validateToken(storedToken)) {
             setToken(storedToken);
-            setIsGuest(isGuest);
+            setIsGuest(storedIsGuest);
             // 게스트 토큰이면 인증되지 않은 상태로 처리
-            setIsAuthenticated(!isGuest);
+            setIsAuthenticated(!storedIsGuest);
           } else {
             // 토큰이 만료되었으면 localStorage에서 제거
             localStorage.removeItem(TOKEN_KEYS.TOKEN);
@@ -90,7 +114,7 @@ export function useAuth(): UseAuthReturn {
     };
 
     initializeAuth();
-  }, [validateToken]);
+  }, [session, sessionStatus, validateToken]);
 
   // 주기적으로 토큰 검증 (5분마다)
   useEffect(() => {

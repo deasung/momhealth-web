@@ -7,6 +7,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import SEO from "../../components/SEO";
 import { useAuth } from "../../../lib/hooks/useAuth";
+import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 import {
   getUserProfile,
   updateUserProfile,
@@ -16,7 +17,8 @@ import type { UserProfile } from "../../types/user";
 
 export default function MySettingsPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isTokenSynced } = useTokenSync(); // 세션 토큰을 localStorage에 동기화
   const [nickname, setNickname] = useState("");
   const [age, setAge] = useState("");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -28,7 +30,8 @@ export default function MySettingsPage() {
 
   // 사용자 프로필 정보 가져오기
   useEffect(() => {
-    if (isAuthenticated) {
+    // 인증 상태 확인이 완료되고 토큰 동기화가 완료된 후 인증된 경우에만 프로필 가져오기
+    if (!authLoading && isTokenSynced && isAuthenticated) {
       const fetchProfile = async () => {
         try {
           setLoading(true);
@@ -38,6 +41,7 @@ export default function MySettingsPage() {
           setAge(response.user.age.toString());
         } catch (error) {
           // 프로필 정보 로딩 실패 시 기본값 유지
+          console.error("프로필 정보 로딩 실패:", error);
         } finally {
           setLoading(false);
         }
@@ -45,7 +49,7 @@ export default function MySettingsPage() {
 
       fetchProfile();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, isTokenSynced]);
 
   const handleSelectFile = () => {
     fileInputRef.current?.click();
@@ -119,6 +123,27 @@ export default function MySettingsPage() {
       setSubmitting(false);
     }
   };
+
+  // 인증 상태 로딩 중
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <SEO
+          title="내 정보 설정"
+          description="내 정보를 설정하고 관리할 수 있습니다."
+          noindex={true}
+        />
+        <Header />
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">인증 상태를 확인하는 중...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // 로그인 확인
   if (!isAuthenticated) {

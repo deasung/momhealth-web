@@ -77,13 +77,13 @@ export default async function InquirePage() {
   // 로그인 확인
   if (!session) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <SEO
           title="1:1 문의"
           description="궁금한 내용이 있으신가요? 1:1 문의를 남겨주세요."
         />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 text-center">
           <div className="mb-8">
             <div className="text-gray-400 text-6xl mb-4">❓</div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
@@ -123,7 +123,7 @@ export default async function InquirePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <SEO
         title="1:1 문의"
         description="궁금한 내용이 있으신가요? 1:1 문의를 남겨주세요."
@@ -131,21 +131,21 @@ export default async function InquirePage() {
 
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-8">
-        {/* ✅ UX & 반응형: 페이지 헤더 개선 */}
-        <header className="mb-6 md:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (친구 화면과 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                 1:1 문의
               </h1>
-              <p className="text-sm md:text-base text-gray-600 mt-2">
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
                 궁금한 내용을 문의해주세요
               </p>
             </div>
             <Link
               href="/my"
-              className="inline-flex items-center gap-2 px-3 py-2 -ml-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base"
               aria-label="마이페이지로 돌아가기"
             >
               <svg
@@ -165,7 +165,7 @@ export default async function InquirePage() {
               <span>뒤로가기</span>
             </Link>
           </div>
-        </header>
+        </section>
 
         {/* ✅ UX & 디자인: 에러 화면 개선 */}
         {error ? (

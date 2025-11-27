@@ -114,10 +114,10 @@ export default function InquireWritePage() {
 
   if (!isAuthenticated && !isLoading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <SEO title="1:1 문의하기" description="궁금한 내용을 남겨주세요." />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 text-center">
           <div className="mb-8">
             <div className="text-gray-400 text-6xl mb-4">❓</div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
@@ -140,61 +140,56 @@ export default function InquireWritePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <SEO title="1:1 문의하기" description="궁금한 내용을 남겨주세요." />
       <Header />
 
-      <main className="max-w-3xl mx-auto px-4 md:px-6 py-8">
-        {/* 상단 헤더 */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={handleClose}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-            닫기
-          </button>
-
-          <h1 className="text-xl font-semibold text-gray-900">1:1 문의하기</h1>
-
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
-            style={{ backgroundColor: canSubmit ? "#ff5b24" : "#cbd5e1" }}
-          >
-            {submitting ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (친구 화면과 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                1:1 문의하기
+              </h1>
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+                궁금한 내용을 남겨주세요
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleClose}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            )}
-            등록
-          </button>
-        </div>
+                취소
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              >
+                {submitting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+                등록
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* 입력 영역 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

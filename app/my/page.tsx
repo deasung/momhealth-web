@@ -63,14 +63,14 @@ export default function MyPage() {
     }
 
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <SEO
           title="마이페이지"
           description="나의 건강 정보와 활동 내역을 확인하고 관리해보세요."
           noindex={true}
         />
         <Header />
-        <main className="max-w-6xl mx-auto px-4 md:px-6 py-16 text-center">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 text-center">
           <div className="mb-8">
             <div className="text-gray-400 text-6xl mb-4">👤</div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
@@ -102,9 +102,18 @@ export default function MyPage() {
 
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-        {/* 페이지 타이틀 */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">마이</h1>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        {/* ✅ SEO & 디자인: 헤더 섹션 (친구 화면과 통일감 있게) */}
+        <section className="mb-8 md:mb-12">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+              마이
+            </h1>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              나의 건강 정보와 활동 내역을 확인하고 관리해보세요.
+            </p>
+          </div>
+        </section>
 
         {/* 사용자 프로필 카드 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">

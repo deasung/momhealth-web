@@ -3,10 +3,7 @@ import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import QuestionListClient from "../../components/QuestionListClient";
-import {
-  getHealthQuestionsServer,
-  getServerToken,
-} from "../../../lib/api-server";
+import { getHealthQuestionsServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generatePageMetadata } from "../../../lib/metadata";
 
@@ -15,8 +12,14 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 // ✅ SEO: 동적 메타데이터 생성
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const token = await getServerToken();
-    const data = await getHealthQuestionsServer(10, undefined, token);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+    const data = await getHealthQuestionsServer(
+      10,
+      undefined,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
     const metadata = generatePageMetadata("health-questions", {
       title: `건강 질문 - ${data.questions.length}개의 질문이 있습니다`,
       description: `${data.questions.length}개의 건강 질문을 통해 나의 건강 상태를 확인해보세요.`,
@@ -66,12 +69,46 @@ export default async function HealthQuestionsList() {
   let error: string | null = null;
 
   try {
-    const token = await getServerToken();
-    const data = await getHealthQuestionsServer(10, undefined, token);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+
+    console.log("📋 [HealthQuestionsList] 토큰 상태:", {
+      hasAccessToken: !!tokens.accessToken,
+      hasRefreshToken: !!tokens.refreshToken,
+      accessTokenPreview: tokens.accessToken
+        ? `${tokens.accessToken.substring(0, 20)}...`
+        : "null",
+    });
+
+    if (!tokens.accessToken) {
+      console.warn(
+        "⚠️ [HealthQuestionsList] 토큰이 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const data = await getHealthQuestionsServer(
+      10,
+      undefined,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
     questions = data.questions || [];
     nextCursor = data.nextCursor || null;
-  } catch (err) {
-    console.error("질문목록 로딩 실패:", err);
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+      };
+    };
+    console.error("❌ [HealthQuestionsList] 질문목록 로딩 실패:", {
+      message: axiosError.message,
+      status: axiosError.response?.status,
+      statusText: axiosError.response?.statusText,
+      data: axiosError.response?.data,
+    });
     error = "질문목록을 불러오는데 실패했습니다.";
   }
 

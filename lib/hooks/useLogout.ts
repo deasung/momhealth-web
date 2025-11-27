@@ -18,20 +18,22 @@ export function useLogout() {
       // 1. NextAuth 로그아웃 (세션 제거)
       await signOut({ redirect: false });
 
-      // 2. localStorage 초기화
+      // 2. localStorage 초기화 (refresh_token도 함께 제거)
       localStorage.removeItem(TOKEN_KEYS.TOKEN);
       localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
+      localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
       clearToken();
 
       console.log("🗑️ localStorage 초기화 완료");
 
       // 3. 게스트 토큰 발급
       try {
-        const guestToken = await getGuestToken();
-        if (guestToken) {
-          localStorage.setItem(TOKEN_KEYS.TOKEN, guestToken);
-          localStorage.setItem(TOKEN_KEYS.IS_GUEST, "true");
-          console.log("👤 게스트 토큰 발급 완료");
+        const guestTokens = await getGuestToken();
+        if (guestTokens) {
+          // setToken 함수를 사용하여 access_token과 refresh_token 모두 저장
+          const { setToken } = await import("../api");
+          setToken(guestTokens.accessToken, true, guestTokens.refreshToken);
+          console.log("👤 게스트 토큰 발급 완료 (refresh_token 포함)");
         }
       } catch (error) {
         console.error("게스트 토큰 발급 실패:", error);

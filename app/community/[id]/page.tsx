@@ -5,10 +5,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import CommunityPostComments from "../../components/CommunityPostComments";
 import CommunityPostActions from "../../components/CommunityPostActions";
-import {
-  getCommunityPostDetailServer,
-  getServerToken,
-} from "../../../lib/api-server";
+import { getCommunityPostDetailServer } from "../../../lib/api-server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
 import type { CommunityPostDetail } from "../../types/community";
@@ -23,8 +20,13 @@ export async function generateMetadata({
   params: { id: string };
 }): Promise<Metadata> {
   try {
-    const token = await getServerToken();
-    const post = await getCommunityPostDetailServer(params.id, token);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+    const post = await getCommunityPostDetailServer(
+      params.id,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
     const metadata = generateCommunityPostMetadata(post);
 
     return {
@@ -86,16 +88,34 @@ export default async function CommunityPostDetailPage({
   let currentUserId: string | number | null = null;
 
   try {
-    const token = await getServerToken();
-    post = await getCommunityPostDetailServer(params.id, token);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+    post = await getCommunityPostDetailServer(
+      params.id,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
 
     // 현재 사용자 ID 가져오기
     const session = await getServerSession(authOptions);
     if (session?.user?.id) {
       currentUserId = session.user.id;
     }
-  } catch (err) {
-    console.error("게시글 상세 로딩 실패:", err);
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+      };
+    };
+    console.error("❌ [CommunityPostDetailPage] 게시글 상세 로딩 실패:", {
+      message: axiosError.message,
+      status: axiosError.response?.status,
+      statusText: axiosError.response?.statusText,
+      data: axiosError.response?.data,
+    });
     error = "게시글 정보를 불러올 수 없습니다.";
   }
 
@@ -128,8 +148,13 @@ export default async function CommunityPostDetailPage({
   // 댓글 새로고침 함수 (Client Component에서 사용)
   const refreshPost = async () => {
     "use server";
-    const token = await getServerToken();
-    const updatedPost = await getCommunityPostDetailServer(params.id, token);
+    const { getServerTokens } = await import("../../../lib/api-server");
+    const tokens = await getServerTokens();
+    const updatedPost = await getCommunityPostDetailServer(
+      params.id,
+      tokens.accessToken,
+      tokens.refreshToken
+    );
     return updatedPost;
   };
 

@@ -189,14 +189,32 @@ export async function resetQuizProgressServer(
 
 /**
  * 커뮤니티 게시글 목록 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
  */
 export async function getCommunityPostsServer(
   limit: number = 10,
   cursor?: string,
-  token?: string | null
+  token?: string | null,
+  refreshToken?: string | null
 ) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
   try {
-    const api = createServerApi(token);
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getCommunityPostsServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
     const params = new URLSearchParams();
     params.append("limit", limit.toString());
     if (cursor) {
@@ -205,25 +223,136 @@ export async function getCommunityPostsServer(
 
     const response = await api.get(`/private/community?${params.toString()}`);
     return response.data;
-  } catch (error) {
-    console.error("커뮤니티 게시글 로딩 실패:", error);
+  } catch (error: unknown) {
+    const axiosError = error as {
+      message?: string;
+      response?: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+      };
+    };
+
+    // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
+    if (axiosError.response?.status === 401 && currentRefreshToken) {
+      console.log(
+        "🔄 [getCommunityPostsServer] 401 에러 발생, refresh_token으로 토큰 갱신 시도"
+      );
+
+      try {
+        const newTokens = await refreshAccessToken(currentRefreshToken);
+        if (newTokens) {
+          console.log("✅ [getCommunityPostsServer] 토큰 갱신 성공, 재시도");
+
+          // 갱신된 토큰으로 재시도
+          const api = createServerApi(newTokens.accessToken);
+          const params = new URLSearchParams();
+          params.append("limit", limit.toString());
+          if (cursor) {
+            params.append("cursor", cursor);
+          }
+
+          const retryResponse = await api.get(
+            `/private/community?${params.toString()}`
+          );
+          return retryResponse.data;
+        }
+      } catch (refreshError) {
+        console.error(
+          "❌ [getCommunityPostsServer] 토큰 갱신 실패:",
+          refreshError
+        );
+      }
+    }
+
+    console.error("❌ [getCommunityPostsServer] 커뮤니티 게시글 로딩 실패:", {
+      message: axiosError.message,
+      status: axiosError.response?.status,
+      statusText: axiosError.response?.statusText,
+      data: axiosError.response?.data,
+      hasToken: !!token,
+      hasRefreshToken: !!refreshToken,
+    });
     throw error;
   }
 }
 
 /**
  * 커뮤니티 게시글 상세 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
  */
 export async function getCommunityPostDetailServer(
   postId: string,
-  token?: string | null
+  token?: string | null,
+  refreshToken?: string | null
 ) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
   try {
-    const api = createServerApi(token);
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getCommunityPostDetailServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
     const response = await api.get(`/private/community/${postId}`);
     return response.data;
-  } catch (error) {
-    console.error("커뮤니티 게시글 상세 로딩 실패:", error);
+  } catch (error: unknown) {
+    const axiosError = error as {
+      message?: string;
+      response?: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+      };
+    };
+
+    // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
+    if (axiosError.response?.status === 401 && currentRefreshToken) {
+      console.log(
+        "🔄 [getCommunityPostDetailServer] 401 에러 발생, refresh_token으로 토큰 갱신 시도"
+      );
+
+      try {
+        const newTokens = await refreshAccessToken(currentRefreshToken);
+        if (newTokens) {
+          console.log(
+            "✅ [getCommunityPostDetailServer] 토큰 갱신 성공, 재시도"
+          );
+
+          // 갱신된 토큰으로 재시도
+          const api = createServerApi(newTokens.accessToken);
+          const retryResponse = await api.get(`/private/community/${postId}`);
+          return retryResponse.data;
+        }
+      } catch (refreshError) {
+        console.error(
+          "❌ [getCommunityPostDetailServer] 토큰 갱신 실패:",
+          refreshError
+        );
+      }
+    }
+
+    console.error(
+      "❌ [getCommunityPostDetailServer] 커뮤니티 게시글 상세 로딩 실패:",
+      {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      }
+    );
     throw error;
   }
 }

@@ -108,12 +108,17 @@ const api = axios.create({
 // 요청 인터셉터: localStorage 토큰을 프록시로 전달
 api.interceptors.request.use(
   (config) => {
-    // localStorage에서 토큰 및 refresh token 가져오기
-    const currentToken = getCurrentToken();
+    // 항상 localStorage에서 직접 토큰 가져오기 (메모리 캐시 무시)
+    // useTokenSync가 세션 토큰으로 업데이트했을 수 있으므로
+    let currentToken: string | null = null;
     let refreshToken: string | null = null;
+    let isGuestToken = false;
 
     if (typeof window !== "undefined") {
+      // 항상 localStorage에서 직접 읽기 (useTokenSync가 세션 토큰으로 업데이트했을 수 있음)
+      currentToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
       refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
+      isGuestToken = localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
     }
 
     if (currentToken) {
@@ -131,7 +136,7 @@ api.interceptors.request.use(
       url: config.url,
       hasToken: !!currentToken,
       hasRefreshToken: !!refreshToken,
-      isGuest: getIsGuest(),
+      isGuest: isGuestToken,
       tokenPreview: currentToken
         ? currentToken.substring(0, 50) + "..."
         : "none",
@@ -173,7 +178,60 @@ api.interceptors.response.use(
 
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
+      if (refreshToken) {
+        try {
+          console.log(
+            "🔄 [API 인터셉터] 401 에러 발생, refresh_token으로 토큰 갱신 시도"
+          );
+
+          // refresh token으로 새 access token 발급
+          const refreshResponse = await axios.post(
+            `${BASE_URL}/public/auth/token/refresh`,
+            { refresh_token: refreshToken },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": API_KEY,
+              },
+            }
+          );
+
+          if (
+            refreshResponse.data?.access_token &&
+            refreshResponse.data?.refresh_token
+          ) {
+            // 새 토큰 저장
+            const newAccessToken = refreshResponse.data.access_token;
+            const newRefreshToken = refreshResponse.data.refresh_token;
+
+            setToken(newAccessToken, false, newRefreshToken);
+
+            console.log("✅ [API 인터셉터] 토큰 갱신 성공, 원래 요청 재시도");
+
+            // 원래 요청 재시도
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            if (newRefreshToken) {
+              originalRequest.headers["x-refresh-token"] = newRefreshToken;
+            }
+
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          console.error("❌ [API 인터셉터] 토큰 갱신 실패:", refreshError);
+          // 토큰 갱신 실패 시 로그아웃 처리
+          clearToken();
+        }
+      }
+    }
+
     console.error("❌ API 요청 실패:", {
       url: error.config?.url,
       method: error.config?.method?.toUpperCase(),

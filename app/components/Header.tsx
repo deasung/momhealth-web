@@ -53,7 +53,11 @@ const Header = () => {
   };
 
   // 로그인된 경우에만 친구와 마이 메뉴 추가
-  const isLoggedIn = session && status === "authenticated";
+  // 세션이 있고 user 정보가 있어야 로그인 상태로 간주
+  const isLoggedIn =
+    status === "authenticated" &&
+    session &&
+    (session.user?.email || session.user?.name || session.user?.nickname);
   const navItems: NavItem[] = [
     { label: "홈", path: "/" },
     ...(isLoggedIn ? [{ label: "친구", path: "/friends" }] : []),
@@ -189,10 +193,10 @@ const Header = () => {
         <div className="hidden md:flex items-center gap-4 text-sm whitespace-nowrap">
           {status === "loading" ? (
             <span className="text-gray-500">로딩 중...</span>
-          ) : session ? (
+          ) : isLoggedIn ? (
             <>
               <span className="text-gray-700">
-                {session.user?.nickname || session.user?.name || "사용자"}님
+                {session?.user?.nickname || session?.user?.name || "사용자"}님
                 환영합니다!
               </span>
               <button
@@ -253,11 +257,11 @@ const Header = () => {
             <div className="px-3 py-2 text-sm border-b border-gray-200 mb-2">
               {status === "loading" ? (
                 <span>로딩 중...</span>
-              ) : session ? (
+              ) : isLoggedIn ? (
                 <div className="flex flex-col gap-2">
                   <span className="text-gray-700">
-                    {session.user?.nickname || session.user?.name || "사용자"}님
-                    환영합니다!
+                    {session?.user?.nickname || session?.user?.name || "사용자"}
+                    님 환영합니다!
                   </span>
                   <button
                     onClick={logout}

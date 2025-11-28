@@ -17,9 +17,12 @@ const showInPageNotification = (
   body: string,
   onClick?: () => void
 ) => {
+  console.log("🎨 [커스텀 알림] 알림 표시 시작:", { title, body });
+
   // 기존 알림이 있으면 제거
   const existing = document.getElementById("in-page-notification");
   if (existing) {
+    console.log("🗑️ [커스텀 알림] 기존 알림 제거");
     existing.remove();
   }
 
@@ -77,6 +80,16 @@ const showInPageNotification = (
           opacity: 1;
         }
       }
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
     </style>
   `;
 
@@ -100,13 +113,16 @@ const showInPageNotification = (
   }
 
   document.body.appendChild(notification);
+  console.log("✅ [커스텀 알림] 알림 요소가 DOM에 추가되었습니다");
 
   // 5초 후 자동 제거
   setTimeout(() => {
     if (notification.parentNode) {
+      console.log("⏰ [커스텀 알림] 5초 경과 - 알림 자동 제거");
       notification.style.animation = "slideOut 0.3s ease-out";
       setTimeout(() => {
         notification.remove();
+        console.log("🗑️ [커스텀 알림] 알림 제거 완료");
       }, 300);
     }
   }, 5000);
@@ -392,93 +408,24 @@ export default function ClientProviders({
             }
           } else if (event.data.type === "SHOW_NOTIFICATION") {
             // Service Worker에서 포그라운드 알림 표시 요청
+            // SHOW_NOTIFICATION은 포그라운드 상태에서의 알림 요청이므로 무조건 커스텀 알림 표시
             console.log(
               "📢 [클라이언트] 포그라운드 알림 표시 요청:",
               event.data.data
             );
 
-            if (
-              "Notification" in window &&
-              Notification.permission === "granted"
-            ) {
-              const notificationData = event.data.data;
+            const notificationData = event.data.data;
 
-              // 브라우저 알림 표시 시도
-              try {
-                const clientNotification = new Notification(
-                  notificationData.title || "새로운 알림",
-                  {
-                    body: notificationData.body || "",
-                    icon: notificationData.icon || "/icon-192x192.png",
-                    badge: notificationData.badge || "/badge-72x72.png",
-                    tag: notificationData.tag || "default",
-                    data: notificationData.data || {},
-                    requireInteraction: true,
-                  }
-                );
-
-                console.log(
-                  "✅ [클라이언트] 브라우저 알림 표시 성공:",
-                  clientNotification.title
-                );
-
-                // 알림 클릭 이벤트 처리
-                clientNotification.onclick = (event) => {
-                  event.preventDefault();
-                  clientNotification.close();
-                  const url = notificationData.data?.url || "/";
-                  window.focus();
-                  window.location.href = url;
-                };
-
-                // 알림 닫기 이벤트 (디버깅용)
-                clientNotification.onclose = () => {
-                  console.log("📱 [클라이언트] 브라우저 알림이 닫혔습니다.");
-                };
-
-                // 알림 에러 이벤트 (브라우저 알림 실패 시에만 페이지 내 알림 표시)
-                clientNotification.onerror = (error) => {
-                  console.error(
-                    "❌ [클라이언트] 브라우저 알림 에러 발생:",
-                    error
-                  );
-                  // 에러 발생 시에만 페이지 내 알림 표시 (fallback)
-                  showInPageNotification(
-                    notificationData.title || "새로운 알림",
-                    notificationData.body || "",
-                    () => {
-                      const url = notificationData.data?.url || "/";
-                      window.location.href = url;
-                    }
-                  );
-                };
-              } catch (error: unknown) {
-                console.error(
-                  "❌ [클라이언트] 브라우저 알림 표시 실패:",
-                  error
-                );
-                // 에러 발생 시에만 페이지 내 알림 표시 (fallback)
-                showInPageNotification(
-                  notificationData.title || "새로운 알림",
-                  notificationData.body || "",
-                  () => {
-                    const url = notificationData.data?.url || "/";
-                    window.location.href = url;
-                  }
-                );
+            // 포그라운드 알림 요청이므로 무조건 커스텀 웹푸시 알림 표시
+            console.log("✅ [클라이언트] 포그라운드 상태 - 커스텀 알림 표시");
+            showInPageNotification(
+              notificationData.title || "새로운 알림",
+              notificationData.body || "",
+              () => {
+                const url = notificationData.data?.url || "/";
+                window.location.href = url;
               }
-            } else {
-              // 권한이 없을 때만 페이지 내 알림 표시 (fallback)
-              const notificationData = event.data.data;
-              showInPageNotification(
-                notificationData.title || "새로운 알림",
-                notificationData.body || "",
-                () => {
-                  const url = notificationData.data?.url || "/";
-                  window.location.href = url;
-                }
-              );
-            }
+            );
           } else if (event.data.type === "NOTIFICATION_ERROR") {
             console.error("❌ [클라이언트] 알림 표시 실패:", event.data.error);
 

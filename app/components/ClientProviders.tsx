@@ -11,17 +11,48 @@ import {
 } from "../../lib/webPush";
 import { registerWebPushToken } from "../../lib/api";
 
+// 알림 데이터 타입
+interface NotificationData {
+  title?: string;
+  body?: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  data?: {
+    questionId?: string | number;
+    url?: string;
+    icon?: string;
+    badge?: string;
+    [key: string]: unknown;
+  };
+}
+
+// 알림 URL 생성 헬퍼 함수
+const getNotificationUrl = (notificationData?: NotificationData): string => {
+  if (notificationData?.data?.questionId) {
+    return `/health-questions/${notificationData.data.questionId}`;
+  }
+  return notificationData?.data?.url || "/";
+};
+
 // 페이지 내 알림 표시 함수
 const showInPageNotification = (
   title: string,
   body: string,
-  onClick?: () => void
+  onClick?: () => void,
+  icon?: string,
+  badge?: string
 ) => {
   // 기존 알림이 있으면 제거
   const existing = document.getElementById("in-page-notification");
   if (existing) {
     existing.remove();
   }
+
+  // 아이콘 이미지 태그 생성
+  const iconHtml = icon
+    ? `<img src="${icon}" alt="알림 아이콘" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex-shrink: 0;" />`
+    : "";
 
   // 알림 요소 생성
   const notification = document.createElement("div");
@@ -44,7 +75,8 @@ const showInPageNotification = (
 
   notification.innerHTML = `
     <div style="display: flex; align-items: flex-start; gap: 12px;">
-      <div style="flex: 1;">
+      ${iconHtml}
+      <div style="flex: 1; min-width: 0;">
         <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color: #333;">
           ${title}
         </div>
@@ -64,6 +96,7 @@ const showInPageNotification = (
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
       ">×</button>
     </div>
     <style>
@@ -77,15 +110,59 @@ const showInPageNotification = (
           opacity: 1;
         }
       }
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
     </style>
   `;
+
+  document.body.appendChild(notification);
+
+  // 15초 후 자동 제거 (사용자가 직접 닫지 않으면)
+  let autoRemoveTimeout: NodeJS.Timeout | null = setTimeout(() => {
+    if (notification.parentNode) {
+      notification.style.animation = "slideOut 0.3s ease-out";
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 300);
+    }
+  }, 15000);
+
+  // 알림 제거 헬퍼 함수
+  const removeNotification = () => {
+    if (autoRemoveTimeout) {
+      clearTimeout(autoRemoveTimeout);
+      autoRemoveTimeout = null;
+    }
+    if (notification.parentNode) {
+      notification.style.animation = "slideOut 0.3s ease-out";
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 300);
+    }
+  };
 
   // 클릭 이벤트
   if (onClick) {
     notification.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).id !== "close-notification") {
+        if (autoRemoveTimeout) {
+          clearTimeout(autoRemoveTimeout);
+          autoRemoveTimeout = null;
+        }
         onClick();
-        notification.remove();
+        removeNotification();
       }
     });
   }
@@ -95,21 +172,13 @@ const showInPageNotification = (
   if (closeBtn) {
     closeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      notification.remove();
+      if (autoRemoveTimeout) {
+        clearTimeout(autoRemoveTimeout);
+        autoRemoveTimeout = null;
+      }
+      removeNotification();
     });
   }
-
-  document.body.appendChild(notification);
-
-  // 5초 후 자동 제거
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.style.animation = "slideOut 0.3s ease-out";
-      setTimeout(() => {
-        notification.remove();
-      }, 300);
-    }
-  }, 5000);
 };
 
 export default function ClientProviders({
@@ -123,132 +192,57 @@ export default function ClientProviders({
     // Service Worker 등록 및 푸시 구독 초기화
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       const initializeWebPush = async () => {
-        console.log("🚀 [웹 푸시 초기화] 시작");
         try {
-          // Service Worker 등록
-          console.log("📝 [웹 푸시 초기화] Service Worker 등록 시작");
           await registerServiceWorker("/sw.js");
-          console.log("✅ [웹 푸시 초기화] Service Worker 등록 완료");
-
-          // Service Worker가 준비될 때까지 대기
-          console.log("⏳ [웹 푸시 초기화] Service Worker 준비 대기 중...");
           await navigator.serviceWorker.ready;
-          console.log("✅ [웹 푸시 초기화] Service Worker 준비 완료");
 
-          // 기존 구독 확인
-          console.log("🔍 [웹 푸시 초기화] 기존 구독 확인 중...");
           const existingSubscription = await getCurrentSubscription();
-          console.log("📊 [웹 푸시 초기화] 기존 구독 상태:", {
-            hasSubscription: !!existingSubscription,
-            endpoint: existingSubscription?.endpoint?.substring(0, 50) + "...",
-          });
 
           if (existingSubscription) {
-            // 기존 구독이 있으면 백엔드에 등록되어 있는지 확인 및 등록
-            console.log("🔍 [웹 푸시 초기화] 백엔드 등록 상태 확인 중...");
             try {
               const { getWebPushTokenStatus } = await import("../../lib/api");
               const status = await getWebPushTokenStatus(
                 existingSubscription.endpoint
               );
-              console.log("📊 [웹 푸시 초기화] 백엔드 상태:", {
-                success: status.success,
-                hasPushToken: !!status.pushToken,
-              });
 
               if (!status.success || !status.pushToken) {
-                // 백엔드에 등록되지 않은 경우 자동 등록
-                console.log("📝 [웹 푸시 초기화] 백엔드 자동 등록 시작");
                 await registerWebPushToken(existingSubscription);
-                console.log(
-                  "✅ [웹 푸시 초기화] 기존 구독 백엔드 자동 등록 완료"
-                );
-              } else {
-                console.log("✅ [웹 푸시 초기화] 이미 백엔드에 등록됨");
               }
             } catch (err) {
-              // 백엔드 조회 실패 시 자동 등록 시도
-              console.warn(
-                "⚠️ [웹 푸시 초기화] 백엔드 조회 실패, 자동 등록 시도:",
-                err
-              );
               try {
                 await registerWebPushToken(existingSubscription);
-                console.log("✅ [웹 푸시 초기화] 구독 백엔드 자동 등록 완료");
               } catch (registerErr) {
-                console.error(
-                  "❌ [웹 푸시 초기화] 백엔드 자동 등록 실패:",
-                  registerErr
-                );
+                console.error("❌ [웹 푸시] 백엔드 등록 실패:", registerErr);
               }
             }
           } else {
-            // 구독이 없으면 권한 확인 및 요청
             const currentPermission = Notification.permission;
-            console.log(
-              "📊 [웹 푸시 초기화] 알림 권한 상태:",
-              currentPermission
-            );
-
             let permission = currentPermission;
 
-            // 권한이 default 상태면 자동으로 요청 시도
             if (permission === "default") {
-              console.log("📝 [웹 푸시 초기화] 알림 권한 요청 시작");
               try {
                 permission = await requestNotificationPermission();
-                console.log("📊 [웹 푸시 초기화] 권한 요청 결과:", permission);
               } catch (err) {
-                console.error("❌ [웹 푸시 초기화] 권한 요청 실패:", err);
                 permission = "denied";
               }
             }
 
             if (permission === "granted") {
               const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-              console.log("🔑 [웹 푸시 초기화] VAPID 키 확인:", {
-                hasVapidKey: !!vapidKey,
-                keyPreview: vapidKey
-                  ? vapidKey.substring(0, 20) + "..."
-                  : "없음",
-              });
-
               if (vapidKey) {
                 try {
-                  console.log("📝 [웹 푸시 초기화] 자동 구독 시작");
                   const subscriptionData = await subscribeToPush(vapidKey);
                   if (subscriptionData) {
-                    console.log(
-                      "✅ [웹 푸시 초기화] 구독 성공, 백엔드 등록 시작"
-                    );
                     await registerWebPushToken(subscriptionData);
-                    console.log(
-                      "✅ [웹 푸시 초기화] 자동 푸시 구독 및 등록 완료"
-                    );
-                  } else {
-                    console.warn("⚠️ [웹 푸시 초기화] 구독 데이터가 없음");
                   }
                 } catch (err) {
-                  console.error("❌ [웹 푸시 초기화] 자동 구독 실패:", err);
+                  console.error("❌ [웹 푸시] 구독 실패:", err);
                 }
-              } else {
-                console.warn("⚠️ [웹 푸시 초기화] VAPID 키가 설정되지 않음");
               }
-            } else if (permission === "denied") {
-              console.log(
-                "ℹ️ [웹 푸시 초기화] 알림 권한이 거부되어 자동 구독 건너뜀"
-              );
-            } else {
-              console.log(
-                "ℹ️ [웹 푸시 초기화] 알림 권한이 없어 자동 구독 건너뜀:",
-                permission
-              );
             }
           }
-
-          console.log("✅ [웹 푸시 초기화] 완료");
         } catch (error) {
-          console.error("❌ [웹 푸시 초기화] 실패:", error);
+          console.error("❌ [웹 푸시] 초기화 실패:", error);
         }
       };
 
@@ -257,17 +251,7 @@ export default function ClientProviders({
       // Service Worker 메시지 리스너 등록
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.addEventListener("message", (event) => {
-          console.log(
-            "📨 [클라이언트] Service Worker 메시지 수신:",
-            event.data
-          );
-
           if (event.data.type === "NOTIFICATION_SHOWN") {
-            console.log(
-              "✅ [클라이언트] Service Worker가 알림 표시를 시도했습니다:",
-              event.data.data
-            );
-
             // 포그라운드에서도 알림을 표시하도록 클라이언트에서 처리
             if (
               "Notification" in window &&
@@ -283,32 +267,20 @@ export default function ClientProviders({
                   const notifications = await registration.getNotifications({
                     tag: notificationData?.tag || "default",
                   });
-                  console.log(
-                    "📊 [클라이언트] 현재 활성 알림 수:",
-                    notifications.length
-                  );
 
                   if (notifications.length === 0) {
-                    console.warn(
-                      "⚠️ [클라이언트] Service Worker 알림이 표시되지 않았습니다. 브라우저 알림으로 표시 시도..."
-                    );
-
                     // 클라이언트에서 직접 브라우저 알림 표시 (포그라운드 대응)
                     try {
-                      // 알림 권한 재확인
                       if (Notification.permission !== "granted") {
-                        console.error(
-                          "❌ [클라이언트] 알림 권한이 없습니다:",
-                          Notification.permission
-                        );
-                        // 권한이 없을 때만 페이지 내 알림 표시 (fallback)
                         showInPageNotification(
                           notificationData.title || "새로운 알림",
                           notificationData.body || "",
                           () => {
-                            const url = notificationData.data?.url || "/";
+                            const url = getNotificationUrl(notificationData);
                             window.location.href = url;
-                          }
+                          },
+                          notificationData.icon || notificationData.data?.icon,
+                          notificationData.badge || notificationData.data?.badge
                         );
                         return;
                       }
@@ -321,212 +293,74 @@ export default function ClientProviders({
                           badge: notificationData.badge || "/badge-72x72.png",
                           tag: notificationData.tag || "default",
                           data: notificationData.data || {},
-                          requireInteraction: true, // 사용자가 클릭할 때까지 유지
+                          requireInteraction: true,
                         }
-                      );
-
-                      console.log(
-                        "✅ [클라이언트] 브라우저 알림 표시 성공:",
-                        clientNotification.title
                       );
 
                       // 알림 클릭 이벤트 처리
                       clientNotification.onclick = (event) => {
                         event.preventDefault();
                         clientNotification.close();
-                        const url = notificationData.data?.url || "/";
+                        const url = getNotificationUrl(notificationData);
                         window.focus();
                         window.location.href = url;
                       };
 
-                      // 알림 에러 이벤트 (브라우저 알림 실패 시에만 페이지 내 알림 표시)
-                      clientNotification.onerror = (error) => {
-                        console.error(
-                          "❌ [클라이언트] 브라우저 알림 에러 발생:",
-                          error
-                        );
-                        // 에러 발생 시에만 페이지 내 알림 표시 (fallback)
+                      clientNotification.onerror = () => {
                         showInPageNotification(
                           notificationData.title || "새로운 알림",
                           notificationData.body || "",
                           () => {
-                            const url = notificationData.data?.url || "/";
+                            const url = getNotificationUrl(notificationData);
                             window.location.href = url;
-                          }
+                          },
+                          notificationData.icon || notificationData.data?.icon,
+                          notificationData.badge || notificationData.data?.badge
                         );
                       };
                     } catch (clientNotifError: unknown) {
-                      console.error(
-                        "❌ [클라이언트] 브라우저 알림 표시 실패:",
-                        clientNotifError
-                      );
-                      if (clientNotifError instanceof Error) {
-                        console.error("에러 상세:", {
-                          name: clientNotifError.name,
-                          message: clientNotifError.message,
-                          stack: clientNotifError.stack,
-                        });
-                      }
-
-                      // 에러 발생 시에만 페이지 내 알림 표시 (fallback)
                       showInPageNotification(
                         notificationData.title || "새로운 알림",
                         notificationData.body || "",
                         () => {
-                          const url = notificationData.data?.url || "/";
+                          const url = getNotificationUrl(notificationData);
                           window.location.href = url;
-                        }
+                        },
+                        notificationData.icon || notificationData.data?.icon,
+                        notificationData.badge || notificationData.data?.badge
                       );
                     }
-                  } else {
-                    console.log(
-                      "✅ [클라이언트] Service Worker 알림이 성공적으로 표시되었습니다:",
-                      notifications[0].title
-                    );
-                    // Service Worker 알림이 성공적으로 표시되었으므로 추가 알림 불필요
                   }
                 } catch (error) {
-                  console.error("❌ [클라이언트] 알림 확인 실패:", error);
+                  // 알림 확인 실패 시 무시
                 }
               }, 200);
             }
           } else if (event.data.type === "SHOW_NOTIFICATION") {
-            // Service Worker에서 포그라운드 알림 표시 요청
-            console.log(
-              "📢 [클라이언트] 포그라운드 알림 표시 요청:",
-              event.data.data
+            const notificationData = event.data.data;
+
+            showInPageNotification(
+              notificationData.title || "새로운 알림",
+              notificationData.body || "",
+              () => {
+                const url = getNotificationUrl(notificationData);
+                window.location.href = url;
+              },
+              notificationData.icon || notificationData.data?.icon,
+              notificationData.badge || notificationData.data?.badge
             );
-
-            if (
-              "Notification" in window &&
-              Notification.permission === "granted"
-            ) {
-              const notificationData = event.data.data;
-
-              // 브라우저 알림 표시 시도
-              try {
-                const clientNotification = new Notification(
-                  notificationData.title || "새로운 알림",
-                  {
-                    body: notificationData.body || "",
-                    icon: notificationData.icon || "/icon-192x192.png",
-                    badge: notificationData.badge || "/badge-72x72.png",
-                    tag: notificationData.tag || "default",
-                    data: notificationData.data || {},
-                    requireInteraction: true,
-                  }
-                );
-
-                console.log(
-                  "✅ [클라이언트] 브라우저 알림 표시 성공:",
-                  clientNotification.title
-                );
-
-                // 알림 클릭 이벤트 처리
-                clientNotification.onclick = (event) => {
-                  event.preventDefault();
-                  clientNotification.close();
-                  const url = notificationData.data?.url || "/";
-                  window.focus();
-                  window.location.href = url;
-                };
-
-                // 알림 닫기 이벤트 (디버깅용)
-                clientNotification.onclose = () => {
-                  console.log("📱 [클라이언트] 브라우저 알림이 닫혔습니다.");
-                };
-
-                // 알림 에러 이벤트 (브라우저 알림 실패 시에만 페이지 내 알림 표시)
-                clientNotification.onerror = (error) => {
-                  console.error(
-                    "❌ [클라이언트] 브라우저 알림 에러 발생:",
-                    error
-                  );
-                  // 에러 발생 시에만 페이지 내 알림 표시 (fallback)
-                  showInPageNotification(
-                    notificationData.title || "새로운 알림",
-                    notificationData.body || "",
-                    () => {
-                      const url = notificationData.data?.url || "/";
-                      window.location.href = url;
-                    }
-                  );
-                };
-              } catch (error: unknown) {
-                console.error(
-                  "❌ [클라이언트] 브라우저 알림 표시 실패:",
-                  error
-                );
-                // 에러 발생 시에만 페이지 내 알림 표시 (fallback)
-                showInPageNotification(
-                  notificationData.title || "새로운 알림",
-                  notificationData.body || "",
-                  () => {
-                    const url = notificationData.data?.url || "/";
-                    window.location.href = url;
-                  }
-                );
-              }
-            } else {
-              // 권한이 없을 때만 페이지 내 알림 표시 (fallback)
-              const notificationData = event.data.data;
-              showInPageNotification(
-                notificationData.title || "새로운 알림",
-                notificationData.body || "",
-                () => {
-                  const url = notificationData.data?.url || "/";
-                  window.location.href = url;
-                }
-              );
-            }
           } else if (event.data.type === "NOTIFICATION_ERROR") {
-            console.error("❌ [클라이언트] 알림 표시 실패:", event.data.error);
-
-            // 알림 권한 상태 확인
-            const permission = Notification.permission;
-            console.log("📊 [클라이언트] 현재 알림 권한 상태:", permission);
-
-            if (permission !== "granted") {
-              const message = `알림 권한이 필요합니다.\n현재 상태: ${permission}\n브라우저 설정에서 알림 권한을 허용해주세요.`;
-              console.warn("⚠️ [클라이언트]", message);
-              // 사용자에게 알림 권한 요청 안내
-              if (confirm(message + "\n\n지금 권한을 요청하시겠습니까?")) {
-                requestNotificationPermission().then((result) => {
-                  console.log("📊 [클라이언트] 권한 요청 결과:", result);
-                  if (result === "granted") {
-                    alert(
-                      "알림 권한이 허용되었습니다. 이제 알림을 받을 수 있습니다."
-                    );
-                  } else {
-                    alert(
-                      "알림 권한이 거부되었습니다. 브라우저 설정에서 수동으로 권한을 허용해주세요."
-                    );
-                  }
-                });
-              }
-            } else {
-              alert(
-                `알림 표시 실패: ${event.data.error}\n브라우저 설정에서 알림 권한을 확인해주세요.`
-              );
-            }
+            console.error("❌ [웹 푸시] 알림 표시 실패:", event.data.error);
           }
         });
 
-        // Service Worker에 알림 권한 상태 전달
         navigator.serviceWorker.ready.then((registration) => {
-          const permission = Notification.permission;
-          console.log(
-            "📤 [클라이언트] Service Worker에 권한 상태 전달:",
-            permission
-          );
           registration.active?.postMessage({
             type: "NOTIFICATION_PERMISSION_STATUS",
-            permission: permission,
+            permission: Notification.permission,
           });
         });
       }
-    } else {
-      console.log("ℹ️ [웹 푸시 초기화] Service Worker를 지원하지 않는 환경");
     }
   }, []);
 

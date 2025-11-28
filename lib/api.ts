@@ -95,6 +95,35 @@ export const clearToken = () => {
   console.log("🗑️ 토큰 초기화");
 };
 
+// 세션 만료 처리 (토큰 갱신 실패 시)
+const handleSessionExpired = async () => {
+  if (typeof window === "undefined") return;
+
+  // NextAuth 세션 초기화
+  try {
+    const { signOut } = await import("next-auth/react");
+    await signOut({ redirect: false });
+  } catch (error) {
+    // signOut 실패해도 계속 진행
+  }
+
+  // localStorage 토큰 제거
+  clearToken();
+
+  // 게스트 토큰 발급 후 홈으로 이동
+  try {
+    const guestTokens = await getGuestToken();
+    if (guestTokens) {
+      setToken(guestTokens.accessToken, true, guestTokens.refreshToken);
+    }
+  } catch (error) {
+    // 게스트 토큰 발급 실패해도 홈으로 이동
+  }
+
+  // 홈으로 리다이렉트
+  window.location.href = "/";
+};
+
 // axios 인스턴스 생성
 const api = axios.create({
   baseURL: BASE_URL,
@@ -181,17 +210,21 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // 401 에러 처리
+    if (error.response?.status === 401) {
+      // 이미 재시도한 경우는 다시 시도하지 않음
+      if (originalRequest._retry) {
+        await handleSessionExpired();
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
-
       const refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
-      if (refreshToken) {
-        try {
-          console.log(
-            "🔄 [API 인터셉터] 401 에러 발생, refresh_token으로 토큰 갱신 시도"
-          );
+      const isGuest = localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
 
+      // refresh token이 있으면 갱신 시도
+      if (refreshToken && !isGuest) {
+        try {
           // refresh token으로 새 access token 발급
           const refreshResponse = await axios.post(
             `${BASE_URL}/public/auth/token/refresh`,
@@ -214,8 +247,6 @@ api.interceptors.response.use(
 
             setToken(newAccessToken, false, newRefreshToken);
 
-            console.log("✅ [API 인터셉터] 토큰 갱신 성공, 원래 요청 재시도");
-
             // 원래 요청 재시도
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             if (newRefreshToken) {
@@ -225,11 +256,13 @@ api.interceptors.response.use(
             return api(originalRequest);
           }
         } catch (refreshError) {
-          console.error("❌ [API 인터셉터] 토큰 갱신 실패:", refreshError);
-          // 토큰 갱신 실패 시 로그아웃 처리
-          clearToken();
+          // 토큰 갱신 실패
         }
       }
+
+      // 토큰 갱신 실패 또는 refresh token이 없으면 세션 만료 처리
+      await handleSessionExpired();
+      return Promise.reject(error);
     }
 
     console.error("❌ API 요청 실패:", {

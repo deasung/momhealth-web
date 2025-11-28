@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { signIn, getSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, getSession, signOut } from "next-auth/react";
 import SEO from "../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
+import { clearToken, getGuestToken, setToken } from "../../lib/api";
+import { TOKEN_KEYS } from "../../lib/constants";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -30,9 +34,42 @@ export default function LoginPage() {
     message: "",
   });
 
-  const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
   const { logout } = useLogout();
+
+  // session_expired 쿼리 파라미터 확인 및 처리
+  useEffect(() => {
+    const sessionExpired = searchParams?.get("session_expired");
+    if (sessionExpired === "true") {
+      // 세션 초기화, localStorage 초기화, 게스트 토큰 발급 후 홈으로
+      const handleSessionExpired = async () => {
+        try {
+          // NextAuth 세션 초기화
+          await signOut({ redirect: false });
+
+          // localStorage 초기화
+          localStorage.removeItem(TOKEN_KEYS.TOKEN);
+          localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
+          localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
+          clearToken();
+
+          // 게스트 토큰 발급
+          const guestTokens = await getGuestToken();
+          if (guestTokens) {
+            setToken(guestTokens.accessToken, true, guestTokens.refreshToken);
+          }
+
+          // 홈으로 리다이렉트
+          router.replace("/");
+        } catch (error) {
+          // 에러 발생해도 홈으로 리다이렉트
+          router.replace("/");
+        }
+      };
+
+      handleSessionExpired();
+    }
+  }, [searchParams, router]);
 
   // ✅ 성능: 유효성 검사 규칙을 상수로 정의 (컴포넌트 외부로 이동 가능하지만 현재 위치 유지)
   const EMAIL_RULE = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);

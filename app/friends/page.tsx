@@ -9,6 +9,7 @@ import {
   getFriendRequestCountsServer,
   getMappedUsersServer,
   getServerToken,
+  getServerRefreshToken,
 } from "../../lib/api-server";
 
 interface Friend {
@@ -67,6 +68,7 @@ export default async function FriendsPage() {
   }
 
   const token = await getServerToken();
+  const refreshToken = await getServerRefreshToken();
   let friends: Friend[] = [];
   let friendRequestCounts: FriendRequestCounts = {
     receivedCount: 0,
@@ -76,8 +78,8 @@ export default async function FriendsPage() {
 
   try {
     const [friendsResponse, countsResponse] = await Promise.all([
-      getMappedUsersServer(token),
-      getFriendRequestCountsServer(token),
+      getMappedUsersServer(token, refreshToken),
+      getFriendRequestCountsServer(token, refreshToken),
     ]);
 
     friends = friendsResponse.data?.friends || [];

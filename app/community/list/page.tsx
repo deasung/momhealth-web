@@ -80,16 +80,43 @@ export default async function CommunityPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* ✅ 에러 상태 */}
         {error ? (
-          <div className="max-w-md mx-auto text-center mb-12">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-              <div className="text-red-500 text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="max-w-md mx-auto text-center py-12 md:py-16">
+            <div className="bg-white border border-red-200 rounded-xl shadow-sm p-8 sm:p-10">
+              <div
+                className="text-red-500 text-5xl sm:text-6xl mb-4"
+                role="img"
+                aria-label="경고"
+              >
+                ⚠️
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 오류가 발생했습니다
-              </h2>
-              <p className="text-gray-600 mb-6">{error}</p>
+              </h1>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">{error}</p>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 active:bg-gray-700 transition-colors text-sm sm:text-base font-medium min-h-[44px]"
+                aria-label="홈으로 이동"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+                <span>홈으로</span>
+              </Link>
             </div>
           </div>
         ) : (

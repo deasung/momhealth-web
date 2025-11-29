@@ -43,19 +43,77 @@ export default function HealthQuestionActions({
 
   if (isAuthenticated && isCompleted) {
     return (
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
         <button
           onClick={handleResetQuestion}
           disabled={resetting}
-          className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-gray-500 hover:bg-gray-600 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] sm:min-h-[52px]"
+          aria-label="퀴즈 다시 풀기"
         >
-          {resetting ? "리셋 중..." : "다시 풀기"}
+          {resetting ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <span>리셋 중...</span>
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span>다시 풀기</span>
+            </>
+          )}
         </button>
         <button
           onClick={() => router.push(`/health-questions/${questionId}/result`)}
-          className="font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg bg-orange-500 hover:bg-orange-600 text-white"
+          className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white min-h-[44px] sm:min-h-[52px]"
+          aria-label="퀴즈 결과 보기"
         >
-          결과 보기
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+          <span>결과 보기</span>
         </button>
       </div>
     );
@@ -64,13 +122,34 @@ export default function HealthQuestionActions({
   return (
     <button
       onClick={handleStartQuestion}
-      className={`font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg ${
+      className={`inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg active:shadow-sm min-h-[44px] sm:min-h-[52px] ${
         isAuthenticated
-          ? "bg-orange-500 hover:bg-orange-600 text-white"
-          : "bg-blue-500 hover:bg-blue-600 text-white"
+          ? "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white"
+          : "bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white"
       }`}
+      aria-label={isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
     >
-      {isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>{isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}</span>
     </button>
   );
 }

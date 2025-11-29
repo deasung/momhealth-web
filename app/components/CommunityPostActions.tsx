@@ -119,14 +119,16 @@ export default function CommunityPostActions({
         <button
           onClick={handleEditPost}
           disabled={submitting}
-          className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-xs sm:text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[36px] sm:min-h-[40px]"
+          aria-label="게시글 수정"
         >
           수정
         </button>
         <button
           onClick={handleDeletePost}
           disabled={submitting}
-          className="px-3 py-1 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium min-h-[36px] sm:min-h-[40px]"
+          aria-label="게시글 삭제"
         >
           삭제
         </button>

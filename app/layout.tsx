@@ -66,8 +66,9 @@ export const metadata: Metadata = {
     images: [ogImage],
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/favicon.ico", // ✅ iOS 홈 화면 아이콘 추가
+    icon: [{ url: "/favicon_32x32.png", sizes: "32x32", type: "image/png" }],
+    apple: [{ url: "/favicon_32x32.png", sizes: "32x32", type: "image/png" }],
+    shortcut: "/favicon_32x32.png",
   },
   // ✅ SEO 개선: 검색 엔진 검증용 메타 태그 (필요시)
   verification: {

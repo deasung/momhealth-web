@@ -6,6 +6,7 @@ import { getCommunityPosts, createCommunityPost } from "../../lib/api";
 import type { CommunityPost, CommunityResponse } from "../types/community";
 import CommunityWriteModal from "./CommunityWriteModal";
 import { useAuth } from "../../lib/hooks/useAuth";
+import { useTokenSync } from "../../lib/hooks/useTokenSync";
 
 interface CommunityListClientProps {
   initialPosts: CommunityPost[];
@@ -24,6 +25,7 @@ export default function CommunityListClient({
   const [submitting, setSubmitting] = useState(false);
 
   const { isAuthenticated } = useAuth();
+  const { isTokenSynced } = useTokenSync(); // 세션 토큰을 localStorage에 동기화
 
   const handleWritePost = () => {
     setShowWriteModal(true);
@@ -38,6 +40,12 @@ export default function CommunityListClient({
     content: string;
     type: "건강질문" | "리뷰";
   }) => {
+    // 토큰 동기화가 완료되지 않았으면 대기
+    if (!isTokenSynced) {
+      alert("인증 상태를 확인하는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       await createCommunityPost(data);
@@ -165,7 +173,7 @@ export default function CommunityListClient({
             건강에 대한 다양한 이야기와 경험을 공유해보세요.
           </p>
         </div>
-        {isAuthenticated && (
+        {isAuthenticated && isTokenSynced && (
           <button
             onClick={handleWritePost}
             className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium ml-4 flex-shrink-0"

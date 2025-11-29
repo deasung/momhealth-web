@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { updateCommunityPost, deleteCommunityPost } from "../../lib/api";
 import type { CommunityPostDetail } from "../types/community";
 import CommunityWriteModal from "./CommunityWriteModal";
@@ -16,11 +17,61 @@ export default function CommunityPostActions({
   currentUserId,
 }: CommunityPostActionsProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [showEditModal, setShowEditModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // 실제 DB 사용자 ID 사용 (user_id 우선, 없으면 기존 id 사용)
+  const userId =
+    (session?.user as { user_id?: string })?.user_id ||
+    currentUserId ||
+    session?.user?.id ||
+    null;
+
+  // authorId 또는 author.id와 비교
+  const authorId = post.authorId || post.author?.id;
+
+  // 숫자로 강제 형변환하여 비교
+  const userIdNum = userId ? Number(userId) : null;
+  const authorIdNum = authorId ? Number(authorId) : null;
+
+  // // 상세 디버깅
+  // console.log("🔍 [CommunityPostActions] 디버깅 정보:", {
+  //   "currentUserId (서버에서 전달)": currentUserId,
+  //   "session 존재 여부": !!session,
+  //   "session?.user": session?.user,
+  //   "session?.user?.id": session?.user?.id,
+  //   "최종 userId": userId,
+  //   "post.id": post.id,
+  //   "post.authorId": post.authorId,
+  //   "post.author": post.author,
+  //   "post.author?.id": post.author?.id,
+  //   "최종 authorId": authorId,
+  //   "userId 타입": typeof userId,
+  //   "authorId 타입": typeof authorId,
+  //   "String(userId)": String(userId),
+  //   "String(authorId)": String(authorId),
+  //   "Number(userId)": Number(userId),
+  //   "Number(authorId)": Number(authorId),
+  //   "문자열 비교": String(userId) === String(authorId),
+  //   "숫자 비교": Number(userId) === Number(authorId),
+  //   "userId 존재": !!userId,
+  //   "authorId 존재": !!authorId,
+  // });
+
+  // 숫자로 강제 형변환하여 비교
   const isOwnPost =
-    currentUserId && String(currentUserId) === String(post.author.id);
+    userIdNum !== null &&
+    authorIdNum !== null &&
+    !isNaN(userIdNum) &&
+    !isNaN(authorIdNum) &&
+    userIdNum === authorIdNum;
+
+  console.log("✅ [CommunityPostActions] isOwnPost 최종 결과:", isOwnPost);
+  console.log(
+    "✅ [CommunityPostActions] 버튼 표시 여부:",
+    isOwnPost ? "표시됨" : "표시 안됨"
+  );
 
   if (!isOwnPost) return null;
 

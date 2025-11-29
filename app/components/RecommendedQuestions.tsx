@@ -56,8 +56,16 @@ const RecommendedQuestions = ({ questions }: RecommendedQuestionsProps) => {
               </p>
 
               <div className="flex items-center justify-between text-sm text-gray-500">
-                <span className="text-blue-600 font-medium">
-                  {question.readTime}
+                <span>
+                  {question.durationMinutes
+                    ? `${question.durationMinutes}분`
+                    : question.readTime
+                    ? (() => {
+                        // "5 min read" 형식에서 숫자 추출
+                        const match = question.readTime.match(/(\d+)\s*min/);
+                        return match ? `${match[1]}분` : question.readTime;
+                      })()
+                    : "시간 미정"}
                 </span>
                 <span>
                   {new Date(question.createdAt).toLocaleDateString("ko-KR")}

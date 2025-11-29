@@ -96,10 +96,11 @@ export default async function CommunityPostDetailPage({
       tokens.refreshToken
     );
 
-    // 현재 사용자 ID 가져오기
+    // 현재 사용자 ID 가져오기 (실제 DB 사용자 ID 우선)
     const session = await getServerSession(authOptions);
-    if (session?.user?.id) {
-      currentUserId = session.user.id;
+    if (session?.user) {
+      const user = session.user as { user_id?: string; id?: string };
+      currentUserId = user.user_id || user.id || null;
     }
   } catch (err: unknown) {
     const axiosError = err as {

@@ -211,7 +211,10 @@ export default function AddFriendPage() {
           {/* 페이지 헤더 */}
           <div className="mb-8">
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                router.push("/friends");
+                router.refresh();
+              }}
               className="mb-4 text-gray-600 hover:text-gray-900"
             >
               <svg

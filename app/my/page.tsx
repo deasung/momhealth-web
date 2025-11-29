@@ -8,11 +8,13 @@ import Footer from "../components/Footer";
 import SEO from "../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
+import { useTokenSync } from "../../lib/hooks/useTokenSync";
 import { getUserProfile } from "../../lib/api";
 import type { UserProfile } from "../types/user";
 
 export default function MyPage() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { isTokenSynced } = useTokenSync(); // 세션 토큰을 localStorage에 동기화
   const { logout } = useLogout();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -28,7 +30,8 @@ export default function MyPage() {
 
   // 사용자 프로필 정보 가져오기
   const fetchProfile = useCallback(async () => {
-    if (!isAuthenticated || isLoading) return;
+    // 인증 상태 확인이 완료되고 토큰 동기화가 완료된 후 인증된 경우에만 프로필 가져오기
+    if (!isAuthenticated || isLoading || !isTokenSynced) return;
 
     try {
       setProfileLoading(true);
@@ -39,13 +42,13 @@ export default function MyPage() {
     } finally {
       setProfileLoading(false);
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, isTokenSynced]);
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading && mounted) {
+    if (isAuthenticated && !isLoading && isTokenSynced && mounted) {
       fetchProfile();
     }
-  }, [isAuthenticated, isLoading, mounted, fetchProfile]);
+  }, [isAuthenticated, isLoading, isTokenSynced, mounted, fetchProfile]);
 
   // 로그인 확인
   if (!mounted || (!isLoading && !isAuthenticated)) {

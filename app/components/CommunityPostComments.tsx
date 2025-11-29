@@ -8,6 +8,7 @@ import {
   deleteComment,
   updateComment,
   getUserProfile,
+  getCommunityPostDetail,
 } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
 import type { CommunityPostDetail } from "../types/community";
@@ -24,7 +25,7 @@ export default function CommunityPostComments({
 }: CommunityPostCommentsProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [comments] = useState(initialComments);
+  const [comments, setComments] = useState(initialComments);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -47,8 +48,9 @@ export default function CommunityPostComments({
       setIsSubmittingComment(true);
       await createComment(postId, commentText.trim());
       setCommentText("");
-      // 서버 컴포넌트 데이터 새로고침
-      router.refresh();
+      // 댓글 목록 다시 가져오기
+      const updatedPost = await getCommunityPostDetail(postId);
+      setComments(updatedPost.comments || []);
     } catch (err) {
       alert("댓글 등록에 실패했습니다.");
     } finally {
@@ -61,8 +63,9 @@ export default function CommunityPostComments({
 
     try {
       await deleteComment(postId, commentId);
-      alert("댓글이 삭제되었습니다.");
-      router.refresh();
+      // 댓글 목록 다시 가져오기
+      const updatedPost = await getCommunityPostDetail(postId);
+      setComments(updatedPost.comments || []);
     } catch (err) {
       alert("댓글 삭제에 실패했습니다.");
     }
@@ -86,10 +89,11 @@ export default function CommunityPostComments({
 
     try {
       await updateComment(postId, editingCommentId, editingCommentText.trim());
-      alert("댓글이 수정되었습니다.");
       setEditingCommentId(null);
       setEditingCommentText("");
-      router.refresh();
+      // 댓글 목록 다시 가져오기
+      const updatedPost = await getCommunityPostDetail(postId);
+      setComments(updatedPost.comments || []);
     } catch (err) {
       alert("댓글 수정에 실패했습니다.");
     }

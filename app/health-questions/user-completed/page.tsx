@@ -72,31 +72,35 @@ const CompletedQuestionCard = ({ item }: CompletedQuestionCardProps) => {
   })();
 
   return (
-    <article className="w-full flex items-start gap-4 md:gap-6 p-4 md:p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
+    <article className="w-full flex items-start gap-4 sm:gap-5 md:gap-6 p-5 sm:p-6 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
       {/* 썸네일 */}
-      <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
+      <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 flex-shrink-0 rounded-xl border border-gray-200 bg-gray-50 overflow-hidden ring-1 ring-gray-100">
         <Image
           src={item.question.thumbnailUrl || "/placeholder.png"}
-          alt={item.question.title}
-          width={80}
-          height={80}
+          alt={`${item.question.title} 썸네일`}
+          width={96}
+          height={96}
           className="w-full h-full object-cover"
+          sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 96px"
         />
       </div>
 
       {/* 내용 */}
       <div className="flex-1 min-w-0">
-        <span className="inline-block bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-medium mb-2">
+        <span
+          className="inline-block bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg text-xs sm:text-sm font-semibold mb-2 border border-blue-200"
+          aria-label={`카테고리: ${categoryName}`}
+        >
           {categoryName}
         </span>
 
-        <h3 className="font-medium text-gray-900 text-sm md:text-base mb-2 line-clamp-2">
+        <h3 className="font-bold text-gray-900 text-sm sm:text-base md:text-lg mb-2 line-clamp-2 leading-tight">
           {item.question.title}
         </h3>
 
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
           <svg
-            className="w-3 h-3"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -106,10 +110,10 @@ const CompletedQuestionCard = ({ item }: CompletedQuestionCardProps) => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-          <span>완료일: {completedDate}</span>
+          <time dateTime={item.completedAt}>완료일: {completedDate}</time>
         </div>
       </div>
     </article>
@@ -241,7 +245,7 @@ export default async function UserCompletedPage({
   const hasNext = pagination?.hasNextPage;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <SEO
         title={`${displayName}의 건강 질문 내역`}
         description={`${displayName}님이 완료한 건강 질문 내역을 확인하세요.`}
@@ -250,36 +254,38 @@ export default async function UserCompletedPage({
 
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* 페이지 헤더 */}
         <header className="mb-6 md:mb-8">
-          <Link
-            href="/my"
-            className="inline-flex items-center gap-2 px-3 py-2 -ml-3 mb-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base"
-            aria-label="마이페이지로 돌아가기"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+          <nav aria-label="브레드크럼 네비게이션" className="mb-4">
+            <Link
+              href="/my"
+              className="inline-flex items-center gap-2 px-3 py-2 -ml-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base font-medium min-h-[44px]"
+              aria-label="마이페이지로 돌아가기"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            <span>뒤로가기</span>
-          </Link>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              <span>뒤로가기</span>
+            </Link>
+          </nav>
 
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               {displayName}의 건강 질문 내역
             </h1>
-            <p className="text-sm md:text-base text-gray-600 mt-2">
+            <p className="text-sm sm:text-base text-gray-600">
               완료한 건강 질문 결과를 다시 확인해보세요.
             </p>
           </div>
@@ -339,24 +345,53 @@ export default async function UserCompletedPage({
                   {/* 페이지네이션 */}
                   {(hasPrev || hasNext) && (
                     <nav
-                      className="flex items-center justify-between mt-6"
+                      className="flex items-center justify-between mt-8"
                       aria-label="페이지 탐색"
                     >
                       <div>
                         {hasPrev ? (
                           <Link
                             href={buildPageUrl(currentPage - 1)}
-                            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                            className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 border border-gray-200 rounded-lg text-sm sm:text-base text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors font-medium min-h-[44px] shadow-sm hover:shadow-md"
+                            aria-label="이전 페이지"
                           >
-                            이전
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 19l-7-7 7-7"
+                              />
+                            </svg>
+                            <span>이전</span>
                           </Link>
                         ) : (
-                          <span className="inline-flex items-center px-4 py-2 border border-gray-100 rounded-lg text-sm text-gray-300 bg-gray-50 cursor-not-allowed">
-                            이전
+                          <span className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 border border-gray-100 rounded-lg text-sm sm:text-base text-gray-300 bg-gray-50 cursor-not-allowed min-h-[44px]">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 19l-7-7 7-7"
+                              />
+                            </svg>
+                            <span>이전</span>
                           </span>
                         )}
                       </div>
-                      <p className="text-xs md:text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500 font-medium">
                         {pagination
                           ? `${pagination.currentPage} / ${pagination.totalPages}`
                           : null}
@@ -365,13 +400,42 @@ export default async function UserCompletedPage({
                         {hasNext ? (
                           <Link
                             href={buildPageUrl(currentPage + 1)}
-                            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                            className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 border border-gray-200 rounded-lg text-sm sm:text-base text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors font-medium min-h-[44px] shadow-sm hover:shadow-md"
+                            aria-label="다음 페이지"
                           >
-                            다음
+                            <span>다음</span>
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
                           </Link>
                         ) : (
-                          <span className="inline-flex items-center px-4 py-2 border border-gray-100 rounded-lg text-sm text-gray-300 bg-gray-50 cursor-not-allowed">
-                            다음
+                          <span className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 border border-gray-100 rounded-lg text-sm sm:text-base text-gray-300 bg-gray-50 cursor-not-allowed min-h-[44px]">
+                            <span>다음</span>
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
                           </span>
                         )}
                       </div>

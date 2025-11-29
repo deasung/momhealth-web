@@ -129,13 +129,40 @@ export default async function HealthQuestionsList() {
 
         {/* ✅ 에러 상태 */}
         {error && (
-          <div className="max-w-md mx-auto text-center mb-12">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-              <div className="text-red-500 text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="max-w-md mx-auto text-center py-12 md:py-16">
+            <div className="bg-white border border-red-200 rounded-xl shadow-sm p-8 sm:p-10">
+              <div
+                className="text-red-500 text-5xl sm:text-6xl mb-4"
+                role="img"
+                aria-label="경고"
+              >
+                ⚠️
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 오류가 발생했습니다
               </h2>
-              <p className="text-gray-600 mb-6">{error}</p>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">{error}</p>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 active:bg-gray-700 transition-colors text-sm sm:text-base font-medium min-h-[44px]"
+                aria-label="홈으로 이동"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+                <span>홈으로</span>
+              </Link>
             </div>
           </div>
         )}
@@ -149,19 +176,40 @@ export default async function HealthQuestionsList() {
             />
           </section>
         ) : (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-6">
-              <span className="text-4xl">📝</span>
+          <div className="text-center py-12 md:py-16">
+            <div
+              className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-100 mb-6"
+              role="img"
+              aria-label="질문 없음"
+            >
+              <span className="text-4xl sm:text-5xl">📝</span>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
               질문이 없습니다
             </h3>
-            <p className="text-gray-600 mb-6">아직 등록된 질문이 없습니다.</p>
+            <p className="text-gray-600 mb-6 text-sm sm:text-base">
+              아직 등록된 질문이 없습니다.
+            </p>
             <Link
               href="/"
-              className="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 min-h-[44px] shadow-sm hover:shadow-md"
+              aria-label="홈으로 돌아가기"
             >
-              홈으로 돌아가기
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+              <span>홈으로 돌아가기</span>
             </Link>
           </div>
         )}

@@ -173,14 +173,16 @@ export default function QuestionListClient({
             <div className="w-full sm:w-auto flex-shrink-0 mt-4 sm:mt-0">
               <Link
                 href={`/health-questions/${question.id}`}
-                className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 bg-orange-500 text-white text-sm sm:text-base font-semibold rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 min-h-[44px]"
+                aria-label={`${question.title} 질문 시작하기`}
               >
-                시작하기
+                <span>시작하기</span>
                 <svg
-                  className="w-4 h-4 ml-2"
+                  className="w-4 h-4 sm:w-5 sm:h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -219,24 +221,40 @@ export default function QuestionListClient({
       )}
 
       {hasMore && !loadingMore && (
-        <div className="text-center py-4">
+        <div className="text-center py-6 md:py-8">
           <button
             onClick={loadMore}
-            className="px-8 py-3 bg-white border-2 border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-orange-300 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-white border-2 border-gray-200 rounded-lg text-gray-700 text-sm sm:text-base font-medium hover:bg-gray-50 hover:border-orange-300 active:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 min-h-[44px] shadow-sm hover:shadow-md"
+            aria-label="더 많은 질문 불러오기"
           >
-            더 많은 질문 보기
-          </button>
-        </div>
-      )}
-
-      {!hasMore && questions.length > 0 && (
-        <div className="text-center py-12">
-          <div className="inline-flex items-center gap-2 text-gray-500">
+            <span>더 많은 질문 보기</span>
             <svg
               className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {!hasMore && questions.length > 0 && (
+        <div className="text-center py-8 md:py-12">
+          <div className="inline-flex items-center gap-2 text-gray-500 text-sm sm:text-base">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -245,7 +263,7 @@ export default function QuestionListClient({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <p className="text-sm">모든 질문을 확인했습니다.</p>
+            <p>모든 질문을 확인했습니다.</p>
           </div>
         </div>
       )}

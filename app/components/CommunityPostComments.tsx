@@ -100,56 +100,81 @@ export default function CommunityPostComments({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
       <div className="p-6 sm:p-8">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">
-          댓글 {comments.length}개
-        </h3>
+        <header className="mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+            댓글{" "}
+            <span className="text-gray-600 font-normal">
+              {comments.length.toLocaleString()}개
+            </span>
+          </h2>
+        </header>
 
         {comments.length > 0 ? (
-          <div className="space-y-4">
+          <ul className="space-y-4 sm:space-y-5" role="list">
             {comments.map((comment) => {
               const isOwnComment =
                 currentUser &&
                 String(currentUser.id) === String(comment.author.id);
 
               return (
-                <div
+                <li
                   key={comment.id}
-                  className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
+                  className="border-b border-gray-100 pb-4 sm:pb-5 last:border-b-0 last:pb-0"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden bg-gray-100">
+                  <article className="flex items-start gap-3 sm:gap-4">
+                    {/* 작성자 아바타 */}
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-200">
                       {comment.author.userThumbnailUrl ? (
                         <Image
                           src={comment.author.userThumbnailUrl}
-                          alt={comment.author.nickname || "익명"}
-                          width={40}
-                          height={40}
+                          alt={`${
+                            comment.author.nickname || "익명"
+                          }의 프로필 이미지`}
+                          width={44}
+                          height={44}
                           className="w-full h-full object-cover"
+                          sizes="(max-width: 640px) 40px, 44px"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600 text-sm font-medium">
-                          {(comment.author.nickname || "익명").charAt(0)}
+                        <div
+                          className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600 text-sm font-semibold"
+                          aria-label={`${
+                            comment.author.nickname || "익명"
+                          }의 프로필 이니셜`}
+                        >
+                          {(comment.author.nickname || "익명")
+                            .charAt(0)
+                            .toUpperCase()}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      {/* 댓글 헤더 */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 text-sm sm:text-base">
                             {comment.author.nickname || "익명"}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <time
+                            dateTime={comment.createdAt}
+                            className="text-xs text-gray-500"
+                          >
                             {new Date(comment.createdAt).toLocaleDateString(
-                              "ko-KR"
+                              "ko-KR",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
                             )}
-                          </span>
+                          </time>
                         </div>
 
                         {isOwnComment && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() =>
                                 handleCommentEditStart(
@@ -157,13 +182,15 @@ export default function CommunityPostComments({
                                   comment.content
                                 )
                               }
-                              className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+                              className="text-xs text-gray-600 hover:text-gray-900 px-2.5 py-1.5 rounded-md hover:bg-gray-100 transition-colors font-medium min-h-[32px]"
+                              aria-label="댓글 수정"
                             >
                               수정
                             </button>
                             <button
                               onClick={() => handleCommentDelete(comment.id)}
-                              className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
+                              className="text-xs text-red-600 hover:text-red-700 px-2.5 py-1.5 rounded-md hover:bg-red-50 transition-colors font-medium min-h-[32px]"
+                              aria-label="댓글 삭제"
                             >
                               삭제
                             </button>
@@ -171,31 +198,33 @@ export default function CommunityPostComments({
                         )}
                       </div>
 
+                      {/* 댓글 내용 */}
                       {editingCommentId !== comment.id ? (
-                        <p className="text-gray-700 text-sm leading-relaxed">
+                        <p className="text-gray-700 text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">
                           {comment.content}
                         </p>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <textarea
                             value={editingCommentText}
                             onChange={(e) =>
                               setEditingCommentText(e.target.value)
                             }
-                            className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="w-full p-3 border border-gray-300 rounded-lg text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                             rows={3}
                             placeholder="댓글을 수정하세요..."
+                            aria-label="댓글 수정 입력"
                           />
                           <div className="flex items-center gap-2">
                             <button
                               onClick={handleCommentEditSubmit}
-                              className="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 transition-colors"
+                              className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors font-medium min-h-[36px]"
                             >
                               저장
                             </button>
                             <button
                               onClick={handleCommentEditCancel}
-                              className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+                              className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors font-medium min-h-[36px]"
                             >
                               취소
                             </button>
@@ -203,54 +232,110 @@ export default function CommunityPostComments({
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
+                  </article>
+                </li>
               );
             })}
-          </div>
+          </ul>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">아직 댓글이 없습니다.</p>
+          <div className="text-center py-12 sm:py-16">
+            <div
+              className="text-gray-400 text-4xl sm:text-5xl mb-3"
+              role="img"
+              aria-label="댓글 없음"
+            >
+              💬
+            </div>
+            <p className="text-gray-500 text-sm sm:text-base">
+              아직 댓글이 없습니다.
+            </p>
           </div>
         )}
 
+        {/* 댓글 작성 폼 */}
         {isAuthenticated ? (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="space-y-3">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="댓글을 남겨보세요!"
-                className="w-full p-4 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
-                rows={4}
-                maxLength={1000}
-              />
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCommentSubmit();
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label htmlFor="comment-input" className="sr-only">
+                  댓글 작성
+                </label>
+                <textarea
+                  id="comment-input"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="댓글을 남겨보세요!"
+                  className="w-full p-4 border border-gray-300 rounded-lg text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                  rows={4}
+                  maxLength={1000}
+                  aria-label="댓글 입력"
+                />
+              </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">
+                <span
+                  className={`text-xs sm:text-sm ${
+                    commentText.length >= 1000
+                      ? "text-red-500"
+                      : "text-gray-500"
+                  }`}
+                >
                   {commentText.length}/1000
                 </span>
                 <button
-                  onClick={handleCommentSubmit}
+                  type="submit"
                   disabled={!commentText.trim() || isSubmittingComment}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-5 py-2.5 rounded-lg text-sm sm:text-base font-medium transition-colors min-h-[44px] ${
                     commentText.trim() && !isSubmittingComment
-                      ? "bg-orange-500 text-white hover:bg-orange-600"
+                      ? "bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  {isSubmittingComment ? "등록 중..." : "등록"}
+                  {isSubmittingComment ? (
+                    <span className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      등록 중...
+                    </span>
+                  ) : (
+                    "등록"
+                  )}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         ) : (
-          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-            <p className="text-gray-500 mb-4">
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+            <p className="text-gray-600 mb-4 text-sm sm:text-base">
               댓글을 작성하려면 로그인이 필요합니다.
             </p>
             <button
               onClick={() => router.push("/login")}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              className="px-5 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base font-medium min-h-[44px]"
+              aria-label="로그인 페이지로 이동"
             >
               로그인하기
             </button>

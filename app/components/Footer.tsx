@@ -11,10 +11,11 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-8">
             {/* 로고 */}
             <div className="mb-4 md:mb-0">
-              <Link href="/" className="inline-block">
-                <h3 className="text-xl md:text-2xl font-bold text-gray-900">
-                  오늘의 건강
-                </h3>
+              <Link
+                href="/"
+                className="inline-block font-bold text-xl md:text-2xl text-gray-900 hover:text-orange-500 transition-colors"
+              >
+                오늘의 건강
               </Link>
             </div>
 

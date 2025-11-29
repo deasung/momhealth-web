@@ -75,7 +75,7 @@ const Header = () => {
   return (
     <header className="bg-white border-b border-gray-100">
       {/* 메인 헤더 */}
-      <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex items-center justify-between max-w-7xl mx-auto">
         {/* 로고 */}
         <Link
           href="/"

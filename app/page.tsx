@@ -77,59 +77,86 @@ export default async function Home() {
     : null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* ✅ SEO & UX: 히어로 섹션 - h1 태그 */}
-        <section className="text-center mb-12 md:mb-16">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 md:mb-6">
+        <section className="text-center mb-10 md:mb-12 lg:mb-16">
+          {/* <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">
             오늘의 건강
-          </h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto mb-8 md:mb-12 leading-relaxed">
+          </h1> */}
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
             당신의 건강을 위한 맞춤형 건강 관리 플랫폼
           </p>
 
           {/* ✅ 반응형 & 디자인: 통계 카드 */}
           {stats && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto mb-12 md:mb-16">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 sm:p-8 text-center shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-3xl sm:text-4xl font-bold text-blue-600 mb-2">
-                  {stats.popular}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 md:gap-6 max-w-4xl mx-auto mb-10 md:mb-12 lg:mb-16">
+              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 mb-2">
+                  {stats.popular.toLocaleString()}
                 </div>
-                <div className="text-sm sm:text-base text-gray-700 font-medium">
+                <div className="text-sm sm:text-base text-gray-700 font-semibold">
                   인기 질문
                 </div>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 sm:p-8 text-center shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-3xl sm:text-4xl font-bold text-green-600 mb-2">
-                  {stats.recommended}
+              </article>
+              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600 mb-2">
+                  {stats.recommended.toLocaleString()}
                 </div>
-                <div className="text-sm sm:text-base text-gray-700 font-medium">
+                <div className="text-sm sm:text-base text-gray-700 font-semibold">
                   추천 질문
                 </div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 sm:p-8 text-center shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-3xl sm:text-4xl font-bold text-purple-600 mb-2">
-                  {stats.community}
+              </article>
+              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-purple-600 mb-2">
+                  {stats.community.toLocaleString()}
                 </div>
-                <div className="text-sm sm:text-base text-gray-700 font-medium">
+                <div className="text-sm sm:text-base text-gray-700 font-semibold">
                   커뮤니티 게시글
                 </div>
-              </div>
+              </article>
             </div>
           )}
         </section>
 
         {/* ✅ 에러 상태 */}
         {error && (
-          <div className="max-w-md mx-auto text-center mb-12">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-              <div className="text-red-500 text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="max-w-md mx-auto text-center py-12 md:py-16 mb-12">
+            <div className="bg-white border border-red-200 rounded-xl shadow-sm p-8 sm:p-10">
+              <div
+                className="text-red-500 text-5xl sm:text-6xl mb-4"
+                role="img"
+                aria-label="경고"
+              >
+                ⚠️
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 데이터를 불러올 수 없습니다
               </h2>
-              <p className="text-gray-600">{error}</p>
+              <p className="text-gray-600 text-sm sm:text-base mb-6">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors text-sm sm:text-base font-medium min-h-[44px] shadow-sm hover:shadow-md"
+                aria-label="페이지 새로고침"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                <span>새로고침</span>
+              </button>
             </div>
           </div>
         )}
@@ -159,11 +186,23 @@ export default async function Home() {
 
         {/* ✅ 빈 상태 처리 */}
         {homeData &&
-          (!homeData.popularQuestions?.length ||
-            !homeData.recommendedQuestions?.length ||
-            !homeData.communityPosts?.length) && (
-            <div className="text-center py-12 text-gray-500">
-              <p>콘텐츠를 준비 중입니다.</p>
+          !homeData.popularQuestions?.length &&
+          !homeData.recommendedQuestions?.length &&
+          !homeData.communityPosts?.length && (
+            <div className="text-center py-12 md:py-16">
+              <div
+                className="text-gray-400 text-5xl sm:text-6xl mb-4"
+                role="img"
+                aria-label="콘텐츠 없음"
+              >
+                📋
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                콘텐츠를 준비 중입니다
+              </h3>
+              <p className="text-gray-600 text-sm sm:text-base">
+                곧 새로운 콘텐츠가 제공될 예정입니다.
+              </p>
             </div>
           )}
       </main>

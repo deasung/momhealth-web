@@ -1,85 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { resetQuizProgress } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
+import KakaoShareButton from "./KakaoShareButton";
 
 interface HealthQuestionActionsProps {
   questionId: string;
   isCompleted: boolean;
 }
 
-declare global {
-  interface Window {
-    Kakao?: {
-      isInitialized: () => boolean;
-      init: (key: string) => void;
-      Share: {
-        sendDefault: (options: {
-          objectType: "feed";
-          content: {
-            title: string;
-            description: string;
-            imageUrl?: string;
-            link: {
-              webUrl: string;
-              mobileWebUrl: string;
-            };
-          };
-        }) => void;
-      };
-    };
-  }
-}
-
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
 function ShareButtons({ questionId }: { questionId: string }) {
   const [copied, setCopied] = useState(false);
-  const [kakaoReady, setKakaoReady] = useState(false);
 
   const shareUrl =
     (typeof window !== "undefined" ? window.location.origin : "") +
     `/health-questions/${questionId}`;
-
-  // 카카오 SDK 로드 및 초기화 (클라이언트 전용)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
-    if (!kakaoKey) {
-      return;
-    }
-
-    const w = window as Window;
-
-    if (w.Kakao && w.Kakao.isInitialized()) {
-      setKakaoReady(true);
-      return;
-    }
-
-    const onReady = () => {
-      if (!w.Kakao) return;
-      if (!w.Kakao.isInitialized()) {
-        w.Kakao.init(kakaoKey);
-      }
-      setKakaoReady(true);
-    };
-
-    const existing = document.getElementById("kakao-js-sdk");
-    if (existing) {
-      existing.addEventListener("load", onReady, { once: true });
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = "kakao-js-sdk";
-    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.7/kakao.min.js";
-    script.async = true;
-    script.onload = onReady;
-    document.head.appendChild(script);
-  }, []);
 
   const handleCopyLink = async () => {
     try {
@@ -91,29 +30,9 @@ function ShareButtons({ questionId }: { questionId: string }) {
     }
   };
 
-  const handleKakaoShare = async () => {
-    if (kakaoReady && typeof window !== "undefined" && window.Kakao) {
-      try {
-        window.Kakao.Share.sendDefault({
-          objectType: "feed",
-          content: {
-            title: "오늘의 건강 질문",
-            description: "건강 질문을 카카오톡으로 공유해보세요.",
-            imageUrl: `${siteUrl}/og-image.png`,
-            link: {
-              webUrl: shareUrl,
-              mobileWebUrl: shareUrl,
-            },
-          },
-        });
-        return;
-      } catch {
-        // 카카오 공유 실패 시 아래에서 링크 복사 시도
-      }
-    }
-
-    // 카카오톡 공유가 불가능하면 링크 복사로 대체
-    await handleCopyLink();
+  const handleKakaoShareError = () => {
+    // 카카오톡 공유 실패 시 링크 복사로 대체
+    handleCopyLink();
   };
 
   return (
@@ -140,17 +59,14 @@ function ShareButtons({ questionId }: { questionId: string }) {
         </svg>
         <span>{copied ? "링크 복사됨" : "링크 복사"}</span>
       </button>
-      <button
-        type="button"
-        onClick={handleKakaoShare}
-        className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-[#FEE500] hover:bg-[#FDE74B] text-[#381E1F] min-h-[44px] sm:min-h-[52px] w-full sm:w-64"
-        aria-label="카카오톡으로 질문 공유하기"
-      >
-        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#381E1F] text-[#FEE500] text-xs">
-          K
-        </span>
-        <span>카카오톡 공유</span>
-      </button>
+      <KakaoShareButton
+        title="오늘의 건강 질문"
+        description="건강 질문을 카카오톡으로 공유해보세요."
+        imageUrl={`${siteUrl}/og-image.png`}
+        shareUrl={shareUrl}
+        onError={handleKakaoShareError}
+        className="w-full sm:w-64"
+      />
     </div>
   );
 }

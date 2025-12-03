@@ -56,79 +56,85 @@ export function useAuth(): UseAuthReturn {
     return true;
   }, []);
 
-  // NextAuth 세션 및 localStorage 기반 인증 상태 관리
+  // NextAuth 세션 및 localStorage 기반 인증 상태 관리 (메모리 최적화: 불필요한 재실행 방지)
   useEffect(() => {
-    const initializeAuth = () => {
-      // NextAuth 세션 로딩 중이면 대기
-      if (sessionStatus === "loading") {
-        return;
+    // NextAuth 세션 로딩 중이면 대기
+    if (sessionStatus === "loading") {
+      return;
+    }
+
+    try {
+      // 1. NextAuth 세션이 있으면 인증된 상태로 처리
+      if (session) {
+        const userToken =
+          (session as { token?: string; accessToken?: string })?.token ||
+          (session as { token?: string; accessToken?: string })?.accessToken;
+
+        if (userToken) {
+          setToken(userToken);
+          setIsGuest(false);
+          setIsAuthenticated(true);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      try {
-        // 1. NextAuth 세션이 있으면 인증된 상태로 처리
-        if (session) {
-          const userToken =
-            (session as { token?: string; accessToken?: string })?.token ||
-            (session as { token?: string; accessToken?: string })?.accessToken;
+      // 2. NextAuth 세션이 없으면 localStorage 확인
+      const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
+      const storedIsGuest =
+        localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
 
-          if (userToken) {
-            setToken(userToken);
-            setIsGuest(false);
-            setIsAuthenticated(true);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // 2. NextAuth 세션이 없으면 localStorage 확인
-        const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
-        const storedIsGuest =
-          localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
-
-        if (storedToken) {
-          if (validateToken(storedToken)) {
-            setToken(storedToken);
-            setIsGuest(storedIsGuest);
-            // 게스트 토큰이면 인증되지 않은 상태로 처리
-            setIsAuthenticated(!storedIsGuest);
-          } else {
-            // 토큰이 만료되었으면 localStorage에서 제거
-            localStorage.removeItem(TOKEN_KEYS.TOKEN);
-            localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
-            setToken(null);
-            setIsAuthenticated(false);
-            setIsGuest(false);
-          }
+      if (storedToken) {
+        if (validateToken(storedToken)) {
+          setToken(storedToken);
+          setIsGuest(storedIsGuest);
+          // 게스트 토큰이면 인증되지 않은 상태로 처리
+          setIsAuthenticated(!storedIsGuest);
         } else {
+          // 토큰이 만료되었으면 localStorage에서 제거
+          localStorage.removeItem(TOKEN_KEYS.TOKEN);
+          localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
           setToken(null);
           setIsAuthenticated(false);
           setIsGuest(false);
         }
-      } catch (error) {
+      } else {
         setToken(null);
         setIsAuthenticated(false);
         setIsGuest(false);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      setToken(null);
+      setIsAuthenticated(false);
+      setIsGuest(false);
+    } finally {
+      setIsLoading(false);
+    }
+    // validateToken은 useCallback으로 메모이제이션되어 있어 의존성에 포함해도 안전
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, sessionStatus]);
 
-    initializeAuth();
-  }, [session, sessionStatus, validateToken]);
-
-  // 주기적으로 토큰 검증 (5분마다)
+  // 주기적으로 토큰 검증 (5분마다) - 메모리 최적화: interval 정리 보장
   useEffect(() => {
     if (!isAuthenticated || !token) return;
 
-    const interval = setInterval(() => {
-      if (!validateToken(token)) {
+    const intervalId = setInterval(() => {
+      // 현재 토큰을 다시 가져와서 검증 (클로저 문제 방지)
+      const currentToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
+      if (!currentToken || !validateToken(currentToken)) {
         // 토큰이 만료되었으면 로그아웃
         logout();
       }
     }, 300000); // 5분마다
 
-    return () => clearInterval(interval);
-  }, [isAuthenticated, token, validateToken, logout]);
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+    // validateToken과 logout은 useCallback으로 메모이제이션되어 있어 의존성에 포함해도 안전
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, token]);
 
   return {
     token,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCommunityPosts, createCommunityPost } from "../../lib/api";
@@ -24,6 +24,10 @@ export default function CommunityListClient({
   const [hasMore, setHasMore] = useState(!!initialNextCursor);
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const loadingRef = useRef(false); // 중복 로딩 방지
+
+  // 메모리 최적화: 최대 100개까지만 유지
+  const MAX_ITEMS = 100;
 
   const { isAuthenticated } = useAuth();
   const { isTokenSynced } = useTokenSync(); // 세션 토큰을 localStorage에 동기화
@@ -82,18 +86,28 @@ export default function CommunityListClient({
   };
 
   const loadMore = useCallback(async () => {
-    if (!nextCursor || loadingMore) return;
+    if (!nextCursor || loadingMore || loadingRef.current) return;
 
+    loadingRef.current = true;
     try {
       setLoadingMore(true);
       const data: CommunityResponse = await getCommunityPosts(10, nextCursor);
-      setPosts((prev) => [...prev, ...data.posts]);
+
+      setPosts((prev) => {
+        const newPosts = [...prev, ...data.posts];
+        // 메모리 최적화: 최대 개수 초과 시 오래된 항목 제거
+        if (newPosts.length > MAX_ITEMS) {
+          return newPosts.slice(-MAX_ITEMS);
+        }
+        return newPosts;
+      });
       setNextCursor(data.nextCursor);
       setHasMore(!!data.nextCursor);
     } catch (err) {
       console.error("추가 커뮤니티 게시글 로딩 실패:", err);
     } finally {
       setLoadingMore(false);
+      loadingRef.current = false;
     }
   }, [nextCursor, loadingMore]);
 

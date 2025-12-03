@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   subscribeToPush,
   unsubscribeFromPush,
@@ -67,11 +67,13 @@ export function useWebPush(): UseWebPushReturn {
     checkSupport();
   }, []);
 
-  // 기존 구독 정보 확인 및 자동 구독
+  // 기존 구독 정보 확인 및 자동 구독 (메모리 최적화: 한 번만 실행)
+  const hasInitializedRef = useRef(false);
   useEffect(() => {
-    if (!isSupported || isLoading) return;
+    if (!isSupported || isLoading || hasInitializedRef.current) return;
 
     const checkAndSubscribe = async () => {
+      hasInitializedRef.current = true;
       try {
         const currentSubscription = await getCurrentSubscription();
         if (currentSubscription) {
@@ -126,6 +128,7 @@ export function useWebPush(): UseWebPushReturn {
         }
       } catch (err) {
         console.error("구독 정보 확인 실패:", err);
+        hasInitializedRef.current = false; // 실패 시 재시도 가능하도록
       }
     };
 

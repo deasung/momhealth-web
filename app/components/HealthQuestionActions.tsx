@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { resetQuizProgress } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
@@ -8,6 +8,151 @@ import { useAuth } from "../../lib/hooks/useAuth";
 interface HealthQuestionActionsProps {
   questionId: string;
   isCompleted: boolean;
+}
+
+declare global {
+  interface Window {
+    Kakao?: {
+      isInitialized: () => boolean;
+      init: (key: string) => void;
+      Share: {
+        sendDefault: (options: {
+          objectType: "feed";
+          content: {
+            title: string;
+            description: string;
+            imageUrl?: string;
+            link: {
+              webUrl: string;
+              mobileWebUrl: string;
+            };
+          };
+        }) => void;
+      };
+    };
+  }
+}
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
+
+function ShareButtons({ questionId }: { questionId: string }) {
+  const [copied, setCopied] = useState(false);
+  const [kakaoReady, setKakaoReady] = useState(false);
+
+  const shareUrl =
+    (typeof window !== "undefined" ? window.location.origin : "") +
+    `/health-questions/${questionId}`;
+
+  // 카카오 SDK 로드 및 초기화 (클라이언트 전용)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+    if (!kakaoKey) {
+      return;
+    }
+
+    const w = window as Window;
+
+    if (w.Kakao && w.Kakao.isInitialized()) {
+      setKakaoReady(true);
+      return;
+    }
+
+    const onReady = () => {
+      if (!w.Kakao) return;
+      if (!w.Kakao.isInitialized()) {
+        w.Kakao.init(kakaoKey);
+      }
+      setKakaoReady(true);
+    };
+
+    const existing = document.getElementById("kakao-js-sdk");
+    if (existing) {
+      existing.addEventListener("load", onReady, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "kakao-js-sdk";
+    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.7/kakao.min.js";
+    script.async = true;
+    script.onload = onReady;
+    document.head.appendChild(script);
+  }, []);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      alert("링크 복사에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
+  const handleKakaoShare = async () => {
+    if (kakaoReady && typeof window !== "undefined" && window.Kakao) {
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: "feed",
+          content: {
+            title: "오늘의 건강 질문",
+            description: "건강 질문을 카카오톡으로 공유해보세요.",
+            imageUrl: `${siteUrl}/og-image.png`,
+            link: {
+              webUrl: shareUrl,
+              mobileWebUrl: shareUrl,
+            },
+          },
+        });
+        return;
+      } catch {
+        // 카카오 공유 실패 시 아래에서 링크 복사 시도
+      }
+    }
+
+    // 카카오톡 공유가 불가능하면 링크 복사로 대체
+    await handleCopyLink();
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4">
+      <button
+        type="button"
+        onClick={handleCopyLink}
+        className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-white text-gray-800 border border-gray-200 min-h-[44px] sm:min-h-[52px] w-full sm:w-64"
+        aria-label="질문 링크 복사"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 17l4 4 4-4m-4-5v9M4 9V5a2 2 0 012-2h12a2 2 0 012 2v4"
+          />
+        </svg>
+        <span>{copied ? "링크 복사됨" : "링크 복사"}</span>
+      </button>
+      <button
+        type="button"
+        onClick={handleKakaoShare}
+        className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-[#FEE500] hover:bg-[#FDE74B] text-[#381E1F] min-h-[44px] sm:min-h-[52px] w-full sm:w-64"
+        aria-label="카카오톡으로 질문 공유하기"
+      >
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#381E1F] text-[#FEE500] text-xs">
+          K
+        </span>
+        <span>카카오톡 공유</span>
+      </button>
+    </div>
+  );
 }
 
 export default function HealthQuestionActions({
@@ -34,7 +179,6 @@ export default function HealthQuestionActions({
       await resetQuizProgress(questionId);
       router.push(`/health-questions/${questionId}/quiz`);
     } catch (error) {
-      console.error("퀴즈 리셋 실패:", error);
       alert("퀴즈 리셋에 실패했습니다.");
     } finally {
       setResetting(false);
@@ -43,113 +187,121 @@ export default function HealthQuestionActions({
 
   if (isAuthenticated && isCompleted) {
     return (
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-        <button
-          onClick={handleResetQuestion}
-          disabled={resetting}
-          className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] sm:min-h-[52px]"
-          aria-label="퀴즈 다시 풀기"
-        >
-          {resetting ? (
-            <>
-              <svg
-                className="animate-spin h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              <span>리셋 중...</span>
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              <span>다시 풀기</span>
-            </>
-          )}
-        </button>
-        <button
-          onClick={() => router.push(`/health-questions/${questionId}/result`)}
-          className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white min-h-[44px] sm:min-h-[52px]"
-          aria-label="퀴즈 결과 보기"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+          <button
+            onClick={handleResetQuestion}
+            disabled={resetting}
+            className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] sm:min-h-[52px] w-full sm:w-64"
+            aria-label="퀴즈 다시 풀기"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            />
-          </svg>
-          <span>결과 보기</span>
-        </button>
+            {resetting ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span>리셋 중...</span>
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                <span>다시 풀기</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={() =>
+              router.push(`/health-questions/${questionId}/result`)
+            }
+            className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white min-h-[44px] sm:min-h-[52px] w-full sm:w-64"
+            aria-label="퀴즈 결과 보기"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            <span>결과 보기</span>
+          </button>
+        </div>
+        <ShareButtons questionId={questionId} />
       </div>
     );
   }
 
   return (
-    <button
-      onClick={handleStartQuestion}
-      className={`inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg active:shadow-sm min-h-[44px] sm:min-h-[52px] ${
-        isAuthenticated
-          ? "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white"
-          : "bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white"
-      }`}
-      aria-label={isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
-    >
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
+    <div className="space-y-3">
+      <button
+        onClick={handleStartQuestion}
+        className={`inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg active:shadow-sm min-h-[44px] sm:min-h-[52px] w-full sm:w-64 ${
+          isAuthenticated
+            ? "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white"
+            : "bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white"
+        }`}
+        aria-label={isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-      <span>{isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}</span>
-    </button>
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <span>{isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}</span>
+      </button>
+      <ShareButtons questionId={questionId} />
+    </div>
   );
 }

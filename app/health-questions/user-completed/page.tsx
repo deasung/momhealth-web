@@ -258,27 +258,27 @@ export default async function UserCompletedPage({
         {/* 페이지 헤더 */}
         <header className="mb-6 md:mb-8">
           <nav aria-label="브레드크럼 네비게이션" className="mb-4">
-            <Link
-              href="/my"
+          <Link
+            href="/my"
               className="inline-flex items-center gap-2 px-3 py-2 -ml-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base font-medium min-h-[44px]"
-              aria-label="마이페이지로 돌아가기"
+            aria-label="마이페이지로 돌아가기"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              <span>뒤로가기</span>
-            </Link>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            <span>뒤로가기</span>
+          </Link>
           </nav>
 
           <div>

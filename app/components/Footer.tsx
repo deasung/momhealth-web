@@ -15,7 +15,7 @@ const Footer = () => {
                 href="/"
                 className="inline-block font-bold text-xl md:text-2xl text-gray-900 hover:text-orange-500 transition-colors"
               >
-                오늘의 건강
+                  오늘의 건강
               </Link>
             </div>
 

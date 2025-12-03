@@ -530,6 +530,71 @@ export async function getUserCompletedQuestionsServer(
 }
 
 /**
+ * 친구의 특정 질문 결과 조회 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getFriendQuestionResultServer(
+  params: {
+    questionId: string;
+    targetUserId: string;
+  },
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get(
+      `/private/health.questions/${params.questionId}/result/${params.targetUserId}`
+    );
+    return response.data;
+  } catch (error: unknown) {
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getFriendQuestionResultServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            `/private/health.questions/${params.questionId}/result/${params.targetUserId}`
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getFriendQuestionResultServer] 친구의 질문 결과 조회 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+        }
+      );
+      throw handledError;
+    }
+  }
+}
+
+/**
  * 공지사항 목록 가져오기 (공개 API)
  */
 export async function getNoticesServer(params?: {
@@ -583,6 +648,7 @@ export async function getMappedUsersServer(
 
     const api = createServerApi(accessToken);
     const response = await api.get("/private/register/mapped-users");
+    console.log("response", response.data);
     return response.data;
   } catch (error: unknown) {
     // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)

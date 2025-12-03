@@ -855,6 +855,22 @@ export const getUserCompletedQuestions = async (params: {
   }
 };
 
+// 친구의 특정 질문 결과 조회
+export const getFriendQuestionResult = async (params: {
+  questionId: string;
+  targetUserId: string;
+}) => {
+  try {
+    const response = await api.get(
+      `/private/health.questions/${params.questionId}/result/${params.targetUserId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("친구의 질문 결과 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 문의 목록 조회
 export const getInquiries = async (params?: {
   limit?: number;

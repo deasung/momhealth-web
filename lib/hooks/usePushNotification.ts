@@ -56,16 +56,28 @@ export function usePushNotification(): UsePushNotificationReturn {
     checkSupport();
   }, []);
 
-  // Firebase 초기화
+  // Firebase 초기화 (환경 변수가 있을 때만)
   useEffect(() => {
     if (!isSupported || isLoading) return;
 
+    // Firebase 환경 변수가 설정되어 있는지 확인
+    const hasFirebaseConfig =
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+    if (!hasFirebaseConfig) {
+      // Firebase 환경 변수가 없으면 초기화하지 않음 (에러 방지)
+      return;
+    }
+
     try {
-      initializeFirebase();
-      initializeMessaging();
+      const app = initializeFirebase();
+      if (app) {
+        initializeMessaging();
+      }
     } catch (err) {
-      console.error("Firebase 초기화 실패:", err);
-      setError("Firebase 초기화에 실패했습니다.");
+      // Firebase 초기화 실패는 조용히 무시 (환경 변수 없을 때 에러 방지)
     }
   }, [isSupported, isLoading]);
 

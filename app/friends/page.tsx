@@ -239,10 +239,10 @@ export default async function FriendsPage() {
           ) : (
             <div className="space-y-3">
               {friends.map((friend) => (
-                <div
+                <Link
                   key={friend.mappingId}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-gray-300 transition-colors cursor-pointer"
-                  // TODO: 친구의 건강 질문 화면으로 이동
+                  href={`/friends/${friend.friend.id}`}
+                  className="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-gray-300 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     {/* 프로필 이미지 */}
@@ -302,7 +302,7 @@ export default async function FriendsPage() {
                       />
                     </svg>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

@@ -20,7 +20,10 @@ const Header = () => {
     setIsClient(true);
   }, []);
 
+  // 이벤트 리스너 정리 최적화 (메모리 누수 방지)
   useEffect(() => {
+    if (!isClient) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         openDropdown &&
@@ -30,13 +33,11 @@ const Header = () => {
         setOpenDropdown(null);
       }
     };
-    if (isClient) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
-      if (isClient) {
-        document.removeEventListener("mousedown", handleClickOutside);
-      }
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [openDropdown, isClient]);
 

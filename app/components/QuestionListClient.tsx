@@ -20,44 +20,67 @@ export default function QuestionListClient({
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [hasMore, setHasMore] = useState(!!initialNextCursor);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef(false); // 중복 로딩 방지
 
-  // 더 많은 데이터 로드
+  // 더 많은 데이터 로드 (메모리 최적화: 최대 100개까지만 유지)
+  const MAX_ITEMS = 100;
   const loadMore = useCallback(async () => {
-    if (!nextCursor || loadingMore) return;
+    if (!nextCursor || loadingMore || loadingRef.current) return;
 
+    loadingRef.current = true;
     try {
       setLoadingMore(true);
       const data = await getHealthQuestions(10, nextCursor);
 
-      setQuestions((prev) => [...prev, ...data.questions]);
+      setQuestions((prev) => {
+        const newQuestions = [...prev, ...data.questions];
+        // 메모리 최적화: 최대 개수 초과 시 오래된 항목 제거
+        if (newQuestions.length > MAX_ITEMS) {
+          return newQuestions.slice(-MAX_ITEMS);
+        }
+        return newQuestions;
+      });
       setNextCursor(data.nextCursor);
       setHasMore(!!data.nextCursor);
     } catch (err) {
       console.error("추가 질문목록 로딩 실패:", err);
     } finally {
       setLoadingMore(false);
+      loadingRef.current = false;
     }
   }, [nextCursor, loadingMore]);
 
-  // Intersection Observer로 무한 스크롤
+  // Intersection Observer로 무한 스크롤 (메모리 최적화: observer 재생성 최소화)
   useEffect(() => {
-    if (!hasMore || loadingMore || !observerTarget.current) return;
+    if (!hasMore || loadingMore || !observerTarget.current) {
+      // observer 정리
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      return;
+    }
 
     const target = observerTarget.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
 
-    observer.observe(target);
+    // 기존 observer가 있으면 재사용
+    if (!observerRef.current) {
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !loadingRef.current) {
+            loadMore();
+          }
+        },
+        { threshold: 0.1 }
+      );
+    }
+
+    observerRef.current.observe(target);
 
     return () => {
-      if (target) {
-        observer.unobserve(target);
+      if (observerRef.current && target) {
+        observerRef.current.unobserve(target);
       }
     };
   }, [hasMore, loadingMore, loadMore]);

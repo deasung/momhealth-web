@@ -44,11 +44,19 @@ export default function MyPage() {
     }
   }, [isAuthenticated, isLoading, isTokenSynced]);
 
+  // 메모리 최적화: fetchProfile 의존성 최소화
   useEffect(() => {
     if (isAuthenticated && !isLoading && isTokenSynced && mounted) {
       fetchProfile();
     }
-  }, [isAuthenticated, isLoading, isTokenSynced, mounted, fetchProfile]);
+    // 컴포넌트 언마운트 시 프로필 데이터 정리
+    return () => {
+      if (!mounted) {
+        setUserProfile(null);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isLoading, isTokenSynced, mounted]);
 
   // 로그인 확인
   if (!mounted || (!isLoading && !isAuthenticated)) {
@@ -143,14 +151,14 @@ export default function MyPage() {
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900 mb-1">
                 {profileLoading ? (
-                  <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                  <span className="inline-block h-6 bg-gray-200 rounded animate-pulse w-24"></span>
                 ) : (
                   `${userProfile?.nickname || "사용자"}님`
                 )}
               </h2>
               <p className="text-sm text-gray-500">
                 {profileLoading ? (
-                  <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                  <span className="inline-block h-4 bg-gray-200 rounded animate-pulse w-20"></span>
                 ) : userProfile?.isSocial ? (
                   `${userProfile.socialProvider || "소셜"} 연동`
                 ) : (

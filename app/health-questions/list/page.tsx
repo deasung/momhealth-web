@@ -5,6 +5,7 @@ import Footer from "../../components/Footer";
 import QuestionListClient from "../../components/QuestionListClient";
 import { getHealthQuestionsServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
+import type { QuestionListItemDTO } from "../../types/dto";
 import { generatePageMetadata } from "../../../lib/metadata";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
@@ -64,7 +65,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // ✅ Server Component: 서버에서 초기 데이터 가져오기
 export default async function HealthQuestionsList() {
-  let questions: HealthQuestionDetail[] = [];
+  let questions: QuestionListItemDTO[] = [];
   let nextCursor: string | null = null;
   let error: string | null = null;
 
@@ -72,27 +73,24 @@ export default async function HealthQuestionsList() {
     const { getServerTokens } = await import("../../../lib/api-server");
     const tokens = await getServerTokens();
 
-    console.log("📋 [HealthQuestionsList] 토큰 상태:", {
-      hasAccessToken: !!tokens.accessToken,
-      hasRefreshToken: !!tokens.refreshToken,
-      accessTokenPreview: tokens.accessToken
-        ? `${tokens.accessToken.substring(0, 20)}...`
-        : "null",
-    });
-
-    if (!tokens.accessToken) {
-      console.warn(
-        "⚠️ [HealthQuestionsList] 토큰이 없습니다. 401 에러가 발생할 수 있습니다."
-      );
-    }
-
     const data = await getHealthQuestionsServer(
       10,
       undefined,
       tokens.accessToken,
       tokens.refreshToken
     );
-    questions = data.questions || [];
+    // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
+    questions = (data.questions || []).map((q: HealthQuestionDetail) => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      thumbnailUrl: q.thumbnailUrl,
+      primaryCategory: q.primaryCategory,
+      secondaryCategory: q.secondaryCategory,
+      questionCount: q.questionCount,
+      durationSeconds: q.durationSeconds,
+      viewCount: q.viewCount,
+    }));
     nextCursor = data.nextCursor || null;
   } catch (err: unknown) {
     const axiosError = err as {

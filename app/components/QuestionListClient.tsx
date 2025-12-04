@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getHealthQuestions } from "../../lib/api";
+import type { QuestionListItemDTO } from "../types/dto";
 import type { HealthQuestionDetail } from "../types/health-questions";
 
 interface QuestionListClientProps {
-  initialQuestions: HealthQuestionDetail[];
+  initialQuestions: QuestionListItemDTO[];
   initialNextCursor: string | null;
 }
 
@@ -33,8 +34,23 @@ export default function QuestionListClient({
       setLoadingMore(true);
       const data = await getHealthQuestions(10, nextCursor);
 
+      // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
+      const newQuestionsDTO: QuestionListItemDTO[] = (
+        (data.questions || []) as HealthQuestionDetail[]
+      ).map((q) => ({
+        id: q.id,
+        title: q.title,
+        description: q.description,
+        thumbnailUrl: q.thumbnailUrl,
+        primaryCategory: q.primaryCategory,
+        secondaryCategory: q.secondaryCategory,
+        questionCount: q.questionCount,
+        durationSeconds: q.durationSeconds,
+        viewCount: q.viewCount,
+      }));
+
       setQuestions((prev) => {
-        const newQuestions = [...prev, ...data.questions];
+        const newQuestions = [...prev, ...newQuestionsDTO];
         // 메모리 최적화: 최대 개수 초과 시 오래된 항목 제거
         if (newQuestions.length > MAX_ITEMS) {
           return newQuestions.slice(-MAX_ITEMS);
@@ -44,7 +60,7 @@ export default function QuestionListClient({
       setNextCursor(data.nextCursor);
       setHasMore(!!data.nextCursor);
     } catch (err) {
-      console.error("추가 질문목록 로딩 실패:", err);
+      // 에러는 조용히 처리 (사용자 경험을 위해)
     } finally {
       setLoadingMore(false);
       loadingRef.current = false;
@@ -86,7 +102,7 @@ export default function QuestionListClient({
   }, [hasMore, loadingMore, loadMore]);
 
   // 질문 카드 컴포넌트
-  const QuestionCard = ({ question }: { question: HealthQuestionDetail }) => {
+  const QuestionCard = ({ question }: { question: QuestionListItemDTO }) => {
     const [imageError, setImageError] = useState(false);
     const hasThumbnail = question.thumbnailUrl && !imageError;
 

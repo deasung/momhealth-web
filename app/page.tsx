@@ -5,7 +5,8 @@ import PopularQuestions from "./components/PopularQuestions";
 import RecommendedQuestions from "./components/RecommendedQuestions";
 import CommunityPosts from "./components/CommunityPosts";
 import { getHomeDataServer } from "../lib/api-server";
-import { HomeData } from "./types/home";
+import type { HomeData } from "./types/home";
+import type { QuestionCardDTO } from "./types/dto";
 import { generatePageMetadata } from "../lib/metadata";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
@@ -75,6 +76,28 @@ export default async function Home() {
         community: homeData.communityPosts.length,
       }
     : null;
+
+  // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
+  const popularQuestionsDTO: QuestionCardDTO[] =
+    homeData?.popularQuestions.map((q) => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      thumbnailUrl: q.thumbnailUrl,
+      durationMinutes: q.durationMinutes,
+      createdAt: q.createdAt,
+    })) || [];
+
+  const recommendedQuestionsDTO: QuestionCardDTO[] =
+    homeData?.recommendedQuestions.map((q) => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      thumbnailUrl: q.thumbnailUrl,
+      durationMinutes: q.durationMinutes,
+      createdAt: q.createdAt,
+      readTime: q.readTime,
+    })) || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -163,19 +186,18 @@ export default async function Home() {
 
         {/* ✅ SEO: 시맨틱 HTML 구조 */}
         {/* 인기 질문 섹션 */}
-        {homeData?.popularQuestions && homeData.popularQuestions.length > 0 && (
+        {popularQuestionsDTO.length > 0 && (
           <section aria-label="인기 건강 질문" className="mb-12 md:mb-16">
-            <PopularQuestions questions={homeData.popularQuestions} />
+            <PopularQuestions questions={popularQuestionsDTO} />
           </section>
         )}
 
         {/* 추천 질문 섹션 */}
-        {homeData?.recommendedQuestions &&
-          homeData.recommendedQuestions.length > 0 && (
-            <section aria-label="추천 건강 질문" className="mb-12 md:mb-16">
-              <RecommendedQuestions questions={homeData.recommendedQuestions} />
-            </section>
-          )}
+        {recommendedQuestionsDTO.length > 0 && (
+          <section aria-label="추천 건강 질문" className="mb-12 md:mb-16">
+            <RecommendedQuestions questions={recommendedQuestionsDTO} />
+          </section>
+        )}
 
         {/* 커뮤니티 섹션 */}
         {homeData?.communityPosts && homeData.communityPosts.length > 0 && (

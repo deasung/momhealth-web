@@ -1,5 +1,4 @@
-"use client";
-
+// ✅ Server Component: 정적 UI만 포함, 인터랙션 없음
 import Link from "next/link";
 
 const Footer = () => {
@@ -15,7 +14,7 @@ const Footer = () => {
                 href="/"
                 className="inline-block font-bold text-xl md:text-2xl text-gray-900 hover:text-orange-500 transition-colors"
               >
-                  오늘의 건강
+                오늘의 건강
               </Link>
             </div>
 

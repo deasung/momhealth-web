@@ -1,12 +1,12 @@
 "use client";
 
-import { RecommendedQuestion } from "../types/home";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import type { QuestionCardDTO } from "../types/dto";
 
 interface RecommendedQuestionsProps {
-  questions: RecommendedQuestion[];
+  questions: QuestionCardDTO[];
 }
 
 const RecommendedQuestions = ({ questions }: RecommendedQuestionsProps) => {

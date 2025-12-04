@@ -1,7 +1,10 @@
 /**
  * 서버 사이드 API 유틸리티
  * Server Components에서 사용하는 API 함수들
+ * ✅ server-only로 클라이언트 번들에서 완전히 격리
  */
+
+import "server-only";
 
 import axios from "axios";
 import { getServerSession } from "next-auth/next";

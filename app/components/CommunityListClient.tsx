@@ -4,13 +4,15 @@ import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCommunityPosts, createCommunityPost } from "../../lib/api";
-import type { CommunityPost, CommunityResponse } from "../types/community";
+import type { CommunityResponse, CommunityPost } from "../types/community";
+import type { CommunityPostCardDTO } from "../types/dto";
 import CommunityWriteModal from "./CommunityWriteModal";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
+import { formatTimeAgo } from "../../lib/utils/timeFormat";
 
 interface CommunityListClientProps {
-  initialPosts: CommunityPost[];
+  initialPosts: CommunityPostCardDTO[];
   initialNextCursor: string | null;
 }
 
@@ -93,8 +95,22 @@ export default function CommunityListClient({
       setLoadingMore(true);
       const data: CommunityResponse = await getCommunityPosts(10, nextCursor);
 
+      // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
+      const newPostsDTO: CommunityPostCardDTO[] = (
+        (data.posts || []) as CommunityPost[]
+      ).map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        type: p.type,
+        createdAt: p.createdAt,
+        author: p.author,
+        commentCount: p.commentCount,
+        timeAgo: p.timeAgo,
+      }));
+
       setPosts((prev) => {
-        const newPosts = [...prev, ...data.posts];
+        const newPosts = [...prev, ...newPostsDTO];
         // 메모리 최적화: 최대 개수 초과 시 오래된 항목 제거
         if (newPosts.length > MAX_ITEMS) {
           return newPosts.slice(-MAX_ITEMS);
@@ -104,7 +120,7 @@ export default function CommunityListClient({
       setNextCursor(data.nextCursor);
       setHasMore(!!data.nextCursor);
     } catch (err) {
-      console.error("추가 커뮤니티 게시글 로딩 실패:", err);
+      // 에러는 조용히 처리 (사용자 경험을 위해)
     } finally {
       setLoadingMore(false);
       loadingRef.current = false;
@@ -122,7 +138,7 @@ export default function CommunityListClient({
     }
   };
 
-  const PostCard = ({ post }: { post: CommunityPost }) => (
+  const PostCard = ({ post }: { post: CommunityPostCardDTO }) => (
     <article className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200">
       <Link
         href={`/community/${post.id}`}
@@ -167,7 +183,7 @@ export default function CommunityListClient({
                   dateTime={post.createdAt}
                   className="text-xs text-gray-500"
                 >
-                  {post.timeAgo}
+                  {formatTimeAgo(post.createdAt)}
                 </time>
               </div>
 

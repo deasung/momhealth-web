@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../lib/hooks/useAuth";
 import type { CommunityPostDetail } from "../types/community";
 import type { UserProfile } from "../types/user";
+import { formatTimeAgo } from "../../lib/utils/timeFormat";
 
 interface CommunityPostCommentsProps {
   postId: string;
@@ -162,14 +163,7 @@ export default function CommunityPostComments({
                             dateTime={comment.createdAt}
                             className="text-xs text-gray-500"
                           >
-                            {new Date(comment.createdAt).toLocaleDateString(
-                              "ko-KR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              }
-                            )}
+                            {formatTimeAgo(comment.createdAt)}
                           </time>
                         </div>
 

@@ -5,6 +5,7 @@ import Footer from "../../components/Footer";
 import CommunityListClient from "../../components/CommunityListClient";
 import { getCommunityPostsServer } from "../../../lib/api-server";
 import type { CommunityPost } from "../../types/community";
+import type { CommunityPostCardDTO } from "../../types/dto";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -43,7 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // ✅ Server Component: 서버에서 초기 데이터 가져오기
 export default async function CommunityPage() {
-  let posts: CommunityPost[] = [];
+  let posts: CommunityPostCardDTO[] = [];
   let nextCursor: string | null = null;
   let error: string | null = null;
 
@@ -57,7 +58,17 @@ export default async function CommunityPage() {
       tokens.accessToken,
       tokens.refreshToken
     );
-    posts = data.posts || [];
+    // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
+    posts = (data.posts || []).map((p: CommunityPost) => ({
+      id: p.id,
+      title: p.title,
+      content: p.content,
+      type: p.type,
+      createdAt: p.createdAt,
+      author: p.author,
+      commentCount: p.commentCount,
+      timeAgo: p.timeAgo,
+    }));
     nextCursor = data.nextCursor || null;
   } catch (err: unknown) {
     const axiosError = err as {

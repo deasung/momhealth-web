@@ -10,6 +10,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth";
 import type { CommunityPostDetail } from "../../types/community";
 import { generateCommunityPostMetadata } from "../../../lib/metadata";
+import { formatTimeAgo } from "../../../lib/utils/timeFormat";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -239,7 +240,7 @@ export default async function CommunityPostDetailPage({
                       dateTime={post.createdAt}
                       className="text-xs sm:text-sm text-gray-500"
                     >
-                      {post.timeAgo}
+                      {formatTimeAgo(post.createdAt)}
                     </time>
                   </div>
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight break-words">

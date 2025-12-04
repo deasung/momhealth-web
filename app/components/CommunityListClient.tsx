@@ -9,6 +9,7 @@ import type { CommunityPostCardDTO } from "../types/dto";
 import CommunityWriteModal from "./CommunityWriteModal";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
+import { formatTimeAgo } from "../../lib/utils/timeFormat";
 
 interface CommunityListClientProps {
   initialPosts: CommunityPostCardDTO[];
@@ -182,7 +183,7 @@ export default function CommunityListClient({
                   dateTime={post.createdAt}
                   className="text-xs text-gray-500"
                 >
-                  {post.timeAgo}
+                  {formatTimeAgo(post.createdAt)}
                 </time>
               </div>
 

@@ -363,6 +363,11 @@ export default async function HealthQuestionDetailPage({
           <HealthQuestionActions
             questionId={question.id}
             isCompleted={question.userProgress?.isCompleted || false}
+            title={question.title}
+            description={question.description || question.title}
+            imageUrl={
+              question.detailThumbnailUrl || question.thumbnailUrl || undefined
+            }
           />
         </div>
       </main>

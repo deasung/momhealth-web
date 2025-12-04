@@ -9,11 +9,24 @@ import KakaoShareButton from "./KakaoShareButton";
 interface HealthQuestionActionsProps {
   questionId: string;
   isCompleted: boolean;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-function ShareButtons({ questionId }: { questionId: string }) {
+function ShareButtons({
+  questionId,
+  title,
+  description,
+  imageUrl,
+}: {
+  questionId: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   const shareUrl =
@@ -34,6 +47,16 @@ function ShareButtons({ questionId }: { questionId: string }) {
     // 카카오톡 공유 실패 시 링크 복사로 대체
     handleCopyLink();
   };
+
+  // 질문 정보가 있으면 사용, 없으면 기본값 사용
+  const shareTitle = title || "오늘의 건강 질문";
+  const shareDescription =
+    description || "건강 질문을 카카오톡으로 공유해보세요.";
+  const shareImageUrl = imageUrl
+    ? imageUrl.startsWith("http")
+      ? imageUrl
+      : `${siteUrl}${imageUrl}`
+    : `${siteUrl}/og-image.png`;
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4">
@@ -60,9 +83,9 @@ function ShareButtons({ questionId }: { questionId: string }) {
         <span>{copied ? "링크 복사됨" : "링크 복사"}</span>
       </button>
       <KakaoShareButton
-        title="오늘의 건강 질문"
-        description="건강 질문을 카카오톡으로 공유해보세요."
-        imageUrl={`${siteUrl}/og-image.png`}
+        title={shareTitle}
+        description={shareDescription}
+        imageUrl={shareImageUrl}
         shareUrl={shareUrl}
         onError={handleKakaoShareError}
         className="w-full sm:w-64"
@@ -74,6 +97,9 @@ function ShareButtons({ questionId }: { questionId: string }) {
 export default function HealthQuestionActions({
   questionId,
   isCompleted,
+  title,
+  description,
+  imageUrl,
 }: HealthQuestionActionsProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
@@ -179,7 +205,12 @@ export default function HealthQuestionActions({
             <span>결과 보기</span>
           </button>
         </div>
-        <ShareButtons questionId={questionId} />
+        <ShareButtons
+          questionId={questionId}
+          title={title}
+          description={description}
+          imageUrl={imageUrl}
+        />
       </div>
     );
   }

@@ -8,6 +8,8 @@ import Header from "../../../../components/Header";
 import Footer from "../../../../components/Footer";
 import SEO from "../../../../components/SEO";
 import { getFriendQuestionResult } from "../../../../../lib/api";
+import { useAuth } from "../../../../../lib/hooks/useAuth";
+import { useTokenSync } from "../../../../../lib/hooks/useTokenSync";
 
 interface ResultData {
   score: number;
@@ -54,11 +56,23 @@ export default function FriendQuestionResultPage() {
   const id = params?.id as string;
   const userId = params?.userId as string;
 
+  const { isAuthenticated } = useAuth();
+  const { isTokenSynced } = useTokenSync();
+
   const [resultData, setResultData] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 토큰 동기화가 완료되지 않았으면 대기
+    if (!isTokenSynced) return;
+
+    // 인증되지 않은 경우 로그인 페이지로 리다이렉트
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
     const fetchResult = async () => {
       if (!id || !userId) {
         setError("필수 파라미터가 없습니다.");
@@ -76,12 +90,24 @@ export default function FriendQuestionResultPage() {
         });
 
         setResultData(res);
-      } catch (e: any) {
-        if (e?.response?.status === 404) {
+      } catch (e: unknown) {
+        // axios 인터셉터가 이미 401 에러를 처리했을 수 있음
+        // 하지만 여전히 에러가 발생했다면 처리
+        const axiosError = e as {
+          response?: {
+            status?: number;
+          };
+        };
+
+        if (axiosError?.response?.status === 404) {
           setError("결과가 없습니다.");
-        } else if (e?.response?.status === 401) {
+        } else if (axiosError?.response?.status === 401) {
+          // 401 에러 발생 시 로그인 페이지로 리다이렉트
           setError("로그인이 필요합니다.");
-        } else if (e?.response?.status === 403) {
+          setTimeout(() => {
+            router.push("/login");
+          }, 2000);
+        } else if (axiosError?.response?.status === 403) {
           setError("접근 권한이 없습니다.");
         } else {
           setError("결과를 불러오는데 실패했습니다.");
@@ -92,14 +118,15 @@ export default function FriendQuestionResultPage() {
     };
 
     fetchResult();
-  }, [id, userId]);
+  }, [id, userId, isAuthenticated, isTokenSynced, router]);
 
   const handleLinkPress = () => {
     if (!resultData?.result.linkUrl) return;
     window.open(resultData.result.linkUrl, "_blank", "noopener,noreferrer");
   };
 
-  if (loading) {
+  // 토큰 동기화 대기 중이거나 로딩 중일 때
+  if (!isTokenSynced || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <SEO
@@ -111,7 +138,9 @@ export default function FriendQuestionResultPage() {
         <main className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] px-4 sm:px-6 py-8 md:py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
           <p className="text-gray-600 text-sm sm:text-base">
-            결과를 불러오는 중...
+            {!isTokenSynced
+              ? "인증 상태를 확인하는 중..."
+              : "결과를 불러오는 중..."}
           </p>
         </main>
         <Footer />

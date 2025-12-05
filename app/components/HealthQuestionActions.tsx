@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { resetQuizProgress } from "../../lib/api";
+import { resetQuizProgress, getHealthQuestionDetail } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
 import KakaoShareButton from "./KakaoShareButton";
 
@@ -104,6 +104,35 @@ export default function HealthQuestionActions({
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [resetting, setResetting] = useState(false);
+  const [shareData, setShareData] = useState<{
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+  }>({
+    title,
+    description,
+    imageUrl,
+  });
+
+  // 비로그인 상태에서 질문 정보가 없으면 클라이언트에서 가져오기
+  useEffect(() => {
+    if (!title && !description && questionId) {
+      const fetchQuestionData = async () => {
+        try {
+          const question = await getHealthQuestionDetail(questionId);
+          setShareData({
+            title: question.title,
+            description: question.description || question.title,
+            imageUrl: question.detailThumbnailUrl || question.thumbnailUrl,
+          });
+        } catch (error) {
+          console.error("질문 정보 가져오기 실패:", error);
+          // 에러 발생 시 기본값 유지
+        }
+      };
+      fetchQuestionData();
+    }
+  }, [questionId, title, description]);
 
   const handleStartQuestion = () => {
     if (!isAuthenticated) {
@@ -248,7 +277,12 @@ export default function HealthQuestionActions({
         </svg>
         <span>{isAuthenticated ? "질문 시작하기" : "로그인 후 시작하기"}</span>
       </button>
-      <ShareButtons questionId={questionId} />
+      <ShareButtons
+        questionId={questionId}
+        title={shareData.title}
+        description={shareData.description}
+        imageUrl={shareData.imageUrl}
+      />
     </div>
   );
 }

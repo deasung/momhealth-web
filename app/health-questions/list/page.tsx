@@ -64,21 +64,64 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // ✅ Server Component: 서버에서 초기 데이터 가져오기
-export default async function HealthQuestionsList() {
+export default async function HealthQuestionsList({
+  searchParams,
+}: {
+  searchParams: {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    primaryCategoryId?: string;
+    secondaryCategoryId?: string;
+  };
+}) {
   let questions: QuestionListItemDTO[] = [];
   let nextCursor: string | null = null;
   let error: string | null = null;
+  let categories: Array<{
+    id: string;
+    name: string;
+    secondaryCategories: Array<{ id: string; name: string }>;
+  }> = [];
 
   try {
     const { getServerTokens } = await import("../../../lib/api-server");
     const tokens = await getServerTokens();
 
-    const data = await getHealthQuestionsServer(
-      10,
-      undefined,
-      tokens.accessToken,
-      tokens.refreshToken
-    );
+    // 검색 옵션 구성
+    const searchOptions = {
+      title: searchParams?.title,
+      description: searchParams?.description,
+      categoryId: searchParams?.categoryId,
+      primaryCategoryId: searchParams?.primaryCategoryId,
+      secondaryCategoryId: searchParams?.secondaryCategoryId,
+    };
+
+    // 질문 목록과 카테고리 목록을 병렬로 가져오기
+    const [data, categoriesData] = await Promise.all([
+      getHealthQuestionsServer(
+        10,
+        undefined,
+        tokens.accessToken,
+        tokens.refreshToken,
+        searchOptions
+      ),
+      (async () => {
+        try {
+          const { getHealthQuestionCategoriesServer } = await import(
+            "../../../lib/api-server"
+          );
+          return await getHealthQuestionCategoriesServer(
+            tokens.accessToken,
+            tokens.refreshToken
+          );
+        } catch (err) {
+          // 카테고리 목록 가져오기 실패해도 계속 진행
+          return [];
+        }
+      })(),
+    ]);
+
     // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
     questions = (data.questions || []).map((q: HealthQuestionDetail) => ({
       id: q.id,
@@ -92,6 +135,7 @@ export default async function HealthQuestionsList() {
       viewCount: q.viewCount,
     }));
     nextCursor = data.nextCursor || null;
+    categories = categoriesData || [];
   } catch (err: unknown) {
     const axiosError = err as {
       message?: string;
@@ -171,6 +215,8 @@ export default async function HealthQuestionsList() {
             <QuestionListClient
               initialQuestions={questions}
               initialNextCursor={nextCursor}
+              initialSearchParams={searchParams}
+              categories={categories}
             />
           </section>
         ) : (

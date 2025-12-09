@@ -73,7 +73,14 @@ export async function getHealthQuestionsServer(
   limit: number = 10,
   cursor?: string,
   token?: string | null,
-  refreshToken?: string | null
+  refreshToken?: string | null,
+  options?: {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    primaryCategoryId?: string;
+    secondaryCategoryId?: string;
+  }
 ) {
   // 토큰이 없으면 토큰 가져오기 시도
   let accessToken = token;
@@ -88,6 +95,7 @@ export async function getHealthQuestionsServer(
         tokenPreview: token ? `${token.substring(0, 20)}...` : "null",
         limit,
         cursor: cursor || "없음",
+        options,
       });
     }
 
@@ -109,6 +117,21 @@ export async function getHealthQuestionsServer(
     if (cursor) {
       params.append("cursor", cursor);
     }
+    if (options?.title) {
+      params.append("title", options.title);
+    }
+    if (options?.description) {
+      params.append("description", options.description);
+    }
+    if (options?.categoryId) {
+      params.append("categoryId", options.categoryId);
+    }
+    if (options?.primaryCategoryId) {
+      params.append("primaryCategoryId", options.primaryCategoryId);
+    }
+    if (options?.secondaryCategoryId) {
+      params.append("secondaryCategoryId", options.secondaryCategoryId);
+    }
 
     const response = await api.get(
       `/private/health.questions?${params.toString()}`
@@ -127,6 +150,21 @@ export async function getHealthQuestionsServer(
           params.append("limit", limit.toString());
           if (cursor) {
             params.append("cursor", cursor);
+          }
+          if (options?.title) {
+            params.append("title", options.title);
+          }
+          if (options?.description) {
+            params.append("description", options.description);
+          }
+          if (options?.categoryId) {
+            params.append("categoryId", options.categoryId);
+          }
+          if (options?.primaryCategoryId) {
+            params.append("primaryCategoryId", options.primaryCategoryId);
+          }
+          if (options?.secondaryCategoryId) {
+            params.append("secondaryCategoryId", options.secondaryCategoryId);
           }
           const retryResponse = await api.get(
             `/private/health.questions?${params.toString()}`
@@ -152,6 +190,64 @@ export async function getHealthQuestionsServer(
         hasToken: !!token,
         hasRefreshToken: !!refreshToken,
       });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 건강 질문 카테고리 목록 가져오기 (인증 필요)
+ */
+export async function getHealthQuestionCategoriesServer(
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get("/private/health.questions/categories");
+    return response.data;
+  } catch (error: unknown) {
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getHealthQuestionCategoriesServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            "/private/health.questions/categories"
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getHealthQuestionCategoriesServer] 카테고리 목록 가져오기 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+        }
+      );
       throw handledError;
     }
   }

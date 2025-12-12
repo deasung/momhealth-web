@@ -68,6 +68,7 @@ export default async function HealthQuestionsList({
   searchParams,
 }: {
   searchParams: {
+    q?: string;
     title?: string;
     description?: string;
     categoryId?: string;
@@ -88,10 +89,12 @@ export default async function HealthQuestionsList({
     const { getServerTokens } = await import("../../../lib/api-server");
     const tokens = await getServerTokens();
 
-    // 검색 옵션 구성
+    // 검색 옵션 구성 (q 파라미터를 title과 description으로 변환)
+    const searchQuery =
+      searchParams?.q || searchParams?.title || searchParams?.description;
     const searchOptions = {
-      title: searchParams?.title,
-      description: searchParams?.description,
+      title: searchQuery,
+      description: searchQuery,
       categoryId: searchParams?.categoryId,
       primaryCategoryId: searchParams?.primaryCategoryId,
       secondaryCategoryId: searchParams?.secondaryCategoryId,

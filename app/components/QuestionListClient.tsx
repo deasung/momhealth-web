@@ -4,15 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getHealthQuestions, getHealthQuestionCategories } from "../../lib/api";
+import { getHealthQuestions } from "../../lib/api";
 import type { QuestionListItemDTO } from "../types/dto";
 import type { HealthQuestionDetail } from "../types/health-questions";
-
-interface Category {
-  id: string;
-  name: string;
-  secondaryCategories: Array<{ id: string; name: string }>;
-}
 
 interface QuestionListClientProps {
   initialQuestions: QuestionListItemDTO[];
@@ -25,14 +19,13 @@ interface QuestionListClientProps {
     primaryCategoryId?: string;
     secondaryCategoryId?: string;
   };
-  categories?: Category[];
+  categories?: never;
 }
 
 export default function QuestionListClient({
   initialQuestions,
   initialNextCursor,
   initialSearchParams,
-  categories: initialCategories,
 }: QuestionListClientProps) {
   const router = useRouter();
   const [questions, setQuestions] = useState(initialQuestions);
@@ -50,41 +43,13 @@ export default function QuestionListClient({
       initialSearchParams?.description ||
       ""
   );
-  const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState<
-    string | null
-  >(initialSearchParams?.primaryCategoryId || null);
-  const [selectedSecondaryCategory, setSelectedSecondaryCategory] = useState<
-    string | null
-  >(initialSearchParams?.secondaryCategoryId || null);
-  const [categories, setCategories] = useState<Category[]>(
-    initialCategories || []
-  );
   const [isSearching, setIsSearching] = useState(false);
-  const [showFilters, setShowFilters] = useState(
-    !!(selectedPrimaryCategory || selectedSecondaryCategory)
-  );
-
-  // 카테고리 목록 가져오기
-  useEffect(() => {
-    if (!initialCategories || initialCategories.length === 0) {
-      getHealthQuestionCategories()
-        .then((data) => {
-          setCategories(data || []);
-        })
-        .catch(() => {
-          // 에러는 조용히 처리
-        });
-    }
-  }, [initialCategories]);
 
   // 검색 옵션 구성
   const getSearchOptions = useCallback(() => {
     const options: {
       title?: string;
       description?: string;
-      categoryId?: string;
-      primaryCategoryId?: string;
-      secondaryCategoryId?: string;
     } = {};
 
     // 검색어가 있으면 제목과 내용 모두에 적용
@@ -92,14 +57,9 @@ export default function QuestionListClient({
       options.title = searchQuery.trim();
       options.description = searchQuery.trim();
     }
-    if (selectedSecondaryCategory) {
-      options.secondaryCategoryId = selectedSecondaryCategory;
-    } else if (selectedPrimaryCategory) {
-      options.primaryCategoryId = selectedPrimaryCategory;
-    }
 
     return options;
-  }, [searchQuery, selectedPrimaryCategory, selectedSecondaryCategory]);
+  }, [searchQuery]);
 
   // 검색 실행
   const handleSearch = useCallback(async () => {
@@ -133,10 +93,6 @@ export default function QuestionListClient({
       // URL 업데이트
       const params = new URLSearchParams();
       if (searchQuery.trim()) params.set("q", searchQuery.trim());
-      if (searchOptions.primaryCategoryId)
-        params.set("primaryCategoryId", searchOptions.primaryCategoryId);
-      if (searchOptions.secondaryCategoryId)
-        params.set("secondaryCategoryId", searchOptions.secondaryCategoryId);
 
       const newUrl = params.toString()
         ? `/health-questions/list?${params.toString()}`
@@ -151,12 +107,44 @@ export default function QuestionListClient({
   }, [isSearching, getSearchOptions, router, searchQuery]);
 
   // 검색 초기화
-  const handleResetSearch = useCallback(() => {
+  const handleResetSearch = useCallback(async () => {
+    if (isSearching) return;
+
+    setIsSearching(true);
+    loadingRef.current = true;
     setSearchQuery("");
-    setSelectedPrimaryCategory(null);
-    setSelectedSecondaryCategory(null);
-    router.push("/health-questions/list");
-  }, [router]);
+
+    try {
+      // 검색 옵션 없이 전체 목록 가져오기
+      const data = await getHealthQuestions(10, undefined, {});
+
+      const newQuestionsDTO: QuestionListItemDTO[] = (
+        (data.questions || []) as HealthQuestionDetail[]
+      ).map((q) => ({
+        id: q.id,
+        title: q.title,
+        description: q.description,
+        thumbnailUrl: q.thumbnailUrl,
+        primaryCategory: q.primaryCategory,
+        secondaryCategory: q.secondaryCategory,
+        questionCount: q.questionCount,
+        durationSeconds: q.durationSeconds,
+        viewCount: q.viewCount,
+      }));
+
+      setQuestions(newQuestionsDTO);
+      setNextCursor(data.nextCursor);
+      setHasMore(!!data.nextCursor);
+
+      // URL 업데이트
+      router.push("/health-questions/list");
+    } catch (err) {
+      // 에러는 조용히 처리
+    } finally {
+      setIsSearching(false);
+      loadingRef.current = false;
+    }
+  }, [isSearching, router]);
 
   // 더 많은 데이터 로드 (메모리 최적화: 최대 100개까지만 유지)
   const MAX_ITEMS = 100;
@@ -373,92 +361,17 @@ export default function QuestionListClient({
     );
   };
 
-  // 선택된 1차 카테고리의 2차 카테고리 목록
-  const selectedPrimary = categories.find(
-    (c) => c.id === selectedPrimaryCategory
-  );
-  const secondaryCategories = selectedPrimary?.secondaryCategories || [];
-
   return (
     <>
-      {/* 검색 UI - 구글 스타일 */}
-      <div className="mb-6 md:mb-8">
-        {/* 메인 검색창 */}
-        <div className="relative max-w-2xl mx-auto">
-          <div className="relative flex items-center">
-            {/* 검색 아이콘 */}
-            <div className="absolute left-4 text-gray-400 pointer-events-none">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-
-            {/* 검색 입력 */}
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-              placeholder="건강 질문 검색..."
-              className="w-full pl-12 pr-12 py-4 text-base sm:text-lg border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm hover:shadow-md transition-all"
-            />
-
-            {/* 검색어 지우기 버튼 */}
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  if (!selectedPrimaryCategory && !selectedSecondaryCategory) {
-                    handleResetSearch();
-                  }
-                }}
-                className="absolute right-12 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="검색어 지우기"
-              >
+      {/* 검색 UI - 모던한 카드 스타일 */}
+      <div className="mb-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 max-w-3xl mx-auto">
+          <div className="relative">
+            <div className="flex items-center gap-3">
+              {/* 검색 아이콘 */}
+              <div className="flex-shrink-0 text-orange-500">
                 <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            )}
-
-            {/* 검색 버튼 */}
-            <button
-              onClick={handleSearch}
-              disabled={isSearching}
-              className="absolute right-2 p-2 text-gray-500 hover:text-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="검색"
-            >
-              {isSearching ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-orange-500 border-t-transparent"></div>
-              ) : (
-                <svg
-                  className="w-5 h-5"
+                  className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -471,114 +384,90 @@ export default function QuestionListClient({
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-              )}
-            </button>
-          </div>
+              </div>
 
-          {/* 필터 토글 버튼 */}
-          <div className="mt-4 flex items-center justify-center gap-4">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="text-sm text-gray-600 hover:text-orange-500 transition-colors flex items-center gap-1"
-            >
-              <span>필터</span>
-              <svg
-                className={`w-4 h-4 transition-transform ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-            {(searchQuery ||
-              selectedPrimaryCategory ||
-              selectedSecondaryCategory) && (
-              <button
-                onClick={handleResetSearch}
-                className="text-sm text-gray-600 hover:text-orange-500 transition-colors"
-              >
-                초기화
-              </button>
-            )}
-          </div>
+              {/* 검색 입력 */}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
+                placeholder="건강 질문을 검색해보세요..."
+                className="flex-1 py-3 text-base sm:text-lg border-0 focus:outline-none focus:ring-0 bg-transparent placeholder-gray-400"
+              />
 
-          {/* 카테고리 필터 (접을 수 있음) */}
-          {showFilters && (
-            <div className="mt-4 bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="primary-category"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    1차 카테고리
-                  </label>
-                  <select
-                    id="primary-category"
-                    value={selectedPrimaryCategory || ""}
-                    onChange={(e) => {
-                      setSelectedPrimaryCategory(e.target.value || null);
-                      setSelectedSecondaryCategory(null);
-                      // 카테고리 변경 시 자동 검색
-                      setTimeout(() => handleSearch(), 0);
+              {/* 검색어 지우기 및 검색 버튼 */}
+              <div className="flex items-center gap-2">
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      handleResetSearch();
                     }}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors text-sm sm:text-base bg-white"
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+                    aria-label="검색어 지우기"
                   >
-                    <option value="">전체</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor="secondary-category"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    2차 카테고리
-                  </label>
-                  <select
-                    id="secondary-category"
-                    value={selectedSecondaryCategory || ""}
-                    onChange={(e) => {
-                      setSelectedSecondaryCategory(e.target.value || null);
-                      // 카테고리 변경 시 자동 검색
-                      setTimeout(() => handleSearch(), 0);
-                    }}
-                    disabled={!selectedPrimaryCategory}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors text-sm sm:text-base bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">전체</option>
-                    {secondaryCategories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  onClick={handleSearch}
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 active:bg-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base shadow-sm hover:shadow-md disabled:shadow-none"
+                  aria-label="검색"
+                >
+                  {isSearching ? (
+                    <span className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span>검색 중</span>
+                    </span>
+                  ) : (
+                    "검색"
+                  )}
+                </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* 검색 결과 표시 */}
-      {(searchQuery ||
-        selectedPrimaryCategory ||
-        selectedSecondaryCategory) && (
-        <div className="mb-4 text-sm text-gray-600">
-          검색 결과: {questions.length}개
+      {searchQuery && (
+        <div className="mb-6 text-center">
+          <span className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            검색 결과 <strong>{questions.length}개</strong>
+          </span>
         </div>
       )}
 
@@ -588,26 +477,55 @@ export default function QuestionListClient({
             <QuestionCard key={question.id} question={question} />
           ))
         ) : (
-          <div className="text-center py-12 md:py-16">
-            <div
-              className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-100 mb-6"
-              role="img"
-              aria-label="검색 결과 없음"
-            >
-              <span className="text-4xl sm:text-5xl">🔍</span>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 md:p-16">
+            <div className="text-center max-w-md mx-auto">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-orange-50 to-orange-100 mb-6">
+                <svg
+                  className="w-12 h-12 text-orange-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+                {searchQuery ? "검색 결과가 없습니다" : "질문 결과가 없습니다"}
+              </h3>
+              <p className="text-gray-500 mb-8 text-base">
+                {searchQuery
+                  ? "다른 검색어로 다시 시도해보세요."
+                  : "검색창에서 건강 질문을 검색해보세요."}
+              </p>
+              {searchQuery && (
+                <button
+                  onClick={handleResetSearch}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-all font-medium text-sm sm:text-base min-h-[44px]"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  검색 초기화
+                </button>
+              )}
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-              검색 결과가 없습니다
-            </h3>
-            <p className="text-gray-600 mb-6 text-sm sm:text-base">
-              다른 검색어나 필터를 사용해보세요.
-            </p>
-            <button
-              onClick={handleResetSearch}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 min-h-[44px] shadow-sm hover:shadow-md"
-            >
-              검색 초기화
-            </button>
           </div>
         )}
       </div>

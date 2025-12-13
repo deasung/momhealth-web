@@ -79,11 +79,6 @@ export default async function HealthQuestionsList({
   let questions: QuestionListItemDTO[] = [];
   let nextCursor: string | null = null;
   let error: string | null = null;
-  let categories: Array<{
-    id: string;
-    name: string;
-    secondaryCategories: Array<{ id: string; name: string }>;
-  }> = [];
 
   try {
     const { getServerTokens } = await import("../../../lib/api-server");
@@ -100,30 +95,14 @@ export default async function HealthQuestionsList({
       secondaryCategoryId: searchParams?.secondaryCategoryId,
     };
 
-    // 질문 목록과 카테고리 목록을 병렬로 가져오기
-    const [data, categoriesData] = await Promise.all([
-      getHealthQuestionsServer(
-        10,
-        undefined,
-        tokens.accessToken,
-        tokens.refreshToken,
-        searchOptions
-      ),
-      (async () => {
-        try {
-          const { getHealthQuestionCategoriesServer } = await import(
-            "../../../lib/api-server"
-          );
-          return await getHealthQuestionCategoriesServer(
-            tokens.accessToken,
-            tokens.refreshToken
-          );
-        } catch (err) {
-          // 카테고리 목록 가져오기 실패해도 계속 진행
-          return [];
-        }
-      })(),
-    ]);
+    // 질문 목록 가져오기
+    const data = await getHealthQuestionsServer(
+      10,
+      undefined,
+      tokens.accessToken,
+      tokens.refreshToken,
+      searchOptions
+    );
 
     // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
     questions = (data.questions || []).map((q: HealthQuestionDetail) => ({
@@ -138,7 +117,6 @@ export default async function HealthQuestionsList({
       viewCount: q.viewCount,
     }));
     nextCursor = data.nextCursor || null;
-    categories = categoriesData || [];
   } catch (err: unknown) {
     const axiosError = err as {
       message?: string;
@@ -213,53 +191,13 @@ export default async function HealthQuestionsList({
         )}
 
         {/* ✅ SEO: 질문 목록 섹션 */}
-        {questions.length > 0 ? (
-          <section aria-label="건강 질문 목록">
-            <QuestionListClient
-              initialQuestions={questions}
-              initialNextCursor={nextCursor}
-              initialSearchParams={searchParams}
-              categories={categories}
-            />
-          </section>
-        ) : (
-          <div className="text-center py-12 md:py-16">
-            <div
-              className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-100 mb-6"
-              role="img"
-              aria-label="질문 없음"
-            >
-              <span className="text-4xl sm:text-5xl">📝</span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-              질문이 없습니다
-            </h3>
-            <p className="text-gray-600 mb-6 text-sm sm:text-base">
-              아직 등록된 질문이 없습니다.
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors font-medium text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 min-h-[44px] shadow-sm hover:shadow-md"
-              aria-label="홈으로 돌아가기"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
-              <span>홈으로 돌아가기</span>
-            </Link>
-          </div>
-        )}
+        <section aria-label="건강 질문 목록">
+          <QuestionListClient
+            initialQuestions={questions}
+            initialNextCursor={nextCursor}
+            initialSearchParams={searchParams}
+          />
+        </section>
       </main>
 
       <Footer />

@@ -1,0 +1,1250 @@
+/**
+ * 서버 사이드 API 유틸리티
+ * Server Components에서 사용하는 API 함수들
+ * ✅ server-only로 클라이언트 번들에서 완전히 격리
+ */
+
+import "server-only";
+
+import axios from "axios";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth";
+import { redirect } from "next/navigation";
+
+/**
+ * 세션 만료 에러 (refresh token 갱신 실패 시)
+ */
+export class SessionExpiredError extends Error {
+  constructor(message: string = "세션이 만료되었습니다. 다시 로그인해주세요.") {
+    super(message);
+    this.name = "SessionExpiredError";
+  }
+}
+
+const API_KEY = "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
+const BASE_URL = process.env.MOMHEALTH_API_URL;
+
+if (!BASE_URL) {
+  console.warn("⚠️ MOMHEALTH_API_URL 환경변수가 설정되지 않았습니다.");
+}
+
+// 서버용 axios 인스턴스 생성
+const createServerApi = (token?: string | null) => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY,
+  };
+
+  // 토큰이 있으면 Authorization 헤더 추가
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+    // 개발 환경에서만 로깅 (프로덕션에서는 로그 제거)
+    if (process.env.NODE_ENV === "development") {
+      console.log("✅ [createServerApi] Authorization 헤더 추가됨");
+    }
+  }
+
+  return axios.create({
+    baseURL: BASE_URL,
+    headers,
+    timeout: 10000,
+  });
+};
+
+/**
+ * 홈 데이터 가져오기 (공개 API)
+ */
+export async function getHomeDataServer() {
+  try {
+    const api = createServerApi();
+    const response = await api.get("/public/home");
+    return response.data;
+  } catch (error) {
+    console.error("홈 데이터 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 건강 질문 목록 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getHealthQuestionsServer(
+  limit: number = 10,
+  cursor?: string,
+  token?: string | null,
+  refreshToken?: string | null,
+  options?: {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    primaryCategoryId?: string;
+    secondaryCategoryId?: string;
+  }
+) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    // 디버깅: 토큰 전달 확인 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔐 [getHealthQuestionsServer] 토큰 전달 상태:", {
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : "null",
+        limit,
+        cursor: cursor || "없음",
+        options,
+      });
+    }
+
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getHealthQuestionsServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
+    const params = new URLSearchParams();
+    params.append("limit", limit.toString());
+    if (cursor) {
+      params.append("cursor", cursor);
+    }
+    if (options?.title) {
+      params.append("title", options.title);
+    }
+    if (options?.description) {
+      params.append("description", options.description);
+    }
+    if (options?.categoryId) {
+      params.append("categoryId", options.categoryId);
+    }
+    if (options?.primaryCategoryId) {
+      params.append("primaryCategoryId", options.primaryCategoryId);
+    }
+    if (options?.secondaryCategoryId) {
+      params.append("secondaryCategoryId", options.secondaryCategoryId);
+    }
+
+    const response = await api.get(
+      `/private/health.questions?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getHealthQuestionsServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const params = new URLSearchParams();
+          params.append("limit", limit.toString());
+          if (cursor) {
+            params.append("cursor", cursor);
+          }
+          if (options?.title) {
+            params.append("title", options.title);
+          }
+          if (options?.description) {
+            params.append("description", options.description);
+          }
+          if (options?.categoryId) {
+            params.append("categoryId", options.categoryId);
+          }
+          if (options?.primaryCategoryId) {
+            params.append("primaryCategoryId", options.primaryCategoryId);
+          }
+          if (options?.secondaryCategoryId) {
+            params.append("secondaryCategoryId", options.secondaryCategoryId);
+          }
+          const retryResponse = await api.get(
+            `/private/health.questions?${params.toString()}`
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("❌ [getHealthQuestionsServer] 질문목록 가져오기 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 건강 질문 카테고리 목록 가져오기 (인증 필요)
+ */
+export async function getHealthQuestionCategoriesServer(
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get("/private/health.questions/categories");
+    return response.data;
+  } catch (error: unknown) {
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getHealthQuestionCategoriesServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            "/private/health.questions/categories"
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getHealthQuestionCategoriesServer] 카테고리 목록 가져오기 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+        }
+      );
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 건강 질문 상세 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getHealthQuestionDetailServer(
+  id: string,
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getHealthQuestionDetailServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get(`/private/health.questions/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getHealthQuestionDetailServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            `/private/health.questions/${id}`
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getHealthQuestionDetailServer] 질문 상세 가져오기 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+          hasToken: !!token,
+          hasRefreshToken: !!refreshToken,
+        }
+      );
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 퀴즈 진행 상태 리셋 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function resetQuizProgressServer(
+  id: string,
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.post(`/private/health.questions/${id}/reset`);
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "resetQuizProgressServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.post(
+            `/private/health.questions/${id}/reset`
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("❌ [resetQuizProgressServer] 퀴즈 리셋 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 커뮤니티 게시글 목록 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getCommunityPostsServer(
+  limit: number = 10,
+  cursor?: string,
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getCommunityPostsServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
+    const params = new URLSearchParams();
+    params.append("limit", limit.toString());
+    if (cursor) {
+      params.append("cursor", cursor);
+    }
+
+    const response = await api.get(`/private/community?${params.toString()}`);
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getCommunityPostsServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const params = new URLSearchParams();
+          params.append("limit", limit.toString());
+          if (cursor) {
+            params.append("cursor", cursor);
+          }
+          const retryResponse = await api.get(
+            `/private/community?${params.toString()}`
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("❌ [getCommunityPostsServer] 커뮤니티 게시글 로딩 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 커뮤니티 게시글 상세 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getCommunityPostDetailServer(
+  postId: string,
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    if (!accessToken) {
+      console.warn(
+        "⚠️ [getCommunityPostDetailServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
+      );
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get(`/private/community/${postId}`);
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getCommunityPostDetailServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(`/private/community/${postId}`);
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getCommunityPostDetailServer] 커뮤니티 게시글 상세 로딩 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+          hasToken: !!token,
+          hasRefreshToken: !!refreshToken,
+        }
+      );
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 개인정보 처리방침 가져오기 (공개 API)
+ */
+export async function getPrivacyPolicyServer() {
+  try {
+    const api = createServerApi();
+    const response = await api.get("/public/policy/privacy");
+    return response.data;
+  } catch (error) {
+    console.error("개인정보 처리방침 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 서비스 이용약관 가져오기 (공개 API)
+ */
+export async function getServiceTermsServer() {
+  try {
+    const api = createServerApi();
+    const response = await api.get("/public/policy/terms");
+    return response.data;
+  } catch (error) {
+    console.error("서비스 이용약관 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 사용자의 완료한 건강 질문 조회 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getUserCompletedQuestionsServer(
+  params: {
+    userId: string;
+    page?: number;
+    limit?: number;
+  },
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get("/private/health.questions/user/completed", {
+      params,
+    });
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getUserCompletedQuestionsServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            "/private/health.questions/user/completed",
+            { params }
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getUserCompletedQuestionsServer] 완료한 건강 질문 조회 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+          hasToken: !!token,
+          hasRefreshToken: !!refreshToken,
+        }
+      );
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 친구의 특정 질문 결과 조회 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getFriendQuestionResultServer(
+  params: {
+    questionId: string;
+    targetUserId: string;
+  },
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get(
+      `/private/health.questions/${params.questionId}/result/${params.targetUserId}`
+    );
+    return response.data;
+  } catch (error: unknown) {
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getFriendQuestionResultServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            `/private/health.questions/${params.questionId}/result/${params.targetUserId}`
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error(
+        "❌ [getFriendQuestionResultServer] 친구의 질문 결과 조회 실패:",
+        {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+        }
+      );
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 공지사항 목록 가져오기 (공개 API)
+ */
+export async function getNoticesServer(params?: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}) {
+  try {
+    const api = createServerApi();
+    const response = await api.get("/public/notice/list", { params });
+    return response.data;
+  } catch (error) {
+    console.error("공지사항 목록 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 공지사항 상세 가져오기 (공개 API)
+ */
+export async function getNoticeDetailServer(id: string) {
+  try {
+    const api = createServerApi();
+    const response = await api.get(`/public/notice/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("공지사항 상세 가져오기 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 매핑된 사용자 목록 조회 (친구 목록, 인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getMappedUsersServer(
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get("/private/register/mapped-users");
+    console.log("response", response.data);
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getMappedUsersServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get("/private/register/mapped-users");
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("매핑된 사용자 목록 조회 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 친구 요청 카운트 조회 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getFriendRequestCountsServer(
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  // 토큰이 없으면 토큰 가져오기 시도
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get("/private/register/friend-requests");
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getFriendRequestCountsServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(
+            "/private/register/friend-requests"
+          );
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("친구 요청 카운트 조회 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 문의 목록 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getInquiriesServer(
+  params?: {
+    limit?: number;
+    cursor?: string;
+  },
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get("/private/inquiry", {
+      params: {
+        limit: params?.limit || 10,
+        cursor: params?.cursor,
+      },
+    });
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getInquiriesServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get("/private/inquiry", {
+            params: {
+              limit: params?.limit || 10,
+              cursor: params?.cursor,
+            },
+          });
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("❌ [getInquiriesServer] 문의 목록 가져오기 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * 문의 상세 가져오기 (인증 필요)
+ * 401 에러 발생 시 refresh_token으로 자동 갱신 후 재시도
+ */
+export async function getInquiryDetailServer(
+  id: number,
+  token?: string | null,
+  refreshToken?: string | null
+) {
+  let accessToken = token;
+  let currentRefreshToken = refreshToken;
+
+  try {
+    if (!accessToken) {
+      const tokens = await getServerTokens();
+      accessToken = tokens.accessToken;
+      currentRefreshToken = tokens.refreshToken || currentRefreshToken;
+    }
+
+    const api = createServerApi(accessToken);
+    const response = await api.get(`/private/inquiry/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
+    try {
+      return await handle401Error(
+        error,
+        currentRefreshToken,
+        "getInquiryDetailServer",
+        async (newAccessToken) => {
+          const api = createServerApi(newAccessToken);
+          const retryResponse = await api.get(`/private/inquiry/${id}`);
+          return retryResponse.data;
+        }
+      );
+    } catch (handledError) {
+      const axiosError = handledError as {
+        message?: string;
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+      };
+
+      console.error("❌ [getInquiryDetailServer] 문의 상세 가져오기 실패:", {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        hasToken: !!token,
+        hasRefreshToken: !!refreshToken,
+      });
+      throw handledError;
+    }
+  }
+}
+
+/**
+ * JWT 토큰 만료 시간 확인
+ */
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    const isExpired = payload.exp < currentTime;
+
+    if (isExpired) {
+      console.warn("⚠️ [isTokenExpired] 토큰이 만료되었습니다:", {
+        exp: payload.exp,
+        currentTime,
+        expiredAt: new Date(payload.exp * 1000).toISOString(),
+        now: new Date().toISOString(),
+      });
+    }
+
+    return isExpired;
+  } catch (error) {
+    console.error("❌ [isTokenExpired] 토큰 파싱 실패:", error);
+    return true; // 파싱 실패 시 만료된 것으로 간주
+  }
+}
+
+/**
+ * NextAuth 세션에서 토큰 가져오기
+ * 세션 콜백에서 설정한 token 또는 accessToken 필드를 읽습니다.
+ */
+export async function getServerToken(): Promise<string | null> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️ [getServerToken] 세션이 없습니다.");
+      }
+      return null;
+    }
+
+    // NextAuth 세션에서 토큰 추출
+    // lib/auth.ts의 session 콜백에서 token, accessToken, refreshToken을 설정함
+    const sessionAny = session as unknown as Record<string, unknown>;
+
+    // 우선순위: token > accessToken
+    const token =
+      (sessionAny.token as string) ||
+      (sessionAny.accessToken as string) ||
+      null;
+
+    // 디버깅: 세션 구조 로깅 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development" && !token) {
+      console.log("🔐 [getServerToken] 세션 구조:", {
+        hasSession: !!session,
+        sessionKeys: Object.keys(session),
+        hasToken: !!sessionAny.token,
+        hasAccessToken: !!sessionAny.accessToken,
+      });
+    }
+
+    if (!token) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️ [getServerToken] 세션에는 있지만 토큰이 없습니다.", {
+          sessionKeys: Object.keys(session),
+        });
+      }
+      return null;
+    }
+
+    // 토큰 만료 여부 확인
+    if (isTokenExpired(token)) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "⚠️ [getServerToken] 토큰이 만료되었습니다. refresh_token으로 갱신 필요"
+        );
+      }
+      return null; // 만료된 토큰은 null 반환하여 refresh 시도 유도
+    }
+
+    return token;
+  } catch (error) {
+    console.error("❌ [getServerToken] 서버 토큰 가져오기 실패:", error);
+    return null;
+  }
+}
+
+/**
+ * NextAuth 세션에서 refresh_token 가져오기
+ * 세션 콜백에서 설정한 refreshToken 필드를 읽습니다.
+ */
+export async function getServerRefreshToken(): Promise<string | null> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return null;
+
+    // lib/auth.ts의 session 콜백에서 refreshToken을 설정함
+    const sessionAny = session as unknown as Record<string, unknown>;
+    const refreshToken = (sessionAny.refreshToken as string) || null;
+
+    // 디버깅: refresh token 상태 로깅 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development" && refreshToken) {
+      console.log("🔐 [getServerRefreshToken] refresh token 확인:", {
+        hasSession: !!session,
+        hasRefreshToken: !!refreshToken,
+        refreshTokenPreview: `${refreshToken.substring(0, 20)}...`,
+      });
+    }
+
+    return refreshToken;
+  } catch (error) {
+    console.error(
+      "❌ [getServerRefreshToken] refresh_token 가져오기 실패:",
+      error
+    );
+    return null;
+  }
+}
+
+/**
+ * 게스트 토큰 발급 (비로그인 사용자용)
+ */
+export async function getGuestToken(): Promise<{
+  accessToken: string;
+  refreshToken: string;
+} | null> {
+  try {
+    const api = createServerApi();
+    const response = await api.post("/public/auth/token", {});
+
+    if (response.data?.access_token && response.data?.refresh_token) {
+      console.log("✅ [getGuestToken] 게스트 토큰 발급 성공");
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ [getGuestToken] 게스트 토큰 발급 실패:", error);
+    return null;
+  }
+}
+
+/**
+ * refresh_token으로 access_token 갱신
+ */
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  accessToken: string;
+  refreshToken: string;
+} | null> {
+  try {
+    const api = createServerApi();
+    const response = await api.post("/public/auth/token/refresh", {
+      refresh_token: refreshToken,
+    });
+
+    if (response.data?.access_token && response.data?.refresh_token) {
+      console.log("✅ [refreshAccessToken] 토큰 갱신 성공");
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ [refreshAccessToken] 토큰 갱신 실패:", error);
+    return null;
+  }
+}
+
+/**
+ * 401 에러 처리 및 토큰 갱신 공통 헬퍼 함수
+ * @param error - axios 에러 객체
+ * @param refreshToken - 현재 refresh token
+ * @param functionName - 함수 이름 (로깅용)
+ * @param retryFn - 토큰 갱신 성공 시 재시도할 함수
+ * @returns 토큰 갱신 성공 시 재시도 결과, 실패 시 redirect (never 반환)
+ */
+export async function handle401Error<T>(
+  error: unknown,
+  refreshToken: string | null | undefined,
+  functionName: string,
+  retryFn: (newAccessToken: string) => Promise<T>
+): Promise<T> {
+  const axiosError = error as {
+    message?: string;
+    response?: {
+      status?: number;
+      statusText?: string;
+      data?: unknown;
+    };
+  };
+
+  // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
+  if (axiosError.response?.status === 401 && refreshToken) {
+    console.log(
+      `🔄 [${functionName}] 401 에러 발생, refresh_token으로 토큰 갱신 시도`
+    );
+
+    try {
+      const newTokens = await refreshAccessToken(refreshToken);
+      if (newTokens) {
+        console.log(`✅ [${functionName}] 토큰 갱신 성공, 재시도`);
+
+        // 갱신된 토큰으로 재시도
+        return await retryFn(newTokens.accessToken);
+      } else {
+        console.error(`❌ [${functionName}] 토큰 갱신 응답에 토큰이 없습니다`);
+        // 토큰 갱신 실패 시 세션 만료 처리 - 홈으로 리다이렉트
+        redirect("/");
+      }
+    } catch (refreshError) {
+      console.error(`❌ [${functionName}] 토큰 갱신 실패:`, refreshError);
+      // 토큰 갱신 실패 시 세션 만료 처리 - 홈으로 리다이렉트
+      redirect("/");
+    }
+  }
+
+  // 401이 아니거나 refresh token이 없으면 원래 에러 throw
+  throw error;
+}
+
+/**
+ * 토큰과 refresh_token을 함께 가져오기 (세션 또는 게스트 토큰)
+ */
+export async function getServerTokens(): Promise<{
+  accessToken: string | null;
+  refreshToken: string | null;
+}> {
+  // 먼저 세션에서 토큰 확인
+  const sessionToken = await getServerToken();
+  const sessionRefreshToken = await getServerRefreshToken();
+
+  // 세션에 유효한 토큰이 있으면 반환
+  if (sessionToken && sessionRefreshToken) {
+    return {
+      accessToken: sessionToken,
+      refreshToken: sessionRefreshToken,
+    };
+  }
+
+  // 토큰이 만료되었지만 refresh_token이 있으면 자동 갱신 시도
+  if (!sessionToken && sessionRefreshToken) {
+    console.log(
+      "🔄 [getServerTokens] 토큰이 만료되었습니다. refresh_token으로 갱신 시도"
+    );
+    try {
+      const newTokens = await refreshAccessToken(sessionRefreshToken);
+      if (newTokens) {
+        console.log("✅ [getServerTokens] 토큰 갱신 성공");
+        return {
+          accessToken: newTokens.accessToken,
+          refreshToken: newTokens.refreshToken,
+        };
+      }
+    } catch (error) {
+      console.error("❌ [getServerTokens] 토큰 갱신 실패:", error);
+    }
+  }
+
+  // 세션에 토큰이 없거나 유효하지 않으면 게스트 토큰 발급
+  const guestTokens = await getGuestToken();
+  if (guestTokens) {
+    return {
+      accessToken: guestTokens.accessToken,
+      refreshToken: guestTokens.refreshToken,
+    };
+  }
+
+  // 게스트 토큰 발급도 실패하면 null 반환
+  return {
+    accessToken: null,
+    refreshToken: null,
+  };
+}

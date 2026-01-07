@@ -17,7 +17,7 @@ export const defaultMetadata: PageMetadata = {
   title: "오늘의 건강",
   description: "건강한 하루를 위한 맞춤형 건강 관리 서비스",
   keywords: "건강, 의료, 질문, 커뮤니티, 건강관리",
-  ogImage: "/og-image.jpg",
+  ogImage: "/og-image.png",
 };
 
 // 페이지별 메타데이터 설정
@@ -93,6 +93,7 @@ export function generatePageMetadata(
 
 // 커뮤니티 게시글 상세 페이지용 메타데이터 생성
 export function generateCommunityPostMetadata(post: {
+  id: string;
   title: string;
   content: string;
   author: { nickname: string };
@@ -122,11 +123,16 @@ export function generateHealthQuestionMetadata(question: {
   description: string;
   category: string;
 }) {
+  const truncatedDescription =
+    question.description.length > 150
+      ? question.description.substring(0, 150) + "..."
+      : question.description;
+
   return {
     title: question.title,
-    description: question.description || question.title,
+    description: truncatedDescription || question.title,
     keywords: `건강 질문, ${question.category}, 건강 체크`,
     ogTitle: question.title,
-    ogDescription: question.description || question.title,
+    ogDescription: truncatedDescription || question.title,
   };
 }

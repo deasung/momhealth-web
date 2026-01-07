@@ -1,5 +1,5 @@
 import axios from "axios";
-import { TOKEN_KEYS, API_CONFIG } from "./constants";
+import { API_CONFIG, TOKEN_KEYS } from "./constants";
 
 // 클라이언트에서는 Next.js API 라우트를 통해 프록시
 export const BASE_URL = "/api/proxy";
@@ -9,16 +9,25 @@ export const API_KEY = "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
 let currentToken: string | null = null;
 let isGuest: boolean = false;
 
+// refresh 진행 중 플래그 (동시 요청에서 중복 refresh 방지)
+let isRefreshing = false;
+let refreshPromise: Promise<{
+  accessToken: string;
+  refreshToken: string;
+} | null> | null = null;
+
 // localStorage에서 토큰 초기화
 const initializeTokenFromStorage = () => {
   if (typeof window !== "undefined") {
     try {
       const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
       const storedIsGuest = localStorage.getItem(TOKEN_KEYS.IS_GUEST);
+      const storedRefreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
 
       if (storedToken) {
         currentToken = storedToken;
         isGuest = storedIsGuest === "true";
+        // refresh_token도 메모리에 유지 (필요시 사용)
       }
     } catch (error) {
       console.error("토큰 복원 실패:", error);
@@ -93,23 +102,34 @@ export const clearToken = () => {
   console.log("🗑️ 토큰 초기화");
 };
 
-// 환경 변수 검증
-if (!process.env.MOMHEATH_API_URL) {
-  console.warn(
-    "⚠️ MOMHEATH_API_URL 환경 변수가 설정되지 않았습니다. 기본값 http://localhost:8080을 사용합니다."
-  );
-}
+// 세션 만료 처리 (토큰 갱신 실패 시)
+const handleSessionExpired = async () => {
+  if (typeof window === "undefined") return;
 
-if (!process.env.MOMHEATH_API_KEY) {
-  console.warn("⚠️ MOMHEATH_ADMIN_API_KEY 환경 변수가 설정되지 않았습니다.");
-}
+  // NextAuth 세션 초기화
+  try {
+    const { signOut } = await import("next-auth/react");
+    await signOut({ redirect: false });
+  } catch (error) {
+    // signOut 실패해도 계속 진행
+  }
 
-console.log("API 설정:", {
-  BASE_URL: BASE_URL || "상대 경로 사용",
-  MOMHEATH_API_URL: process.env.MOMHEATH_API_URL,
-  API_KEY: API_KEY ? "설정됨" : "설정되지 않음",
-  NODE_ENV: process.env.NODE_ENV,
-});
+  // localStorage 토큰 제거
+  clearToken();
+
+  // 게스트 토큰 발급 후 홈으로 이동
+  try {
+    const guestTokens = await getGuestToken();
+    if (guestTokens) {
+      setToken(guestTokens.accessToken, true, guestTokens.refreshToken);
+    }
+  } catch (error) {
+    // 게스트 토큰 발급 실패해도 홈으로 이동
+  }
+
+  // 홈으로 리다이렉트
+  window.location.href = "/";
+};
 
 // axios 인스턴스 생성
 const api = axios.create({
@@ -124,12 +144,17 @@ const api = axios.create({
 // 요청 인터셉터: localStorage 토큰을 프록시로 전달
 api.interceptors.request.use(
   (config) => {
-    // localStorage에서 토큰 및 refresh token 가져오기
-    const currentToken = getCurrentToken();
+    // 항상 localStorage에서 직접 토큰 가져오기 (메모리 캐시 무시)
+    // useTokenSync가 세션 토큰으로 업데이트했을 수 있으므로
+    let currentToken: string | null = null;
     let refreshToken: string | null = null;
+    let isGuestToken = false;
 
     if (typeof window !== "undefined") {
+      // 항상 localStorage에서 직접 읽기 (useTokenSync가 세션 토큰으로 업데이트했을 수 있음)
+      currentToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
       refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
+      isGuestToken = localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
     }
 
     if (currentToken) {
@@ -147,7 +172,7 @@ api.interceptors.request.use(
       url: config.url,
       hasToken: !!currentToken,
       hasRefreshToken: !!refreshToken,
-      isGuest: getIsGuest(),
+      isGuest: isGuestToken,
       tokenPreview: currentToken
         ? currentToken.substring(0, 50) + "..."
         : "none",
@@ -189,7 +214,208 @@ api.interceptors.response.use(
 
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // 401 에러 처리
+    if (error.response?.status === 401) {
+      // 이미 재시도한 경우는 다시 시도하지 않음
+      if (originalRequest._retry) {
+        // NextAuth 세션 확인 - 세션이 유효하면 세션에서 토큰 가져오기
+        try {
+          const { getSession } = await import("next-auth/react");
+          const session = await getSession();
+
+          if (session) {
+            const sessionToken =
+              (session as { token?: string; accessToken?: string })?.token ||
+              (session as { token?: string; accessToken?: string })
+                ?.accessToken;
+            const sessionRefreshToken = (session as { refreshToken?: string })
+              ?.refreshToken;
+
+            if (sessionToken) {
+              // 세션에서 토큰을 가져와서 localStorage에 저장하고 재시도
+              setToken(sessionToken, false, sessionRefreshToken);
+              originalRequest.headers.Authorization = `Bearer ${sessionToken}`;
+              if (sessionRefreshToken) {
+                originalRequest.headers["x-refresh-token"] =
+                  sessionRefreshToken;
+              }
+              originalRequest._retry = false; // 재시도 플래그 리셋
+              return api(originalRequest);
+            }
+          }
+        } catch (sessionError) {
+          // 세션 확인 실패
+        }
+
+        // 이미 재시도했는데도 실패하면 세션 만료 처리
+        await handleSessionExpired();
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
+      const isGuest = localStorage.getItem(TOKEN_KEYS.IS_GUEST) === "true";
+
+      // refresh token이 있으면 갱신 시도
+      if (refreshToken && !isGuest) {
+        // 이미 refresh가 진행 중이면 기다림
+        if (isRefreshing && refreshPromise) {
+          try {
+            const tokens = await refreshPromise;
+            if (tokens) {
+              // 새 토큰으로 원래 요청 재시도
+              originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+              if (tokens.refreshToken) {
+                originalRequest.headers["x-refresh-token"] =
+                  tokens.refreshToken;
+              }
+              return api(originalRequest);
+            } else {
+              // refresh 실패
+              await handleSessionExpired();
+              return Promise.reject(error);
+            }
+          } catch (refreshError) {
+            // refresh 실패
+            await handleSessionExpired();
+            return Promise.reject(error);
+          }
+        }
+
+        // refresh 시작
+        isRefreshing = true;
+        refreshPromise = (async () => {
+          try {
+            // refresh token으로 새 access token 발급
+            const refreshResponse = await axios.post(
+              `${BASE_URL}/public/auth/token/refresh`,
+              { refresh_token: refreshToken },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": API_KEY,
+                },
+              }
+            );
+
+            if (
+              refreshResponse.data?.access_token &&
+              refreshResponse.data?.refresh_token
+            ) {
+              // 새 토큰 저장
+              const newAccessToken = refreshResponse.data.access_token;
+              const newRefreshToken = refreshResponse.data.refresh_token;
+
+              setToken(newAccessToken, false, newRefreshToken);
+
+              return {
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
+              };
+            } else {
+              // refresh 응답에 토큰이 없으면 실패로 처리
+              return null;
+            }
+          } catch (refreshError) {
+            // refresh 호출 자체가 실패한 경우 (네트워크 에러 또는 401 등)
+            console.error("❌ 토큰 갱신 실패:", refreshError);
+            return null;
+          } finally {
+            // refresh 완료 (성공/실패 관계없이)
+            isRefreshing = false;
+            refreshPromise = null;
+          }
+        })();
+
+        try {
+          const tokens = await refreshPromise;
+          if (tokens) {
+            // 새 토큰으로 원래 요청 재시도
+            originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+            if (tokens.refreshToken) {
+              originalRequest.headers["x-refresh-token"] = tokens.refreshToken;
+            }
+            return api(originalRequest);
+          } else {
+            // refresh 실패 - NextAuth 세션 확인 (마지막 시도)
+            try {
+              const { getSession } = await import("next-auth/react");
+              const session = await getSession();
+
+              if (session) {
+                const sessionToken =
+                  (session as { token?: string; accessToken?: string })
+                    ?.token ||
+                  (session as { token?: string; accessToken?: string })
+                    ?.accessToken;
+                const sessionRefreshToken = (
+                  session as { refreshToken?: string }
+                )?.refreshToken;
+
+                if (sessionToken) {
+                  // 세션에서 토큰을 가져와서 localStorage에 저장하고 재시도
+                  setToken(sessionToken, false, sessionRefreshToken);
+                  originalRequest.headers.Authorization = `Bearer ${sessionToken}`;
+                  if (sessionRefreshToken) {
+                    originalRequest.headers["x-refresh-token"] =
+                      sessionRefreshToken;
+                  }
+                  originalRequest._retry = false; // 재시도 플래그 리셋
+                  return api(originalRequest);
+                }
+              }
+            } catch (sessionError) {
+              // 세션 확인 실패
+            }
+
+            // refresh 실패하고 세션도 없으면 세션 만료 처리
+            await handleSessionExpired();
+            return Promise.reject(error);
+          }
+        } catch (refreshError) {
+          // refresh 실패
+          await handleSessionExpired();
+          return Promise.reject(error);
+        }
+      } else {
+        // refresh token이 없거나 게스트 토큰인 경우 - NextAuth 세션 확인
+        try {
+          const { getSession } = await import("next-auth/react");
+          const session = await getSession();
+
+          if (session) {
+            const sessionToken =
+              (session as { token?: string; accessToken?: string })?.token ||
+              (session as { token?: string; accessToken?: string })
+                ?.accessToken;
+            const sessionRefreshToken = (session as { refreshToken?: string })
+              ?.refreshToken;
+
+            if (sessionToken) {
+              // 세션에서 토큰을 가져와서 localStorage에 저장하고 재시도
+              setToken(sessionToken, false, sessionRefreshToken);
+              originalRequest.headers.Authorization = `Bearer ${sessionToken}`;
+              if (sessionRefreshToken) {
+                originalRequest.headers["x-refresh-token"] =
+                  sessionRefreshToken;
+              }
+              originalRequest._retry = false; // 재시도 플래그 리셋
+              return api(originalRequest);
+            }
+          }
+        } catch (sessionError) {
+          // 세션 확인 실패
+        }
+
+        // refresh token이 없고 세션도 없으면 세션 만료 처리
+        await handleSessionExpired();
+        return Promise.reject(error);
+      }
+    }
+
     console.error("❌ API 요청 실패:", {
       url: error.config?.url,
       method: error.config?.method?.toUpperCase(),
@@ -203,7 +429,10 @@ api.interceptors.response.use(
 );
 
 // 게스트 토큰 발급 (프록시를 통해)
-export const getGuestToken = async (): Promise<string | null> => {
+export const getGuestToken = async (): Promise<{
+  accessToken: string;
+  refreshToken: string;
+} | null> => {
   try {
     const response = await fetch(`${BASE_URL}/public/auth/token`, {
       method: "POST",
@@ -215,7 +444,12 @@ export const getGuestToken = async (): Promise<string | null> => {
 
     if (response.ok) {
       const data = await response.json();
-      return data.access_token || null;
+      if (data.access_token && data.refresh_token) {
+        return {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+        };
+      }
     }
     return null;
   } catch (error) {
@@ -238,13 +472,35 @@ export const getHomeData = async () => {
 // 질문목록 가져오기 (커서 기반 페이징)
 export const getHealthQuestions = async (
   limit: number = 10,
-  cursor?: string
+  cursor?: string,
+  options?: {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    primaryCategoryId?: string;
+    secondaryCategoryId?: string;
+  }
 ) => {
   try {
     const params = new URLSearchParams();
     params.append("limit", limit.toString());
     if (cursor) {
       params.append("cursor", cursor);
+    }
+    if (options?.title) {
+      params.append("title", options.title);
+    }
+    if (options?.description) {
+      params.append("description", options.description);
+    }
+    if (options?.categoryId) {
+      params.append("categoryId", options.categoryId);
+    }
+    if (options?.primaryCategoryId) {
+      params.append("primaryCategoryId", options.primaryCategoryId);
+    }
+    if (options?.secondaryCategoryId) {
+      params.append("secondaryCategoryId", options.secondaryCategoryId);
     }
 
     const response = await api.get(
@@ -253,6 +509,17 @@ export const getHealthQuestions = async (
     return response.data;
   } catch (error) {
     console.error("질문목록 가져오기 실패:", error);
+    throw error;
+  }
+};
+
+// 건강 질문 카테고리 목록 가져오기
+export const getHealthQuestionCategories = async () => {
+  try {
+    const response = await api.get("/private/health.questions/categories");
+    return response.data;
+  } catch (error) {
+    console.error("카테고리 목록 가져오기 실패:", error);
     throw error;
   }
 };
@@ -302,7 +569,7 @@ export const submitQuizAnswers = async (
 
     // 백엔드 API 형식에 맞게 데이터 변환
     const formattedAnswers = answers.map((answer) => ({
-      itemId: parseInt(answer.itemId), // 문자열 → 숫자
+      itemId: parseInt(answer.questionId), // 문자열 → 숫자
       choiceId: parseInt(answer.choiceId), // 문자열 → 숫자
     }));
 
@@ -360,6 +627,25 @@ export const getCommunityPostDetail = async (postId: string) => {
     return response.data;
   } catch (error) {
     console.error("커뮤니티 게시글 상세 로딩 실패:", error);
+    throw error;
+  }
+};
+
+// 커뮤니티 게시글 등록
+export const createCommunityPost = async (data: {
+  title: string;
+  content: string;
+  type: "건강질문" | "리뷰";
+}) => {
+  try {
+    const response = await api.post(`/private/community`, {
+      title: data.title,
+      content: data.content,
+      type: data.type === "건강질문" ? "QUESTION" : "REVIEW",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("커뮤니티 게시글 등록 실패:", error);
     throw error;
   }
 };
@@ -753,6 +1039,22 @@ export const getUserCompletedQuestions = async (params: {
   }
 };
 
+// 친구의 특정 질문 결과 조회
+export const getFriendQuestionResult = async (params: {
+  questionId: string;
+  targetUserId: string;
+}) => {
+  try {
+    const response = await api.get(
+      `/private/health.questions/${params.questionId}/result/${params.targetUserId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("친구의 질문 결과 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 문의 목록 조회
 export const getInquiries = async (params?: {
   limit?: number;
@@ -882,10 +1184,9 @@ export const unregisterWebPushToken = async (endpoint: string) => {
 // 웹 푸시 토큰 상태 조회
 export const getWebPushTokenStatus = async (endpoint: string) => {
   try {
-    const encodedEndpoint = encodeURIComponent(endpoint);
-    const response = await api.get(
-      `/public/push/web-push-token/${encodedEndpoint}`
-    );
+    const response = await api.post(`/public/push/web-push-token-info`, {
+      endpoint: endpoint,
+    });
     return response.data;
   } catch (error) {
     console.error("웹 푸시 토큰 상태 조회 실패:", error);

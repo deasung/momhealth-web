@@ -1,3 +1,5 @@
+// lib/firebaseClient.ts 같은 곳
+
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import {
   getMessaging,
@@ -5,6 +7,12 @@ import {
   Messaging,
   onMessage,
 } from "firebase/messaging";
+import {
+  getAnalytics,
+  isSupported,
+  Analytics,
+  logEvent,
+} from "firebase/analytics";
 
 // Firebase 설정 타입
 interface FirebaseConfig {
@@ -21,39 +29,46 @@ interface FirebaseConfig {
 const getFirebaseConfig = (): FirebaseConfig | null => {
   if (typeof window === "undefined") return null;
 
-  const config: FirebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-    messagingSenderId:
-      process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-  };
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const messagingSenderId =
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
 
-  // 필수 값 확인
+  // 필수 값 확인 (빈 문자열도 체크)
   if (
-    !config.apiKey ||
-    !config.authDomain ||
-    !config.projectId ||
-    !config.storageBucket ||
-    !config.messagingSenderId ||
-    !config.appId
+    !apiKey ||
+    !authDomain ||
+    !projectId ||
+    !storageBucket ||
+    !messagingSenderId ||
+    !appId
   ) {
-    console.warn(
-      "⚠️ Firebase 설정이 완전하지 않습니다. 환경 변수를 확인하세요."
-    );
+    // 환경 변수가 없을 때만 조용히 반환 (콘솔 에러 방지)
     return null;
   }
+
+  const config: FirebaseConfig = {
+    apiKey,
+    authDomain,
+    projectId,
+    storageBucket,
+    messagingSenderId,
+    appId,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  };
 
   return config;
 };
 
-// Firebase 앱 초기화
+// Firebase 앱 / Messaging / Analytics 인스턴스
 let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
+let analytics: Analytics | null = null;
 
+// Firebase 앱 초기화
 export const initializeFirebase = (): FirebaseApp | null => {
   if (typeof window === "undefined") return null;
 
@@ -65,14 +80,16 @@ export const initializeFirebase = (): FirebaseApp | null => {
   }
 
   const config = getFirebaseConfig();
-  if (!config) return null;
+  if (!config) {
+    // 환경 변수가 없으면 조용히 반환 (에러 로그 방지)
+    return null;
+  }
 
   try {
     app = initializeApp(config);
-    console.log("✅ Firebase 초기화 완료");
     return app;
   } catch (error) {
-    console.error("❌ Firebase 초기화 실패:", error);
+    // 초기화 실패 시 조용히 반환 (에러 로그 방지)
     return null;
   }
 };
@@ -89,10 +106,33 @@ export const initializeMessaging = (): Messaging | null => {
 
   try {
     messaging = getMessaging(app);
-    console.log("✅ Firebase Messaging 초기화 완료");
     return messaging;
   } catch (error) {
-    console.error("❌ Firebase Messaging 초기화 실패:", error);
+    // 초기화 실패 시 조용히 반환 (에러 로그 방지)
+    return null;
+  }
+};
+
+// Firebase Analytics 초기화
+export const initializeAnalytics = async (): Promise<Analytics | null> => {
+  if (typeof window === "undefined") return null;
+  if (analytics) return analytics;
+
+  if (!app) {
+    app = initializeFirebase();
+    if (!app) return null;
+  }
+
+  try {
+    const supported = await isSupported();
+    if (!supported) {
+      return null;
+    }
+
+    analytics = getAnalytics(app);
+    return analytics;
+  } catch (error) {
+    // 초기화 실패 시 조용히 반환 (에러 로그 방지)
     return null;
   }
 };
@@ -174,4 +214,19 @@ export const requestNotificationPermission =
     }
   };
 
-export { app, messaging };
+// Analytics용 래퍼 (이벤트 로깅)
+export const logAnalyticsEvent = async (
+  eventName: string,
+  params?: Record<string, any>
+) => {
+  const analyticsInstance = await initializeAnalytics();
+  if (!analyticsInstance) return;
+
+  try {
+    logEvent(analyticsInstance, eventName, params);
+  } catch (error) {
+    // Analytics 이벤트 로깅 실패는 조용히 무시 (에러 로그 방지)
+  }
+};
+
+export { app, messaging, analytics };

@@ -1,3 +1,5 @@
+# Dockerfile
+
 # =========================
 # Next.js 14 Standalone
 # =========================
@@ -12,35 +14,33 @@ RUN npm ci
 FROM node:20-slim AS builder
 WORKDIR /app
 
-ARG ENV_FILE=.env.production
-# env 파일이 있으면 .env로 복사 (없어도 빌드 가능)
-RUN if [ -f "$ENV_FILE" ]; then cp "$ENV_FILE" .env; fi
+# arm64 플랫폼에서 SWC 바이너리 로드를 위한 패키지 설치 (유지)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# 💡 수정: 빌드 시점에 런타임 환경 변수 (MOMHEALTH, NEXTAUTH 등) ARG/ENV 모두 제거
+# 이 변수들은 런타임에 docker run -e로 주입됩니다.
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# arm64에서 SWC 바이너리 문제를 피하기 위해 환경변수 설정 (유지)
+ENV NEXT_SWC_BINARY_PATH=""
 RUN npm run build
 
 # 3) runner
 FROM node:20-slim AS runner
 WORKDIR /app
-ENV NODE_ENV=production
 ENV PORT=3300
 
-# 기본값(런타임에서 -e로 덮어쓰기 가능)
-ENV NEXTAUTH_URL=https://medigen.ai.kr
-ENV NEXTAUTH_SECRET=92nkzVApA5J9Fne9s8XeQAGdEkOiTK+v+1cztN/eTok=
-ENV MOMHEALTH_API_URL=https://895txa0nrk.execute-api.ap-northeast-2.amazonaws.com/production
-ENV MOMHEALTH_API_KEY=f5e60c40-5eb4-11ea-b4d7-0d9c1606f185
-ENV JWT_SECRET=e4f5d620-bb7a-4f56-90c7-5a9e6b7b2d10$momhealth2025!
-ENV CDN_URL=https://di7imxmn4pwuq.cloudfront.net
-ENV KAKAO_CLIENT_ID=f8ac4eae134f37ea481b65f4e43ce54e
-ENV KAKAO_CLIENT_SECRET=asdfasdfsafasfasfsdfsfsa121231231
-ENV GOOGLE_CLIENT_ID=575173374427-t09ul9r8c0ckr2lp2r6bhfatksuru9ve.apps.googleusercontent.com
-ENV GOOGLE_CLIENT_SECRET=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
+# 💡 수정: 런타임에 주입될 변수는 ENV로 선언만 하거나 (선택), 생략하고
+# docker run -e 에만 의존하는 것이 가장 안전합니다. 여기서는 생략하겠습니다.
+# Next.js Standalone은 process.env에 의존합니다.
 
-# standalone 산출물만 복사 → 경량
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public

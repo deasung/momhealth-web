@@ -1,0 +1,235 @@
+import type { Metadata } from "next";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import PopularQuestions from "./components/PopularQuestions";
+import RecommendedQuestions from "./components/RecommendedQuestions";
+import CommunityPosts from "./components/CommunityPosts";
+import { getHomeDataServer } from "../lib/api-server";
+import type { HomeData } from "./types/home";
+import type { QuestionCardDTO } from "./types/dto";
+import { generatePageMetadata } from "../lib/metadata";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
+
+// ✅ SEO: 동적 메타데이터 생성
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const homeData = await getHomeDataServer();
+    const metadata = generatePageMetadata("home", {
+      title: `오늘의 건강 - ${homeData.popularQuestions.length}개 인기 질문, ${homeData.communityPosts.length}개 커뮤니티 게시글`,
+      description: `인기 질문 ${homeData.popularQuestions.length}개, 추천 질문 ${homeData.recommendedQuestions.length}개, 커뮤니티 게시글 ${homeData.communityPosts.length}개가 있는 건강 관리 플랫폼입니다.`,
+    });
+
+    return {
+      title: metadata.title,
+      description: metadata.description,
+      keywords: metadata.keywords,
+      openGraph: {
+        title: metadata.ogTitle || metadata.title,
+        description: metadata.ogDescription || metadata.description,
+        images: [
+          {
+            url: `${siteUrl}/og-image.png`,
+            width: 1200,
+            height: 630,
+            type: "image/png",
+            alt: "오늘의 건강 - 건강한 하루를 위한 맞춤형 건강 관리 서비스",
+          },
+        ],
+        url: siteUrl,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: metadata.ogTitle || metadata.title,
+        description: metadata.ogDescription || metadata.description,
+        images: [`${siteUrl}/og-image.png`],
+      },
+    };
+  } catch (error) {
+    // 에러 발생 시 기본 메타데이터 반환
+    return {
+      title: "오늘의 건강",
+      description:
+        "건강한 하루를 위한 맞춤형 건강 관리 서비스입니다. 건강 질문, 커뮤니티, 친구와의 건강 공유를 통해 더 나은 건강을 만들어보세요.",
+    };
+  }
+}
+
+// ✅ Server Component: 서버에서 데이터 가져오기
+export default async function Home() {
+  let homeData: HomeData | null = null;
+  let error: string | null = null;
+
+  try {
+    // 서버에서 데이터 가져오기
+    homeData = await getHomeDataServer();
+  } catch (err) {
+    console.error("홈 데이터 로딩 실패:", err);
+    error = "데이터를 불러오는데 실패했습니다.";
+  }
+
+  // 통계 데이터 계산
+  const stats = homeData
+    ? {
+        popular: homeData.popularQuestions.length,
+        recommended: homeData.recommendedQuestions.length,
+        community: homeData.communityPosts.length,
+      }
+    : null;
+
+  // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
+  const popularQuestionsDTO: QuestionCardDTO[] =
+    homeData?.popularQuestions.map((q) => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      thumbnailUrl: q.thumbnailUrl,
+      durationMinutes: q.durationMinutes,
+      createdAt: q.createdAt,
+    })) || [];
+
+  const recommendedQuestionsDTO: QuestionCardDTO[] =
+    homeData?.recommendedQuestions.map((q) => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      thumbnailUrl: q.thumbnailUrl,
+      durationMinutes: q.durationMinutes,
+      createdAt: q.createdAt,
+      readTime: q.readTime,
+    })) || [];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        {/* ✅ SEO & UX: 히어로 섹션 - h1 태그 */}
+        <section className="text-center mb-10 md:mb-12 lg:mb-16">
+          {/* <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">
+            오늘의 건강
+          </h1> */}
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
+            당신의 건강을 위한 맞춤형 건강 관리 플랫폼
+          </p>
+
+          {/* ✅ 반응형 & 디자인: 통계 카드 */}
+          {stats && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 md:gap-6 max-w-4xl mx-auto mb-10 md:mb-12 lg:mb-16">
+              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 mb-2">
+                  {stats.popular.toLocaleString()}
+                </div>
+                <div className="text-sm sm:text-base text-gray-700 font-semibold">
+                  인기 질문
+                </div>
+              </article>
+              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600 mb-2">
+                  {stats.recommended.toLocaleString()}
+                </div>
+                <div className="text-sm sm:text-base text-gray-700 font-semibold">
+                  추천 질문
+                </div>
+              </article>
+              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-purple-600 mb-2">
+                  {stats.community.toLocaleString()}
+                </div>
+                <div className="text-sm sm:text-base text-gray-700 font-semibold">
+                  커뮤니티 게시글
+                </div>
+              </article>
+            </div>
+          )}
+        </section>
+
+        {/* ✅ 에러 상태 */}
+        {error && (
+          <div className="max-w-md mx-auto text-center py-12 md:py-16 mb-12">
+            <div className="bg-white border border-red-200 rounded-xl shadow-sm p-8 sm:p-10">
+              <div
+                className="text-red-500 text-5xl sm:text-6xl mb-4"
+                role="img"
+                aria-label="경고"
+              >
+                ⚠️
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                데이터를 불러올 수 없습니다
+              </h2>
+              <p className="text-gray-600 text-sm sm:text-base mb-6">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors text-sm sm:text-base font-medium min-h-[44px] shadow-sm hover:shadow-md"
+                aria-label="페이지 새로고침"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                <span>새로고침</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ SEO: 시맨틱 HTML 구조 */}
+        {/* 인기 질문 섹션 */}
+        {popularQuestionsDTO.length > 0 && (
+          <section aria-label="인기 건강 질문" className="mb-12 md:mb-16">
+            <PopularQuestions questions={popularQuestionsDTO} />
+          </section>
+        )}
+
+        {/* 추천 질문 섹션 */}
+        {recommendedQuestionsDTO.length > 0 && (
+          <section aria-label="추천 건강 질문" className="mb-12 md:mb-16">
+            <RecommendedQuestions questions={recommendedQuestionsDTO} />
+          </section>
+        )}
+
+        {/* 커뮤니티 섹션 */}
+        {homeData?.communityPosts && homeData.communityPosts.length > 0 && (
+          <section aria-label="커뮤니티 게시글" className="mb-12 md:mb-16">
+            <CommunityPosts posts={homeData.communityPosts} />
+          </section>
+        )}
+
+        {/* ✅ 빈 상태 처리 */}
+        {homeData &&
+          !homeData.popularQuestions?.length &&
+          !homeData.recommendedQuestions?.length &&
+          !homeData.communityPosts?.length && (
+            <div className="text-center py-12 md:py-16">
+              <div
+                className="text-gray-400 text-5xl sm:text-6xl mb-4"
+                role="img"
+                aria-label="콘텐츠 없음"
+              >
+                📋
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                콘텐츠를 준비 중입니다
+              </h3>
+              <p className="text-gray-600 text-sm sm:text-base">
+                곧 새로운 콘텐츠가 제공될 예정입니다.
+              </p>
+            </div>
+          )}
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

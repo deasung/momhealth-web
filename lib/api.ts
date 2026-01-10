@@ -219,38 +219,10 @@ api.interceptors.response.use(
 
     // 401 에러 처리
     if (error.response?.status === 401) {
-      // 이미 재시도한 경우는 다시 시도하지 않음
+      // 이미 재시도한 경우는 더 이상 시도하지 않고 즉시 실패 처리
       if (originalRequest._retry) {
-        // NextAuth 세션 확인 - 세션이 유효하면 세션에서 토큰 가져오기
-        try {
-          const { getSession } = await import("next-auth/react");
-          const session = await getSession();
-
-          if (session) {
-            const sessionToken =
-              (session as { token?: string; accessToken?: string })?.token ||
-              (session as { token?: string; accessToken?: string })
-                ?.accessToken;
-            const sessionRefreshToken = (session as { refreshToken?: string })
-              ?.refreshToken;
-
-            if (sessionToken) {
-              // 세션에서 토큰을 가져와서 localStorage에 저장하고 재시도
-              setToken(sessionToken, false, sessionRefreshToken);
-              originalRequest.headers.Authorization = `Bearer ${sessionToken}`;
-              if (sessionRefreshToken) {
-                originalRequest.headers["x-refresh-token"] =
-                  sessionRefreshToken;
-              }
-              originalRequest._retry = false; // 재시도 플래그 리셋
-              return api(originalRequest);
-            }
-          }
-        } catch (sessionError) {
-          // 세션 확인 실패
-        }
-
-        // 이미 재시도했는데도 실패하면 세션 만료 처리
+        // 무한 루프 방지: 이미 재시도했으면 세션 만료 처리
+        console.error("❌ 401 에러 재시도 실패 - 세션 만료 처리");
         await handleSessionExpired();
         return Promise.reject(error);
       }
@@ -340,38 +312,8 @@ api.interceptors.response.use(
             }
             return api(originalRequest);
           } else {
-            // refresh 실패 - NextAuth 세션 확인 (마지막 시도)
-            try {
-              const { getSession } = await import("next-auth/react");
-              const session = await getSession();
-
-              if (session) {
-                const sessionToken =
-                  (session as { token?: string; accessToken?: string })
-                    ?.token ||
-                  (session as { token?: string; accessToken?: string })
-                    ?.accessToken;
-                const sessionRefreshToken = (
-                  session as { refreshToken?: string }
-                )?.refreshToken;
-
-                if (sessionToken) {
-                  // 세션에서 토큰을 가져와서 localStorage에 저장하고 재시도
-                  setToken(sessionToken, false, sessionRefreshToken);
-                  originalRequest.headers.Authorization = `Bearer ${sessionToken}`;
-                  if (sessionRefreshToken) {
-                    originalRequest.headers["x-refresh-token"] =
-                      sessionRefreshToken;
-                  }
-                  originalRequest._retry = false; // 재시도 플래그 리셋
-                  return api(originalRequest);
-                }
-              }
-            } catch (sessionError) {
-              // 세션 확인 실패
-            }
-
-            // refresh 실패하고 세션도 없으면 세션 만료 처리
+            // refresh 실패 - 무한 루프 방지를 위해 즉시 세션 만료 처리
+            console.error("❌ 토큰 갱신 실패 - 세션 만료 처리");
             await handleSessionExpired();
             return Promise.reject(error);
           }

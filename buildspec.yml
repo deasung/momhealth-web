@@ -1,83 +1,20 @@
 version: 0.2
 
-env:
-  variables:
-    IMAGE_REPO_NAME: momhealth-web-production
-    IMAGE_TAG: latest
-    PLATFORM: linux/arm64
-    EC2_TAG_KEY: Name
-    EC2_TAG_VAL: momhealth-web
-    CONTAINER_NAME: momhealth-web
-    APP_PORT: "3300"
-
 phases:
   install:
     commands:
-      - docker --version
-  pre_build:
-    commands:
-      - set -e
-      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-      - aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URI}"
-      - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
-      - docker run --privileged --rm tonistiigi/binfmt --install all
-      - docker buildx create --use --name multi || docker buildx use multi
+      - npm install
   build:
     commands:
-      - |
-        docker buildx build \
-          --platform "${PLATFORM}" \
-          -t "${IMAGE}:${IMAGE_TAG}" \
-          --push .
+      - echo "빌드 환경변수 설정"
+      - cp .env.production .env
+      - npm run build
   post_build:
     commands:
-      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
-      - |
-        # .env.production 파싱
-        while IFS= read -r line || [ -n "$line" ]; do
-          line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          if [[ "$line" =~ ^[^#]*= ]] && [[ ! "$line" =~ ^# ]]; then
-            key=$(echo "$line" | cut -d '=' -f 1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            value=$(echo "$line" | cut -d '=' -f 2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/^["'\'']//;s/["'\'']$//')
-            export "$key=$value"
-          fi
-        done < .env.production
+      # 실행 시 필요한 .env.production도 압축에 포함
+      - zip -r deploy.zip .next public package.json package-lock.json next.config.js .env.production
 
-        # SSM 명령어 생성 (문법 오류 방지를 위해 단순화)
-        jq -n \
-          --arg region "$REGION" \
-          --arg account "$ACCOUNT_ID" \
-          --arg image "$IMAGE" \
-          --arg tag "$IMAGE_TAG" \
-          --arg container "$CONTAINER_NAME" \
-          --arg app_port "$APP_PORT" \
-          --arg na_url "$NEXTAUTH_URL" \
-          --arg na_sec "$NEXTAUTH_SECRET" \
-          --arg mh_url "$MOMHEALTH_API_URL" \
-          --arg mh_key "$MOMHEALTH_API_KEY" \
-          --arg jwt "$JWT_SECRET" \
-          --arg cdn "$CDN_URL" \
-          --arg kid "$KAKAO_CLIENT_ID" \
-          --arg ksec "$KAKAO_CLIENT_SECRET" \
-          --arg gid "$GOOGLE_CLIENT_ID" \
-          --arg gsec "$GOOGLE_CLIENT_SECRET" \
-          --arg node_env "${NODE_ENV:-production}" \
-          '{
-            commands: [
-              "docker rm -f \($container) || true",
-              "sudo fuser -k 80/tcp || true",
-              "aws ecr get-login-password --region \($region) | docker login --username AWS --password-stdin \($account).dkr.ecr.\($region).amazonaws.com",
-              "docker pull \($image):\($tag)",
-              "docker image prune -af || true",
-              "docker run -d --name \($container) -p 80:\($app_port) --restart always -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=\($app_port) \($image):\($tag)"
-            ]
-          }' > ssm-params.json
-
-      - |
-        aws ssm send-command \
-          --document-name "AWS-RunShellScript" \
-          --parameters file://ssm-params.json \
-          --targets "Key=tag:${EC2_TAG_KEY},Values=${EC2_TAG_VAL}" \
-          --region "${REGION}"
+artifacts:
+  files:
+    - deploy.zip
+  discard-paths: no

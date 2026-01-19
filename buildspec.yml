@@ -9,10 +9,20 @@ phases:
       - echo "빌드 환경변수 설정"
       - cp .env.production .env
       - npm run build
+      - echo "빌드 결과물 확인"
+      - ls -la .next || echo "ERROR: .next 디렉토리가 생성되지 않았습니다!"
+      - ls -la .next/standalone || echo "WARN: .next/standalone 디렉토리가 없습니다 (standalone 모드)"
+      - ls -la .next/static || echo "WARN: .next/static 디렉토리가 없습니다"
+      - du -sh .next || echo "ERROR: .next 디렉토리 크기 확인 실패"
   post_build:
     commands:
-      # 실행 시 필요한 .env.production도 압축에 포함
+      - echo "배포 패키지 생성"
+      - echo "빌드 결과물 확인"
+      - ls -la .next || echo "ERROR: .next 디렉토리가 없습니다!"
+      # 실행 시 필요한 파일들 압축
       - zip -r deploy.zip .next public package.json package-lock.json next.config.js .env.production
+      - echo "압축 파일 확인"
+      - ls -lh deploy.zip || echo "ERROR: deploy.zip 파일이 생성되지 않았습니다!"
 
 artifacts:
   files:

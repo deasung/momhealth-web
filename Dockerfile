@@ -5,13 +5,13 @@
 # =========================
 
 # 1) deps
-FROM node:20-slim AS deps
+FROM public.ecr.aws/docker/library/node:20-slim AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 # 2) builder
-FROM node:20-slim AS builder
+FROM public.ecr.aws/docker/library/node:20-slim AS builder
 WORKDIR /app
 
 # arm64 플랫폼에서 SWC 바이너리 로드를 위한 패키지 설치 (유지)
@@ -35,7 +35,7 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # 3) runner
-FROM node:20-slim AS runner
+FROM public.ecr.aws/docker/library/node:20-slim AS runner
 WORKDIR /app
 ENV PORT=3300
 

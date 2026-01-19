@@ -126,27 +126,27 @@ phases:
               "HOST_PORT='\''\($host_port)'\''",
               "APP_PORT='\''\($app_port)'\''",
               "echo 기존 컨테이너 중지 및 삭제",
-              "docker stop ${CONTAINER} || true",
-              "docker rm ${CONTAINER} || true",
+              "docker stop $CONTAINER || true",
+              "docker rm $CONTAINER || true",
               "echo Docker 불필요한 리소스 정리 (이미지, 컨테이너, 볼륨, 네트워크)",
               "docker system prune -a -f --volumes || true",
               "echo 로그인 및 이미지 풀",
-              "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com",
-              "docker pull ${IMAGE_URI}",
+              "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com",
+              "docker pull $IMAGE_URI",
 
               "echo 새 컨테이너 실행 환경변수 직접 전달",
-              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
+              "docker run -d --name $CONTAINER -p $HOST_PORT:$APP_PORT --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=$APP_PORT $IMAGE_URI",
 
               "sleep 5",
               "echo 컨테이너 상태 확인",
-              "docker ps -f name=${CONTAINER}",
+              "docker ps -f name=$CONTAINER",
               "echo 컨테이너 내부 환경 변수 확인",
-              "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_URL || echo ERROR: MOMHEALTH_API_URL check failed",
-              "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_KEY || echo ERROR: MOMHEALTH_API_KEY check failed",
-              "docker exec ${CONTAINER} printenv | grep NODE_ENV || echo ERROR: NODE_ENV check failed",
-              "docker exec ${CONTAINER} printenv | head -20",
+              "docker exec $CONTAINER printenv | grep MOMHEALTH_API_URL || echo ERROR: MOMHEALTH_API_URL check failed",
+              "docker exec $CONTAINER printenv | grep MOMHEALTH_API_KEY || echo ERROR: MOMHEALTH_API_KEY check failed",
+              "docker exec $CONTAINER printenv | grep NODE_ENV || echo ERROR: NODE_ENV check failed",
+              "docker exec $CONTAINER printenv | head -20",
               "echo Next.js 로그 확인 디버깅",
-              "docker logs ${CONTAINER} --tail 20"
+              "docker logs $CONTAINER --tail 20"
             ]
           }' > ssm-params.json
         echo "--- ssm-params.json 생성 완료 (보안상 내용은 출력하지 않음) ---"

@@ -47,6 +47,13 @@ const nextConfig = {
       };
     }
 
+    // 서버 사이드에서 클라이언트 전용 모듈이 실행되지 않도록 보호
+    if (isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+      };
+    }
+
     return config;
   },
 };

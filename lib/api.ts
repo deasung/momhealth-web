@@ -16,7 +16,7 @@ let refreshPromise: Promise<{
   refreshToken: string;
 } | null> | null = null;
 
-// localStorage에서 토큰 초기화
+// localStorage에서 토큰 초기화 (클라이언트에서만 실행)
 const initializeTokenFromStorage = () => {
   if (typeof window !== "undefined") {
     try {
@@ -35,8 +35,10 @@ const initializeTokenFromStorage = () => {
   }
 };
 
-// 초기화 실행
-initializeTokenFromStorage();
+// 초기화 실행 (클라이언트에서만 실행되도록 지연)
+if (typeof window !== "undefined") {
+  initializeTokenFromStorage();
+}
 
 // JWT 토큰 만료 시간 확인
 const isTokenExpired = (token: string): boolean => {

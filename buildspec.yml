@@ -37,7 +37,7 @@ phases:
       - aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URI}"
       - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
       - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
-      # buildx 멀티아키
+      # buildx 멀티아키 설정
       - docker run --privileged --rm tonistiigi/binfmt --install all
       - docker buildx create --use --name multi || docker buildx use multi
       - docker buildx inspect --bootstrap
@@ -46,7 +46,6 @@ phases:
     commands:
       - echo "[buildx] build and push (${PLATFORM})"
       - |
-        # 💡 수정: --build-arg 모두 제거. 런타임 환경 변수는 런타임에만 주입합니다.
         docker buildx build \
           --platform "${PLATFORM}" \
           -t "${IMAGE}:${COMMIT}" \
@@ -62,7 +61,6 @@ phases:
       - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
       - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
-      # ====== .env.production 파일에서 환경변수 읽기 및 SSM 파라미터 생성 ======
       - |
         echo "=== .env.production 파일에서 환경변수 로드 ==="
         if [ ! -f .env.production ]; then
@@ -70,9 +68,7 @@ phases:
           exit 1
         fi
         
-        # .env.production 파일 파싱하여 환경변수로 export
         while IFS= read -r line || [ -n "$line" ]; do
-          # 주석과 빈 줄 제거
           line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           if [[ "$line" =~ ^[^#]*= ]] && [[ ! "$line" =~ ^# ]]; then
             key=$(echo "$line" | cut -d '=' -f 1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -81,7 +77,6 @@ phases:
           fi
         done < .env.production
         
-        # 환경변수 값 설정
         NEXTAUTH_URL_VALUE="${NEXTAUTH_URL}"
         NEXTAUTH_SECRET_VALUE="${NEXTAUTH_SECRET}"
         MOMHEALTH_API_URL_VALUE="${MOMHEALTH_API_URL}"
@@ -94,9 +89,8 @@ phases:
         GOOGLE_CLIENT_SECRET_VALUE="${GOOGLE_CLIENT_SECRET}"
         NODE_ENV_VALUE="${NODE_ENV:-production}"
         
-        echo "환경변수 로드 완료 (보안상 값은 출력하지 않음)"
+        echo "환경변수 로드 완료"
         
-        # SSM 파라미터 JSON을 jq로 생성 (docker run -e 옵션 사용)
         jq -n \
           --arg region "${REGION}" \
           --arg account "${ACCOUNT_ID}" \
@@ -125,41 +119,23 @@ phases:
               "CONTAINER='\''\($container)'\''",
               "HOST_PORT='\''\($host_port)'\''",
               "APP_PORT='\''\($app_port)'\''",
-              "echo ===== 배포 시작 =====",
-              "echo 기존 컨테이너 중지 및 삭제",
+              "echo ===== 1. 기존 리소스 정리 =====",
               "docker stop $CONTAINER || true",
-              "docker rm $CONTAINER || true",
-              "echo 로그인 및 이미지 풀",
+              "docker rm -f $CONTAINER || true",
+              "sudo lsof -t -i:80 | xargs sudo kill -9 || true",
+              "echo ===== 2. 이미지 다운로드 및 로그인 =====",
               "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com",
               "docker pull $IMAGE_URI",
-              "echo Docker 불필요한 리소스 정리 (현재 이미지 제외)",
-              "docker image prune -f || true",
-              "docker container prune -f || true",
-              "docker volume prune -f || true",
-              "docker network prune -f || true",
-              "echo 새 컨테이너 실행",
-              "docker run -d --name $CONTAINER -p $HOST_PORT:$APP_PORT --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=$APP_PORT $IMAGE_URI",
+              "echo ===== 3. 디스크 용량 최적화 =====",
+              "docker image prune -af || true",
+              "echo ===== 4. 컨테이너 실행 (80 포트 직접 할당) =====",
+              "docker run -d --name $CONTAINER -p 80:$APP_PORT --restart always --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=$APP_PORT $IMAGE_URI",
               "sleep 10",
-              "echo ===== 컨테이너 상태 확인 =====",
-              "docker ps -a | grep $CONTAINER || echo ERROR: 컨테이너가 존재하지 않습니다",
-              "CONTAINER_STATUS=$(docker ps -f name=$CONTAINER --format '{{.Status}}' || echo 'NOT_RUNNING')",
-              "if [ \"$CONTAINER_STATUS\" = \"NOT_RUNNING\" ]; then",
-              "  echo ERROR: 컨테이너가 실행되지 않았습니다",
-              "  echo 종료된 컨테이너 로그:",
-              "  docker logs $CONTAINER --tail 50 || true",
-              "  exit 1",
-              "fi",
-              "echo 컨테이너 실행 중: $CONTAINER_STATUS",
-              "echo ===== 컨테이너 내부 환경 변수 확인 =====",
-              "docker exec $CONTAINER printenv | grep MOMHEALTH_API_URL || echo WARN: MOMHEALTH_API_URL not found",
-              "docker exec $CONTAINER printenv | grep MOMHEALTH_API_KEY || echo WARN: MOMHEALTH_API_KEY not found",
-              "docker exec $CONTAINER printenv | grep NODE_ENV || echo WARN: NODE_ENV not found",
-              "echo ===== Next.js 로그 확인 =====",
-              "docker logs $CONTAINER --tail 30",
-              "echo ===== 배포 완료 ====="
+              "echo ===== 5. 상태 및 로그 확인 =====",
+              "docker ps -f name=$CONTAINER",
+              "docker logs $CONTAINER --tail 50"
             ]
           }' > ssm-params.json
-        echo "--- ssm-params.json 생성 완료 (보안상 내용은 출력하지 않음) ---"
 
       - |
         COMMAND_ID=$(aws ssm send-command \
@@ -171,21 +147,6 @@ phases:
           --region "${REGION}" \
           --query "Command.CommandId" --output text) || true
         echo "SSM CommandId=${COMMAND_ID}"
-
-      - |
-        if [ -n "$COMMAND_ID" ] && [ "$COMMAND_ID" != "None" ]; then
-          echo "SSM 명령어 실행 결과 확인 중..."
-          sleep 10
-          aws ssm list-command-invocations --command-id "$COMMAND_ID" --details --region "${REGION}" || true
-          echo ""
-          echo "=== SSM 명령어 출력 ==="
-          aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id $(aws ec2 describe-instances --filters "Name=tag:${EC2_TAG_KEY},Values=${EC2_TAG_VAL}" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].InstanceId' --output text --region "${REGION}") --region "${REGION}" --query 'StandardOutputContent' --output text || true
-          echo ""
-          echo "=== SSM 명령어 에러 출력 ==="
-          aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id $(aws ec2 describe-instances --filters "Name=tag:${EC2_TAG_KEY},Values=${EC2_TAG_VAL}" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].InstanceId' --output text --region "${REGION}") --region "${REGION}" --query 'StandardErrorContent' --output text || true
-        else
-          echo "WARN: SSM CommandId is empty (send-command might have failed)."
-        fi
 
 artifacts:
   files:

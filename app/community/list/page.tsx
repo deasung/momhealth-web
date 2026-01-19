@@ -9,6 +9,9 @@ import type { CommunityPostCardDTO } from "../../types/dto";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
 // ✅ SEO: 동적 메타데이터 생성
 export async function generateMetadata(): Promise<Metadata> {
   return {

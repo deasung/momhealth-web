@@ -13,6 +13,9 @@ import {
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
 // 문의 상태 타입 정의
 type InquiryStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
 

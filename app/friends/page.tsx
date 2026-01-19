@@ -32,6 +32,9 @@ interface FriendRequestCounts {
   totalCount: number;
 }
 
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
 export default async function FriendsPage() {
   const session = await getServerSession(authOptions);
 

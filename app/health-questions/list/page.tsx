@@ -10,57 +10,46 @@ import { generatePageMetadata } from "../../../lib/metadata";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-// ✅ SEO: 동적 메타데이터 생성
-export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const { getServerTokens } = await import("../../../lib/api-server");
-    const tokens = await getServerTokens();
-    const data = await getHealthQuestionsServer(
-      10,
-      undefined,
-      tokens.accessToken,
-      tokens.refreshToken
-    );
-    const metadata = generatePageMetadata("health-questions", {
-      title: `건강 질문 - ${data.questions.length}개의 질문이 있습니다`,
-      description: `${data.questions.length}개의 건강 질문을 통해 나의 건강 상태를 확인해보세요.`,
-    });
+// 동적 렌더링 강제 (searchParams와 headers 사용)
+export const dynamic = "force-dynamic";
 
-    return {
-      title: metadata.title,
-      description: metadata.description,
-      keywords: metadata.keywords,
-      openGraph: {
-        title: metadata.ogTitle || metadata.title,
-        description: metadata.ogDescription || metadata.description,
-        images: [
-          {
-            url: `${siteUrl}/og-image.png`,
-            width: 1200,
-            height: 630,
-            type: "image/png",
-            alt: "건강 질문 - 다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요",
-          },
-        ],
-        url: `${siteUrl}/health-questions/list`,
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: metadata.ogTitle || metadata.title,
-        description: metadata.ogDescription || metadata.description,
-        images: [`${siteUrl}/og-image.png`],
-      },
-      alternates: {
-        canonical: `${siteUrl}/health-questions/list`,
-      },
-    };
-  } catch (error) {
-    return {
-      title: "건강 질문",
-      description:
-        "다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요.",
-    };
-  }
+// ✅ SEO: 정적 메타데이터 (빌드 시점 에러 방지 - headers 사용 불가)
+export async function generateMetadata(): Promise<Metadata> {
+  // generateMetadata는 빌드 시점에도 실행될 수 있으므로 headers()를 사용하는 함수 호출 제거
+  const metadata = generatePageMetadata("health-questions", {
+    title: "건강 질문",
+    description:
+      "다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요.",
+  });
+
+  return {
+    title: metadata.title,
+    description: metadata.description,
+    keywords: metadata.keywords,
+    openGraph: {
+      title: metadata.ogTitle || metadata.title,
+      description: metadata.ogDescription || metadata.description,
+      images: [
+        {
+          url: `${siteUrl}/og-image.png`,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: "건강 질문 - 다양한 건강 관련 질문을 통해 자신의 건강 상태를 확인해보세요",
+        },
+      ],
+      url: `${siteUrl}/health-questions/list`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: metadata.ogTitle || metadata.title,
+      description: metadata.ogDescription || metadata.description,
+      images: [`${siteUrl}/og-image.png`],
+    },
+    alternates: {
+      canonical: `${siteUrl}/health-questions/list`,
+    },
+  };
 }
 
 // ✅ Server Component: 서버에서 초기 데이터 가져오기

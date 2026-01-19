@@ -14,56 +14,55 @@ import { formatTimeAgo } from "../../../lib/utils/timeFormat";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-// ✅ SEO: 동적 메타데이터 생성
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
+// ✅ SEO: 정적 메타데이터 (빌드 시점 에러 방지 - headers 사용 불가)
 export async function generateMetadata({
   params,
 }: {
   params: { id: string };
 }): Promise<Metadata> {
-  try {
-    const { getServerTokens } = await import("../../../lib/api-server");
-    const tokens = await getServerTokens();
-    const post = await getCommunityPostDetailServer(
-      params.id,
-      tokens.accessToken,
-      tokens.refreshToken
-    );
-    const metadata = generateCommunityPostMetadata(post);
+  // generateMetadata는 빌드 시점에도 실행될 수 있으므로 headers()를 사용하는 함수 호출 제거
+  const metadata = generateCommunityPostMetadata({
+    id: params.id,
+    title: "커뮤니티 게시글",
+    content: "커뮤니티 게시글을 확인해보세요.",
+    author: { nickname: "사용자" },
+    type: "질문",
+    createdAt: new Date().toISOString(),
+  });
 
-    return {
-      title: metadata.title,
-      description: metadata.description,
-      keywords: metadata.keywords,
-      openGraph: {
-        title: metadata.ogTitle || metadata.title,
-        description: metadata.ogDescription || metadata.description,
-        images: [
-          {
-            url: `${siteUrl}/og-image.png`,
-            width: 1200,
-            height: 630,
-            type: "image/png",
-            alt: post.title,
-          },
-        ],
-        url: metadata.ogUrl || `${siteUrl}/community/${post.id}`,
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: metadata.ogTitle || metadata.title,
-        description: metadata.ogDescription || metadata.description,
-        images: [`${siteUrl}/og-image.png`],
-      },
-      alternates: {
-        canonical: metadata.ogUrl || `${siteUrl}/community/${post.id}`,
-      },
-    };
-  } catch (error) {
-    return {
-      title: "커뮤니티 게시글",
-      description: "커뮤니티 게시글을 불러오는 중입니다.",
-    };
-  }
+  const canonicalUrl = `${siteUrl}/community/${params.id}`;
+
+  return {
+    title: metadata.title,
+    description: metadata.description,
+    keywords: metadata.keywords,
+    openGraph: {
+      title: metadata.ogTitle || metadata.title,
+      description: metadata.ogDescription || metadata.description,
+      images: [
+        {
+          url: `${siteUrl}/og-image.png`,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: "커뮤니티 게시글",
+        },
+      ],
+      url: metadata.ogUrl || canonicalUrl,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: metadata.ogTitle || metadata.title,
+      description: metadata.ogDescription || metadata.description,
+      images: [`${siteUrl}/og-image.png`],
+    },
+    alternates: {
+      canonical: metadata.ogUrl || canonicalUrl,
+    },
+  };
 }
 
 // 게시글 타입별 색상 반환

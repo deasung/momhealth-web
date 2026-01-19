@@ -47,6 +47,9 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
 interface UserCompletedResponse {
   data: {
     results: UserCompletedResult[];

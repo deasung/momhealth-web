@@ -10,67 +10,52 @@ import { generateHealthQuestionMetadata } from "../../../lib/metadata";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-// ✅ SEO: 동적 메타데이터 생성
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
+// ✅ SEO: 정적 메타데이터 (빌드 시점 에러 방지 - headers 사용 불가)
 export async function generateMetadata({
   params,
 }: {
   params: { id: string };
 }): Promise<Metadata> {
-  try {
-    const { getServerTokens } = await import("../../../lib/api-server");
-    const tokens = await getServerTokens();
-    const question = await getHealthQuestionDetailServer(
-      params.id,
-      tokens.accessToken,
-      tokens.refreshToken
-    );
-    const metadata = generateHealthQuestionMetadata({
-      title: question.title,
-      description: question.description || question.title,
-      category: question.primaryCategory.name,
-    });
+  // generateMetadata는 빌드 시점에도 실행될 수 있으므로 headers()를 사용하는 함수 호출 제거
+  const metadata = generateHealthQuestionMetadata({
+    title: "건강 질문",
+    description: "건강 질문 정보를 확인해보세요.",
+    category: "건강",
+  });
 
-    const ogImage =
-      question.detailThumbnailUrl || question.thumbnailUrl || "/og-image.png";
-    const fullOgImage = ogImage.startsWith("http")
-      ? ogImage
-      : `${siteUrl}${ogImage}`;
-    const canonicalUrl = `${siteUrl}/health-questions/${question.id}`;
+  const canonicalUrl = `${siteUrl}/health-questions/${params.id}`;
 
-    return {
-      title: metadata.title,
-      description: metadata.description,
-      keywords: metadata.keywords,
-      openGraph: {
-        title: metadata.ogTitle || metadata.title,
-        description: metadata.ogDescription || metadata.description,
-        images: [
-          {
-            url: fullOgImage,
-            width: 1200,
-            height: 630,
-            type: "image/png",
-            alt: question.title,
-          },
-        ],
-        url: canonicalUrl,
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: metadata.ogTitle || metadata.title,
-        description: metadata.ogDescription || metadata.description,
-        images: [fullOgImage],
-      },
-      alternates: {
-        canonical: canonicalUrl,
-      },
-    };
-  } catch (error) {
-    return {
-      title: "건강 질문",
-      description: "건강 질문 정보를 불러오는 중입니다.",
-    };
-  }
+  return {
+    title: metadata.title,
+    description: metadata.description,
+    keywords: metadata.keywords,
+    openGraph: {
+      title: metadata.ogTitle || metadata.title,
+      description: metadata.ogDescription || metadata.description,
+      images: [
+        {
+          url: `${siteUrl}/og-image.png`,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: "건강 질문",
+        },
+      ],
+      url: canonicalUrl,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: metadata.ogTitle || metadata.title,
+      description: metadata.ogDescription || metadata.description,
+      images: [`${siteUrl}/og-image.png`],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  };
 }
 
 // ✅ Server Component: 서버에서 데이터 가져오기

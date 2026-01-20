@@ -20,4 +20,5 @@ artifacts:
     - 'next.config.js'
     - 'appspec.yml'
     - '.env.production'
+    - '.env'
   discard-paths: no

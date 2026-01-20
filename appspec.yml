@@ -14,6 +14,10 @@ hooks:
     - location: scripts/stop_server.sh
       timeout: 300
       runas: ec2-user
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 300
+      runas: ec2-user
   AfterInstall:
     - location: scripts/install_dependencies.sh
       timeout: 300

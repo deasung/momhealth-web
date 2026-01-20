@@ -20,5 +20,4 @@ artifacts:
     - 'package-lock.json'
     - 'next.config.js'
     - 'appspec.yml'
-    - 'node_modules/**/*'
   discard-paths: no

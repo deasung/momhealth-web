@@ -1,44 +1,42 @@
 #!/bin/bash
 PROJECT_ROOT="/home/ec2-user/app"
 
-# 1. NVM 및 Node 환경 로드 (핵심)
+# 1. NVM 및 Node 환경 로드
 export NVM_DIR="/home/ec2-user/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# 2. 소유권 변경
+# 2. 소유권 및 권한 강제 설정
 sudo chown -R ec2-user:ec2-user $PROJECT_ROOT
-
 cd $PROJECT_ROOT
 
-echo "AfterInstall: standalone 산출물 사용 (npm install / build 생략)"
-
-# 디버깅: 현재 디렉토리 구조 확인
-echo "현재 디렉토리: $(pwd)"
-echo "디렉토리 내용:"
-ls -la | head -20
-
-echo ""
-echo ".next 디렉토리 확인:"
-if [ -d ".next" ]; then
-    ls -la .next | head -10
-else
-    echo "WARN: .next 디렉토리가 없습니다"
+# 3. 환경 파일 설정
+if [ -f ".env.production" ]; then
+    cp .env.production .env
+    echo "✅ .env.production copied to .env"
 fi
 
-# NOTE:
-# - 빌드는 CodeBuild에서 수행합니다.
-# - Next.js standalone 모드에서는 .next/standalone 안에 필요한 node_modules가 포함됩니다.
+# 4. 의존성 재설치 (아키텍처 불일치 해결 핵심)
+# 기존 node_modules가 있다면 제거하여 꼬임 방지
+echo "Cleaning and installing dependencies for ARM64 architecture..."
+rm -rf node_modules
+npm install --production --no-audit
 
-if [ ! -d ".next/standalone" ]; then
-    echo "ERROR: .next/standalone 이 없습니다. CodeBuild 산출물에 standalone이 포함됐는지 확인하세요."
-    echo "디버깅 정보:"
-    echo "  - .next 존재: $([ -d ".next" ] && echo "YES" || echo "NO")"
-    echo "  - .next/standalone 존재: $([ -d ".next/standalone" ] && echo "YES" || echo "NO")"
-    if [ -d ".next" ]; then
-        echo "  - .next 내부:"
-        ls -la .next/
-    fi
+# 5. .next 디렉토리 및 BUILD_ID 확인
+echo "Checking .next directory..."
+if [ ! -d ".next" ]; then
+    echo "ERROR: .next directory is missing. Check CodeBuild artifacts."
     exit 1
 fi
 
-echo "✅ .next/standalone 확인 완료"
+if [ ! -f ".next/BUILD_ID" ]; then
+    echo "ERROR: .next/BUILD_ID is missing. Running emergency build..."
+    npm run build
+fi
+
+# 6. 최종 검증
+if [ -d "node_modules" ] && [ -f ".next/BUILD_ID" ]; then
+    echo "✅ Dependencies and Build artifacts verified."
+else
+    echo "❌ Verification failed."
+    exit 1
+fi

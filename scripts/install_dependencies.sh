@@ -3,19 +3,17 @@
 # 프로젝트 경로 설정
 PROJECT_ROOT="/home/ec2-user/app"
 
-# 디렉토리가 없으면 생성
-if [ ! -d "$PROJECT_ROOT" ]; then
-    mkdir -p "$PROJECT_ROOT"
-fi
-
-# 해당 경로로 이동
+# 해당 경로로 이동 (폴더는 CodeDeploy가 자동으로 생성함)
 cd $PROJECT_ROOT
 
-# 빌드 결과물 실행을 위해 production 의존성만 설치
-# (이미 빌드된 결과물을 가져오더라도 package.json의 라이브러리 연결이 필요할 수 있음)
-echo "Installing production dependencies..."
-npm install --production
+# 기존 node_modules 삭제 (충돌 방지용 - 선택 사항)
+# rm -rf node_modules
 
-# 빌드 결과물 및 스크립트 파일들에 대한 권한 설정
+# 의존성 설치
+echo "Installing dependencies..."
+# --production을 제거하여 전체 패키지 설치 시도
+npm install
+
+# 권한 설정 (ec2-user가 실행할 수 있도록)
 sudo chown -R ec2-user:ec2-user $PROJECT_ROOT
 chmod +x $PROJECT_ROOT/scripts/*.sh

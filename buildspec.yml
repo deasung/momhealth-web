@@ -20,4 +20,5 @@ artifacts:
     - 'next.config.js'
     - 'appspec.yml'
     - '.env'
+    - 'node_modules/**/*'  # 의존성 폴더를 통째로 포함
   discard-paths: no

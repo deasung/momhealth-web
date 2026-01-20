@@ -2,18 +2,22 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      nodejs: 20
     commands:
       - npm install
   build:
     commands:
-      - echo "빌드 환경변수 설정"
       - cp .env.production .env
       - npm run build
-  post_build:
-    commands:
-      - zip -r deploy.zip .next public package.json package-lock.json next.config.js .env.production
-
 artifacts:
   files:
-    - deploy.zip
+    - '.next/**/*'
+    - 'public/**/*'
+    - 'scripts/**/*'
+    - 'package.json'
+    - 'package-lock.json'
+    - 'next.config.js'
+    - 'appspec.yml'
+    - '.env.production'
   discard-paths: no

@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-    swcMinify: true,
+    swcMinify: false,
     poweredByHeader: false,
+    output: "standalone",
     images: {
         remotePatterns: [
             { protocol: "https", hostname: "d2n4p0bysgra0c.cloudfront.net" },

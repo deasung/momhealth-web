@@ -10,24 +10,13 @@ sudo chown -R ec2-user:ec2-user $PROJECT_ROOT
 
 cd $PROJECT_ROOT
 
-# 3. 환경 파일 및 기존 모듈 정리
-rm -f .env.local .env.dev .env.development
-cp .env.production .env
+echo "AfterInstall: standalone 산출물 사용 (npm install / build 생략)"
 
-echo "Removing old node_modules..."
-rm -rf node_modules
-rm -f package-lock.json
+# NOTE:
+# - 빌드는 CodeBuild에서 수행합니다.
+# - Next.js standalone 모드에서는 .next/standalone 안에 필요한 node_modules가 포함됩니다.
 
-# 4. 의존성 설치
-echo "Installing dependencies..."
-npm install --production --no-audit
-
-npm run build
-
-# 5. 설치 결과 확인
-if [ -d "node_modules" ]; then
-    echo "node_modules installed successfully."
-else
-    echo "node_modules installation failed."
+if [ ! -d ".next/standalone" ]; then
+    echo "ERROR: .next/standalone 이 없습니다. CodeBuild 산출물에 standalone이 포함됐는지 확인하세요."
     exit 1
 fi

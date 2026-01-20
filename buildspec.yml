@@ -5,20 +5,20 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
-      - npm install
+      - npm ci
   build:
     commands:
       - cp .env.production .env
       - NODE_ENV=production npm run build
 artifacts:
   files:
-    - '.next/**/*'
+    - '.next/standalone/**/*'
+    - '.next/static/**/*'
+    - '.env'
     - 'public/**/*'
     - 'scripts/**/*'
     - 'package.json'
     - 'package-lock.json'
     - 'next.config.js'
     - 'appspec.yml'
-    - '.env'
-    - 'node_modules/**/*'  # 의존성 폴더를 통째로 포함
   discard-paths: no

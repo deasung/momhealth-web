@@ -20,9 +20,8 @@ sudo chown -R ec2-user:ec2-user $PROJECT_ROOT
 $PM2_BIN delete nextjs || true
 
 echo "Starting Next.js server with CWD: $PROJECT_ROOT"
-NODE_ENV=production $PM2_BIN start npm --name "nextjs" \
+NODE_ENV=production PORT=3300 HOSTNAME=0.0.0.0 $PM2_BIN start "node .next/standalone/server.js" --name "nextjs" \
     --cwd "$PROJECT_ROOT" \
-    --update-env \
-    -- start -- -p 3300
+    --update-env
 
 $PM2_BIN save

@@ -9,7 +9,7 @@ phases:
   build:
     commands:
       - cp .env.production .env
-      - npm run build
+      - NODE_ENV=production npm run build
 artifacts:
   files:
     - '.next/**/*'

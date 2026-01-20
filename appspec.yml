@@ -3,6 +3,7 @@ os: linux
 files:
   - source: /
     destination: /home/ec2-user/app
+    overwrite: yes  # 기존 파일 덮어쓰기 추가
 permissions:
   - object: /home/ec2-user/app
     pattern: "**"

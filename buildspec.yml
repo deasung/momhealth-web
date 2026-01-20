@@ -12,8 +12,7 @@ phases:
       - NODE_ENV=production npm run build
 artifacts:
   files:
-    - '.next/standalone/**/*'
-    - '.next/static/**/*'
+    - '.next/**/*'
     - '.env'
     - 'public/**/*'
     - 'scripts/**/*'

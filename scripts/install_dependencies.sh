@@ -22,6 +22,8 @@ rm -f package-lock.json
 echo "Installing dependencies..."
 npm install --production --no-audit
 
+npm run build
+
 # 5. 설치 결과 확인
 if [ -d "node_modules" ]; then
     echo "node_modules installed successfully."

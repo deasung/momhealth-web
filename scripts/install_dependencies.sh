@@ -12,11 +12,33 @@ cd $PROJECT_ROOT
 
 echo "AfterInstall: standalone 산출물 사용 (npm install / build 생략)"
 
+# 디버깅: 현재 디렉토리 구조 확인
+echo "현재 디렉토리: $(pwd)"
+echo "디렉토리 내용:"
+ls -la | head -20
+
+echo ""
+echo ".next 디렉토리 확인:"
+if [ -d ".next" ]; then
+    ls -la .next | head -10
+else
+    echo "WARN: .next 디렉토리가 없습니다"
+fi
+
 # NOTE:
 # - 빌드는 CodeBuild에서 수행합니다.
 # - Next.js standalone 모드에서는 .next/standalone 안에 필요한 node_modules가 포함됩니다.
 
 if [ ! -d ".next/standalone" ]; then
     echo "ERROR: .next/standalone 이 없습니다. CodeBuild 산출물에 standalone이 포함됐는지 확인하세요."
+    echo "디버깅 정보:"
+    echo "  - .next 존재: $([ -d ".next" ] && echo "YES" || echo "NO")"
+    echo "  - .next/standalone 존재: $([ -d ".next/standalone" ] && echo "YES" || echo "NO")"
+    if [ -d ".next" ]; then
+        echo "  - .next 내부:"
+        ls -la .next/
+    fi
     exit 1
 fi
+
+echo "✅ .next/standalone 확인 완료"

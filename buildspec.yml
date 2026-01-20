@@ -10,6 +10,7 @@ phases:
     commands:
       # 기존 .env가 있다면 삭제 후 강제 복사
       - rm -f .env
+      - rm -f .env.local .env.dev # 불필요한 환경 파일 삭제
       - cp .env.production .env
       - echo "Checking .env content..."
       - cat .env # 빌드 로그에서 내용 확인용

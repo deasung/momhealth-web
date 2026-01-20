@@ -8,12 +8,7 @@ phases:
       - npm install
   build:
     commands:
-      # 기존 .env가 있다면 삭제 후 강제 복사
-      - rm -f .env
-      - rm -f .env.local .env.dev # 불필요한 환경 파일 삭제
       - cp .env.production .env
-      - echo "Checking .env content..."
-      - cat .env # 빌드 로그에서 내용 확인용
       - NODE_ENV=production npm run build
 artifacts:
   files:
@@ -24,6 +19,5 @@ artifacts:
     - 'package-lock.json'
     - 'next.config.js'
     - 'appspec.yml'
-    - '.env' # 이 파일이 반드시 포함되어야 EC2로 전달됩니다.
-    - '.env.production'
+    - '.env'
   discard-paths: no

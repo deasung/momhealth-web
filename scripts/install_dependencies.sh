@@ -6,6 +6,11 @@ sudo chown -R ec2-user:ec2-user $PROJECT_ROOT
 
 cd $PROJECT_ROOT
 
+pm2 delete nextjs || true
+rm -rf .next
+rm -rf node_modules
+rm -f .env.local .env.dev .env.development
+
 # 2. 의존성 설치
 echo "Installing dependencies..."
 npm install

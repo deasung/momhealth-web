@@ -10,6 +10,23 @@ phases:
     commands:
       - cp .env.production .env
       - NODE_ENV=production npm run build
+      - |
+        # standalone 모드: .next/static을 .next/standalone/.next/static으로 복사 (필수)
+        if [ -d ".next/standalone" ] && [ -d ".next/static" ]; then
+          echo "Copying .next/static to .next/standalone/.next/static"
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          echo "✅ Static files copied to standalone"
+        else
+          echo "WARN: .next/standalone or .next/static not found"
+        fi
+      - |
+        # public 폴더도 standalone에 복사 (필요한 경우)
+        if [ -d ".next/standalone" ] && [ -d "public" ]; then
+          echo "Copying public to .next/standalone/public"
+          cp -r public .next/standalone/public
+          echo "✅ Public files copied to standalone"
+        fi
 artifacts:
   files:
     - '.next/**/*'

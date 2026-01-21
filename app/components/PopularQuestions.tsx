@@ -61,13 +61,19 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
             aria-label={`${question.title} 질문 보기`}
           >
             <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
-              <Image
-                src={question.thumbnailUrl}
-                alt={question.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
+              {question.thumbnailUrl ? (
+                <Image
+                  src={question.thumbnailUrl}
+                  alt={question.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl sm:text-3xl">
+                  💊
+                </div>
+              )}
             </div>
 
             <div className="p-4 sm:p-5">

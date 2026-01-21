@@ -257,14 +257,20 @@ export default async function HealthQuestionDetailPage({
             {/* 썸네일 이미지 */}
             <div className="mb-8">
               <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100">
-                <Image
-                  src={question.detailThumbnailUrl || question.thumbnailUrl}
-                  alt={question.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
-                  priority
-                />
+                {question.detailThumbnailUrl || question.thumbnailUrl ? (
+                  <Image
+                    src={question.detailThumbnailUrl || question.thumbnailUrl}
+                    alt={question.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-5xl">
+                    💊
+                  </div>
+                )}
               </div>
             </div>
 

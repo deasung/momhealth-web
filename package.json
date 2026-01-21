@@ -6,6 +6,7 @@
     "dev": "next dev -p 3300",
     "build": "next build",
     "start": "next start",
+    "start:standalone": "mkdir -p .next/standalone/.next && (test -d .next/static && rm -rf .next/standalone/.next/static && cp -R .next/static .next/standalone/.next/static || true) && (test -d public && rm -rf .next/standalone/public && cp -R public .next/standalone/public || true) && PORT=3300 HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0"
   },
   "dependencies": {

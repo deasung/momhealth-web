@@ -62,13 +62,19 @@ const RecommendedQuestions = ({ questions }: RecommendedQuestionsProps) => {
             aria-label={`${question.title} 추천 질문 보기`}
           >
             <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-gradient-to-br from-green-50 to-blue-50">
-              <Image
-                src={question.thumbnailUrl}
-                alt={question.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
+              {question.thumbnailUrl ? (
+                <Image
+                  src={question.thumbnailUrl}
+                  alt={question.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl sm:text-3xl">
+                  💊
+                </div>
+              )}
               <div className="absolute top-3 right-3">
                 <span
                   className="bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-md"

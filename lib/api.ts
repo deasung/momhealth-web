@@ -1,3 +1,5 @@
+"use client";
+
 import axios from "axios";
 import { API_CONFIG, TOKEN_KEYS } from "./constants";
 
@@ -110,8 +112,10 @@ const handleSessionExpired = async () => {
 
   // NextAuth 세션 초기화
   try {
-    const { signOut } = await import("next-auth/react");
-    await signOut({ redirect: false });
+    const nextAuthModule = await import("next-auth/react");
+    if (nextAuthModule && nextAuthModule.signOut) {
+      await nextAuthModule.signOut({ redirect: false });
+    }
   } catch (error) {
     // signOut 실패해도 계속 진행
   }
@@ -327,8 +331,14 @@ api.interceptors.response.use(
       } else {
         // refresh token이 없거나 게스트 토큰인 경우 - NextAuth 세션 확인
         try {
-          const { getSession } = await import("next-auth/react");
-          const session = await getSession();
+          if (typeof window === "undefined") {
+            return Promise.reject(error);
+          }
+          const nextAuthModule = await import("next-auth/react");
+          if (!nextAuthModule || !nextAuthModule.getSession) {
+            return Promise.reject(error);
+          }
+          const session = await nextAuthModule.getSession();
 
           if (session) {
             const sessionToken =
@@ -1065,12 +1075,16 @@ export const registerWebPushToken = async (subscriptionData: {
       throw new Error("브라우저 환경에서만 사용 가능합니다.");
     }
 
-    const { getBrowserInfo, getInstallationId } = await import(
-      "./utils/browserInfo"
-    );
-    const { getBrowserInfo: getDeviceInfo } = await import(
-      "./utils/deviceInfo"
-    );
+    const browserInfoModule = await import("./utils/browserInfo");
+    if (!browserInfoModule) {
+      throw new Error("browserInfo 모듈을 로드할 수 없습니다.");
+    }
+    const { getBrowserInfo, getInstallationId } = browserInfoModule;
+    const deviceInfoModule = await import("./utils/deviceInfo");
+    if (!deviceInfoModule) {
+      throw new Error("deviceInfo 모듈을 로드할 수 없습니다.");
+    }
+    const { getBrowserInfo: getDeviceInfo } = deviceInfoModule;
 
     const browserInfo = getBrowserInfo();
     const deviceInfo = getDeviceInfo();

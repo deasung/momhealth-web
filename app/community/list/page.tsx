@@ -6,6 +6,7 @@ import CommunityListClient from "../../components/CommunityListClient";
 import { getCommunityPostsServer } from "../../../lib/api-server";
 import type { CommunityPost } from "../../types/community";
 import type { CommunityPostCardDTO } from "../../types/dto";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -82,7 +83,7 @@ export default async function CommunityPage() {
         data?: unknown;
       };
     };
-    console.error("❌ [CommunityPage] 커뮤니티 게시글 로딩 실패:", {
+    logger.error(" [CommunityPage] 커뮤니티 게시글 로딩 실패:", {
       message: axiosError.message,
       status: axiosError.response?.status,
       statusText: axiosError.response?.statusText,

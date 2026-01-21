@@ -14,6 +14,7 @@ import {
   uploadThumbnail,
 } from "../../../lib/api";
 import type { UserProfile } from "../../types/user";
+import { logger } from "@/lib/logger";
 
 export default function MySettingsPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function MySettingsPage() {
           setAge(response.user.age.toString());
         } catch (error) {
           // 프로필 정보 로딩 실패 시 기본값 유지
-          console.error("프로필 정보 로딩 실패:", error);
+          logger.error("프로필 정보 로딩 실패:", error);
         } finally {
           setLoading(false);
         }

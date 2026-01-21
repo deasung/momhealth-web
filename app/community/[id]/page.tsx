@@ -11,6 +11,7 @@ import { authOptions } from "../../../lib/auth";
 import type { CommunityPostDetail } from "../../types/community";
 import { generateCommunityPostMetadata } from "../../../lib/metadata";
 import { formatTimeAgo } from "../../../lib/utils/timeFormat";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -111,7 +112,7 @@ export default async function CommunityPostDetailPage({
         data?: unknown;
       };
     };
-    console.error("❌ [CommunityPostDetailPage] 게시글 상세 로딩 실패:", {
+    logger.error(" [CommunityPostDetailPage] 게시글 상세 로딩 실패:", {
       message: axiosError.message,
       status: axiosError.response?.status,
       statusText: axiosError.response?.statusText,

@@ -9,6 +9,7 @@ import { getHomeDataServer } from "../lib/api-server";
 import type { HomeData } from "./types/home";
 import type { QuestionCardDTO } from "./types/dto";
 import { generatePageMetadata } from "../lib/metadata";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -65,7 +66,7 @@ export default async function Home() {
     // 서버에서 데이터 가져오기
     homeData = await getHomeDataServer();
   } catch (err) {
-    console.error("홈 데이터 로딩 실패:", err);
+    logger.error("홈 데이터 로딩 실패:", err);
     error = "데이터를 불러오는데 실패했습니다.";
   }
 

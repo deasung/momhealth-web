@@ -10,6 +10,7 @@ import {
   requestNotificationPermission,
 } from "../../lib/webPush";
 import { registerWebPushToken } from "../../lib/api";
+import { logger } from "@/lib/logger";
 
 // 알림 데이터 타입
 interface NotificationData {
@@ -212,7 +213,7 @@ export default function ClientProviders({
               try {
                 await registerWebPushToken(existingSubscription);
               } catch (registerErr) {
-                console.error("❌ [웹 푸시] 백엔드 등록 실패:", registerErr);
+                logger.error("❌ [웹 푸시] 백엔드 등록 실패:", registerErr);
               }
             }
           } else {
@@ -236,13 +237,13 @@ export default function ClientProviders({
                     await registerWebPushToken(subscriptionData);
                   }
                 } catch (err) {
-                  console.error("❌ [웹 푸시] 구독 실패:", err);
+                  logger.error("❌ [웹 푸시] 구독 실패:", err);
                 }
               }
             }
           }
         } catch (error) {
-          console.error("❌ [웹 푸시] 초기화 실패:", error);
+          logger.error("❌ [웹 푸시] 초기화 실패:", error);
         }
       };
 
@@ -350,7 +351,7 @@ export default function ClientProviders({
               notificationData.badge || notificationData.data?.badge
             );
           } else if (event.data.type === "NOTIFICATION_ERROR") {
-            console.error("❌ [웹 푸시] 알림 표시 실패:", event.data.error);
+            logger.error("❌ [웹 푸시] 알림 표시 실패:", event.data.error);
           }
         });
 

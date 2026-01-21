@@ -7,6 +7,7 @@ import { getHealthQuestionsServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import type { QuestionListItemDTO } from "../../types/dto";
 import { generatePageMetadata } from "../../../lib/metadata";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -115,7 +116,7 @@ export default async function HealthQuestionsList({
         data?: unknown;
       };
     };
-    console.error("❌ [HealthQuestionsList] 질문목록 로딩 실패:", {
+    logger.error(" [HealthQuestionsList] 질문목록 로딩 실패:", {
       message: axiosError.message,
       status: axiosError.response?.status,
       statusText: axiosError.response?.statusText,

@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { logger } from "@/lib/logger";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl =
@@ -50,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const apiUrl = process.env.MOMHEALTH_API_URL;
     if (!apiUrl) {
-      console.warn("MOMHEALTH_API_URL이 설정되지 않아 동적 페이지를 포함할 수 없습니다.");
+      logger.warn("MOMHEALTH_API_URL이 설정되지 않아 동적 페이지를 포함할 수 없습니다.");
       return staticPages;
     }
 
@@ -83,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           );
         }
       } catch (err) {
-        console.error("Health questions 파싱 실패:", err);
+        logger.error("Health questions 파싱 실패:", err);
       }
     }
 
@@ -113,13 +114,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           );
         }
       } catch (err) {
-        console.error("Community posts 파싱 실패:", err);
+        logger.error("Community posts 파싱 실패:", err);
       }
     }
 
     return [...staticPages, ...healthQuestions, ...communityPosts];
   } catch (error) {
-    console.error("Sitemap 생성 중 오류:", error);
+    logger.error("Sitemap 생성 중 오류:", error);
     // 오류 발생 시 정적 페이지만 반환
     return staticPages;
   }

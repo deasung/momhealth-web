@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import KakaoProvider from "next-auth/providers/kakao";
 import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
+import { logger } from "@/lib/logger";
 
 // 타입 정의
 declare module "next-auth" {
@@ -36,7 +37,7 @@ export function isTokenExpired(token: string): boolean {
     const currentTime = Math.floor(Date.now() / 1000);
     return payload.exp < currentTime;
   } catch (error) {
-    console.error("토큰 파싱 실패:", error);
+    logger.error("토큰 파싱 실패:", error);
     return true; // 파싱 실패 시 만료된 것으로 간주
   }
 }
@@ -48,13 +49,13 @@ if (typeof process !== "undefined" && process.env) {
   const apiKey = process.env.MOMHEALTH_API_KEY;
 
   if (!baseURL || !apiKey) {
-    console.error("❌ [NextAuth] 환경변수 누락 (서버 시작 시):", {
+    logger.error("❌ [NextAuth] 환경변수 누락 (서버 시작 시):", {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
       nodeEnv: process.env.NODE_ENV,
     });
   } else {
-    console.log("✅ [NextAuth] 환경변수 확인 완료:", {
+    logger.info("✅ [NextAuth] 환경변수 확인 완료:", {
       MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
       nodeEnv: process.env.NODE_ENV,
@@ -99,7 +100,7 @@ export const authOptions: NextAuthOptions = {
           const apiKey = process.env.MOMHEALTH_API_KEY;
 
           if (!baseURL || !apiKey) {
-            console.error("❌ 환경변수 누락:", {
+            logger.error("❌ 환경변수 누락:", {
               MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
               MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
             });
@@ -179,7 +180,7 @@ export const authOptions: NextAuthOptions = {
             const baseURL = process.env.MOMHEALTH_API_URL;
 
             if (!baseURL || !apiKey) {
-              console.error("❌ 환경변수 누락 (소셜 로그인):", {
+              logger.error("❌ 환경변수 누락 (소셜 로그인):", {
                 MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
                 MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
               });
@@ -213,7 +214,7 @@ export const authOptions: NextAuthOptions = {
             }
           } catch (error) {
             // 백엔드 API 실패 시 에러 로깅만 수행
-            console.error("❌ 소셜 로그인 백엔드 API 실패:", error);
+            logger.error("❌ 소셜 로그인 백엔드 API 실패:", error);
             // 토큰 없이 진행 (인증 실패로 처리됨)
             throw error;
           }

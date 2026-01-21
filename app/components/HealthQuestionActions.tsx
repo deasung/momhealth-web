@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { resetQuizProgress, getHealthQuestionDetail } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
 import KakaoShareButton from "./KakaoShareButton";
+import { logger } from "@/lib/logger";
 
 interface HealthQuestionActionsProps {
   questionId: string;
@@ -126,7 +127,7 @@ export default function HealthQuestionActions({
             imageUrl: question.detailThumbnailUrl || question.thumbnailUrl,
           });
         } catch (error) {
-          console.error("질문 정보 가져오기 실패:", error);
+          logger.error("질문 정보 가져오기 실패:", error);
           // 에러 발생 시 기본값 유지
         }
       };

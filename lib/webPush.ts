@@ -3,6 +3,8 @@
  * 백엔드 API와 연동하여 endpoint, p256dh, auth를 사용
  */
 
+import { logger } from "@/lib/logger";
+
 /**
  * VAPID 공개 키를 Uint8Array로 변환
  */
@@ -27,7 +29,7 @@ export const registerServiceWorker = async (
   swPath: string = "/sw.js"
 ): Promise<ServiceWorkerRegistration | null> => {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
-    console.warn("⚠️ Service Worker를 지원하지 않는 브라우저입니다.");
+    logger.warn("⚠️ Service Worker를 지원하지 않는 브라우저입니다.");
     return null;
   }
 
@@ -35,10 +37,10 @@ export const registerServiceWorker = async (
     const registration = await navigator.serviceWorker.register(swPath, {
       scope: "/",
     });
-    console.log("✅ Service Worker 등록 완료:", registration.scope);
+    logger.info("✅ Service Worker 등록 완료:", registration.scope);
     return registration;
   } catch (error) {
-    console.error("❌ Service Worker 등록 실패:", error);
+    logger.error("❌ Service Worker 등록 실패:", error);
     return null;
   }
 };
@@ -57,7 +59,7 @@ export const requestNotificationPermission =
     }
 
     if (Notification.permission === "denied") {
-      console.warn("⚠️ 알림 권한이 거부되었습니다.");
+      logger.warn("⚠️ 알림 권한이 거부되었습니다.");
       return "denied";
     }
 
@@ -65,7 +67,7 @@ export const requestNotificationPermission =
       const permission = await Notification.requestPermission();
       return permission;
     } catch (error) {
-      console.error("❌ 알림 권한 요청 실패:", error);
+      logger.error("❌ 알림 권한 요청 실패:", error);
       return "denied";
     }
   };
@@ -131,7 +133,7 @@ export const subscribeToPush = async (
       auth: keys.auth,
     };
   } catch (error) {
-    console.error("❌ 푸시 구독 실패:", error);
+    logger.error("❌ 푸시 구독 실패:", error);
     return null;
   }
 };
@@ -150,13 +152,13 @@ export const unsubscribeFromPush = async (): Promise<boolean> => {
 
     if (subscription) {
       await subscription.unsubscribe();
-      console.log("✅ 푸시 구독 해제 완료");
+      logger.info("✅ 푸시 구독 해제 완료");
       return true;
     }
 
     return false;
   } catch (error) {
-    console.error("❌ 푸시 구독 해제 실패:", error);
+    logger.error("❌ 푸시 구독 해제 실패:", error);
     return false;
   }
 };
@@ -191,7 +193,7 @@ export const getCurrentSubscription =
         auth: keys.auth,
       };
     } catch (error) {
-      console.error("❌ 구독 정보 조회 실패:", error);
+      logger.error("❌ 구독 정보 조회 실패:", error);
       return null;
     }
   };

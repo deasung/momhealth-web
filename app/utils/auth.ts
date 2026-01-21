@@ -1,4 +1,5 @@
 // 인증 관련 유틸리티 함수들
+import { logger } from "@/lib/logger";
 
 export interface User {
   id: string;
@@ -101,7 +102,7 @@ export const refreshTokens = async (): Promise<AuthTokens | null> => {
 
     return null;
   } catch (error) {
-    console.error("Token refresh failed:", error);
+    logger.error("Token refresh failed:", error);
     return null;
   }
 };

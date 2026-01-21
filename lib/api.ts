@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { API_CONFIG, TOKEN_KEYS } from "./constants";
+import { logger } from "./logger";
 
 // 클라이언트에서는 Next.js API 라우트를 통해 프록시
 export const BASE_URL = "/api/proxy";
@@ -32,7 +33,7 @@ const initializeTokenFromStorage = () => {
         // refresh_token도 메모리에 유지 (필요시 사용)
       }
     } catch (error) {
-      console.error("토큰 복원 실패:", error);
+      logger.error("토큰 복원 실패:", error);
     }
   }
 };
@@ -49,7 +50,7 @@ const isTokenExpired = (token: string): boolean => {
     const currentTime = Math.floor(Date.now() / 1000);
     return payload.exp < currentTime;
   } catch (error) {
-    console.error("토큰 파싱 실패:", error);
+    logger.error("토큰 파싱 실패:", error);
     return true; // 파싱 실패 시 만료된 것으로 간주
   }
 };
@@ -81,7 +82,7 @@ export const setToken = (
         localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
       }
     } catch (error) {
-      console.error("토큰 저장 실패:", error);
+      logger.error("토큰 저장 실패:", error);
     }
   }
 };
@@ -99,11 +100,11 @@ export const clearToken = () => {
       localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
       localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
     } catch (error) {
-      console.error("토큰 삭제 실패:", error);
+      logger.error("토큰 삭제 실패:", error);
     }
   }
 
-  console.log("🗑️ 토큰 초기화");
+  logger.info("🗑️ 토큰 초기화");
 };
 
 // 세션 만료 처리 (토큰 갱신 실패 시)
@@ -173,7 +174,7 @@ api.interceptors.request.use(
     }
 
     // 디버깅: 토큰 정보 로그
-    console.log("🔐 API 요청에 사용되는 토큰:", {
+    logger.debug("🔐 API 요청에 사용되는 토큰:", {
       method: config.method?.toUpperCase(),
       url: config.url,
       hasToken: !!currentToken,
@@ -187,7 +188,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("API 요청 설정 오류:", error);
+    logger.error("API 요청 설정 오류:", error);
     return Promise.reject(error);
   }
 );
@@ -195,7 +196,7 @@ api.interceptors.request.use(
 // 응답 인터셉터: 프록시를 통한 응답 로깅만
 api.interceptors.response.use(
   (response) => {
-    console.log("✅ API 응답 성공:", {
+    logger.debug("✅ API 응답 성공:", {
       status: response.status,
       url: response.config.url,
       method: response.config.method?.toUpperCase(),
@@ -209,7 +210,7 @@ api.interceptors.response.use(
       response.config.url?.includes("/community") ||
       response.config.url?.includes("/register")
     ) {
-      console.log("📊 상세 응답 데이터:", {
+      logger.debug("📊 상세 응답 데이터:", {
         url: response.config.url,
         dataKeys: Object.keys(response.data || {}),
         hasResults: !!response.data?.results,
@@ -228,7 +229,7 @@ api.interceptors.response.use(
       // 이미 재시도한 경우는 더 이상 시도하지 않고 즉시 실패 처리
       if (originalRequest._retry) {
         // 무한 루프 방지: 이미 재시도했으면 세션 만료 처리
-        console.error("❌ 401 에러 재시도 실패 - 세션 만료 처리");
+        logger.error("❌ 401 에러 재시도 실패 - 세션 만료 처리");
         await handleSessionExpired();
         return Promise.reject(error);
       }
@@ -299,7 +300,7 @@ api.interceptors.response.use(
             }
           } catch (refreshError) {
             // refresh 호출 자체가 실패한 경우 (네트워크 에러 또는 401 등)
-            console.error("❌ 토큰 갱신 실패:", refreshError);
+            logger.error("❌ 토큰 갱신 실패:", refreshError);
             return null;
           } finally {
             // refresh 완료 (성공/실패 관계없이)
@@ -319,7 +320,7 @@ api.interceptors.response.use(
             return api(originalRequest);
           } else {
             // refresh 실패 - 무한 루프 방지를 위해 즉시 세션 만료 처리
-            console.error("❌ 토큰 갱신 실패 - 세션 만료 처리");
+            logger.error("❌ 토큰 갱신 실패 - 세션 만료 처리");
             await handleSessionExpired();
             return Promise.reject(error);
           }
@@ -370,7 +371,7 @@ api.interceptors.response.use(
       }
     }
 
-    console.error("❌ API 요청 실패:", {
+    logger.error("❌ API 요청 실패:", {
       url: error.config?.url,
       method: error.config?.method?.toUpperCase(),
       status: error.response?.status,
@@ -407,7 +408,7 @@ export const getGuestToken = async (): Promise<{
     }
     return null;
   } catch (error) {
-    console.error("게스트 토큰 발급 실패:", error);
+    logger.error("게스트 토큰 발급 실패:", error);
     return null;
   }
 };
@@ -418,7 +419,7 @@ export const getHomeData = async () => {
     const response = await api.get("/public/home");
     return response.data;
   } catch (error) {
-    console.error("홈 데이터 가져오기 실패:", error);
+    logger.error("홈 데이터 가져오기 실패:", error);
     throw error;
   }
 };
@@ -462,7 +463,7 @@ export const getHealthQuestions = async (
     );
     return response.data;
   } catch (error) {
-    console.error("질문목록 가져오기 실패:", error);
+    logger.error("질문목록 가져오기 실패:", error);
     throw error;
   }
 };
@@ -473,7 +474,7 @@ export const getHealthQuestionCategories = async () => {
     const response = await api.get("/private/health.questions/categories");
     return response.data;
   } catch (error) {
-    console.error("카테고리 목록 가져오기 실패:", error);
+    logger.error("카테고리 목록 가져오기 실패:", error);
     throw error;
   }
 };
@@ -484,7 +485,7 @@ export const getHealthQuestionDetail = async (id: string) => {
     const response = await api.get(`/private/health.questions/${id}`);
     return response.data;
   } catch (error) {
-    console.error("질문 상세 정보 가져오기 실패:", error);
+    logger.error("질문 상세 정보 가져오기 실패:", error);
     throw error;
   }
 };
@@ -495,7 +496,7 @@ export const getQuizItems = async (id: string) => {
     const response = await api.get(`/private/health.questions/${id}/items`);
     return response.data;
   } catch (error) {
-    console.error("퀴즈 문항 가져오기 실패:", error);
+    logger.error("퀴즈 문항 가져오기 실패:", error);
     throw error;
   }
 };
@@ -506,7 +507,7 @@ export const resetQuizProgress = async (id: string) => {
     const response = await api.delete(`/private/health.questions/${id}/reset`);
     return response.data;
   } catch (error) {
-    console.error("퀴즈 진행상태 리셋 실패:", error);
+    logger.error("퀴즈 진행상태 리셋 실패:", error);
     throw error;
   }
 };
@@ -517,9 +518,9 @@ export const submitQuizAnswers = async (
   answers: Array<{ questionId: string; choiceId: string }>
 ) => {
   try {
-    console.log("=== API 호출 상세 정보 ===");
-    console.log("요청 URL:", `/private/health.questions/${id}/submit`);
-    console.log("원본 답변 데이터:", answers);
+    logger.debug("=== API 호출 상세 정보 ===");
+    logger.debug("요청 URL:", `/private/health.questions/${id}/submit`);
+    logger.debug("원본 답변 데이터:", answers);
 
     // 백엔드 API 형식에 맞게 데이터 변환
     const formattedAnswers = answers.map((answer) => ({
@@ -527,12 +528,12 @@ export const submitQuizAnswers = async (
       choiceId: parseInt(answer.choiceId), // 문자열 → 숫자
     }));
 
-    console.log("변환된 답변 데이터:", formattedAnswers);
-    console.log("답변 배열 길이:", formattedAnswers.length);
+    logger.debug("변환된 답변 데이터:", formattedAnswers);
+    logger.debug("답변 배열 길이:", formattedAnswers.length);
 
     // 각 답변의 타입 확인
     formattedAnswers.forEach((answer, index) => {
-      console.log(`답변 ${index + 1} 타입 확인:`, {
+      logger.debug(`답변 ${index + 1} 타입 확인:`, {
         itemId: answer.itemId,
         itemIdType: typeof answer.itemId,
         choiceId: answer.choiceId,
@@ -546,7 +547,7 @@ export const submitQuizAnswers = async (
       answers: formattedAnswers,
     });
 
-    console.log("API 응답 성공:", response.data);
+    logger.debug("API 응답 성공:", response.data);
     return response.data;
   } catch (error: unknown) {
     // 퀴즈 답안 제출 실패 처리
@@ -569,7 +570,7 @@ export const getCommunityPosts = async (
     const response = await api.get(`/private/community?${params.toString()}`);
     return response.data;
   } catch (error) {
-    console.error("커뮤니티 게시글 로딩 실패:", error);
+    logger.error("커뮤니티 게시글 로딩 실패:", error);
     throw error;
   }
 };
@@ -580,7 +581,7 @@ export const getCommunityPostDetail = async (postId: string) => {
     const response = await api.get(`/private/community/${postId}`);
     return response.data;
   } catch (error) {
-    console.error("커뮤니티 게시글 상세 로딩 실패:", error);
+    logger.error("커뮤니티 게시글 상세 로딩 실패:", error);
     throw error;
   }
 };
@@ -599,7 +600,7 @@ export const createCommunityPost = async (data: {
     });
     return response.data;
   } catch (error) {
-    console.error("커뮤니티 게시글 등록 실패:", error);
+    logger.error("커뮤니티 게시글 등록 실패:", error);
     throw error;
   }
 };
@@ -621,7 +622,7 @@ export const updateCommunityPost = async (
     });
     return response.data;
   } catch (error) {
-    console.error("커뮤니티 게시글 수정 실패:", error);
+    logger.error("커뮤니티 게시글 수정 실패:", error);
     throw error;
   }
 };
@@ -632,7 +633,7 @@ export const deleteCommunityPost = async (postId: string) => {
     const response = await api.delete(`/private/community/${postId}`);
     return response.data;
   } catch (error) {
-    console.error("커뮤니티 게시글 삭제 실패:", error);
+    logger.error("커뮤니티 게시글 삭제 실패:", error);
     throw error;
   }
 };
@@ -645,7 +646,7 @@ export const createComment = async (postId: string, content: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("댓글 등록 실패:", error);
+    logger.error("댓글 등록 실패:", error);
     throw error;
   }
 };
@@ -658,7 +659,7 @@ export const deleteComment = async (postId: string, commentId: string) => {
     );
     return response.data;
   } catch (error) {
-    console.error("댓글 삭제 실패:", error);
+    logger.error("댓글 삭제 실패:", error);
     throw error;
   }
 };
@@ -678,7 +679,7 @@ export const updateComment = async (
     );
     return response.data;
   } catch (error) {
-    console.error("댓글 수정 실패:", error);
+    logger.error("댓글 수정 실패:", error);
     throw error;
   }
 };
@@ -689,7 +690,7 @@ export const getPrivacyPolicy = async () => {
     const response = await api.get("/public/policy/privacy");
     return response.data;
   } catch (error) {
-    console.error("개인정보 처리방침 조회 실패:", error);
+    logger.error("개인정보 처리방침 조회 실패:", error);
     throw error;
   }
 };
@@ -700,7 +701,7 @@ export const getServiceTerms = async () => {
     const response = await api.get("/public/policy/terms");
     return response.data;
   } catch (error) {
-    console.error("서비스 이용약관 조회 실패:", error);
+    logger.error("서비스 이용약관 조회 실패:", error);
     throw error;
   }
 };
@@ -843,7 +844,7 @@ export const getMyCommunityPosts = async (params?: {
       nextCursor: response.data.nextCursor ?? null,
     };
   } catch (error) {
-    console.error("내 게시글 목록 조회 실패:", error);
+    logger.error("내 게시글 목록 조회 실패:", error);
     throw error;
   }
 };
@@ -854,7 +855,7 @@ export const getUserProfile = async () => {
     const response = await api.get("/private/register/profile");
     return response.data;
   } catch (error) {
-    console.error("사용자 프로필 조회 실패:", error);
+    logger.error("사용자 프로필 조회 실패:", error);
     throw error;
   }
 };
@@ -869,7 +870,7 @@ export const updateUserProfile = async (data: {
     const response = await api.put("/private/register/profile", data);
     return response.data;
   } catch (error) {
-    console.error("사용자 프로필 수정 실패:", error);
+    logger.error("사용자 프로필 수정 실패:", error);
     throw error;
   }
 };
@@ -880,7 +881,7 @@ export const getMappedUsers = async () => {
     const response = await api.get("/private/register/mapped-users");
     return response.data;
   } catch (error) {
-    console.error("매핑된 사용자 목록 조회 실패:", error);
+    logger.error("매핑된 사용자 목록 조회 실패:", error);
     throw error;
   }
 };
@@ -891,7 +892,7 @@ export const getFriendRequestCounts = async () => {
     const response = await api.get("/private/register/friend-requests");
     return response.data;
   } catch (error) {
-    console.error("친구 요청 카운트 조회 실패:", error);
+    logger.error("친구 요청 카운트 조회 실패:", error);
     throw error;
   }
 };
@@ -902,7 +903,7 @@ export const getSentRequests = async () => {
     const response = await api.get("/private/register/friend-requests/sent");
     return response.data;
   } catch (error) {
-    console.error("보낸 친구 요청 조회 실패:", error);
+    logger.error("보낸 친구 요청 조회 실패:", error);
     throw error;
   }
 };
@@ -915,7 +916,7 @@ export const getReceivedRequests = async () => {
     );
     return response.data;
   } catch (error) {
-    console.error("받은 친구 요청 조회 실패:", error);
+    logger.error("받은 친구 요청 조회 실패:", error);
     throw error;
   }
 };
@@ -931,7 +932,7 @@ export const acceptFriendRequest = async (requestId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("친구 요청 수락 실패:", error);
+    logger.error("친구 요청 수락 실패:", error);
     throw error;
   }
 };
@@ -944,7 +945,7 @@ export const cancelFriendRequest = async (requestId: number) => {
     );
     return response.data;
   } catch (error) {
-    console.error("친구 요청 취소 실패:", error);
+    logger.error("친구 요청 취소 실패:", error);
     throw error;
   }
 };
@@ -960,7 +961,7 @@ export const getNotices = async (params: {
     const response = await api.get("/public/notice/list", { params });
     return response.data;
   } catch (error) {
-    console.error("공지사항 목록 조회 실패:", error);
+    logger.error("공지사항 목록 조회 실패:", error);
     throw error;
   }
 };
@@ -971,7 +972,7 @@ export const getNoticeDetail = async (id: string) => {
     const response = await api.get(`/public/notice/${id}`);
     return response.data;
   } catch (error) {
-    console.error("공지사항 상세 조회 실패:", error);
+    logger.error("공지사항 상세 조회 실패:", error);
     throw error;
   }
 };
@@ -988,7 +989,7 @@ export const getUserCompletedQuestions = async (params: {
     });
     return response.data;
   } catch (error) {
-    console.error("사용자의 완료한 건강 질문 조회 실패:", error);
+    logger.error("사용자의 완료한 건강 질문 조회 실패:", error);
     throw error;
   }
 };
@@ -1004,7 +1005,7 @@ export const getFriendQuestionResult = async (params: {
     );
     return response.data;
   } catch (error) {
-    console.error("친구의 질문 결과 조회 실패:", error);
+    logger.error("친구의 질문 결과 조회 실패:", error);
     throw error;
   }
 };
@@ -1023,7 +1024,7 @@ export const getInquiries = async (params?: {
     });
     return response.data;
   } catch (error) {
-    console.error("문의 목록 조회 실패:", error);
+    logger.error("문의 목록 조회 실패:", error);
     throw error;
   }
 };
@@ -1034,7 +1035,7 @@ export const getInquiryDetail = async (id: number) => {
     const response = await api.get(`/private/inquiry/${id}`);
     return response.data;
   } catch (error) {
-    console.error("문의 상세 조회 실패:", error);
+    logger.error("문의 상세 조회 실패:", error);
     throw error;
   }
 };
@@ -1048,7 +1049,7 @@ export const createInquiry = async (data: {
     const response = await api.post("/private/inquiry", data);
     return response.data;
   } catch (error) {
-    console.error("문의 등록 실패:", error);
+    logger.error("문의 등록 실패:", error);
     throw error;
   }
 };
@@ -1059,7 +1060,7 @@ export const requestPasswordReset = async (email: string) => {
     const response = await api.post("/public/auth/password-reset", { email });
     return response.data;
   } catch (error) {
-    console.error("비밀번호 재설정 이메일 발송 실패:", error);
+    logger.error("비밀번호 재설정 이메일 발송 실패:", error);
     throw error;
   }
 };
@@ -1119,7 +1120,7 @@ export const registerWebPushToken = async (subscriptionData: {
     const response = await api.post("/public/push/web-push-token", payload);
     return response.data;
   } catch (error) {
-    console.error("웹 푸시 토큰 등록 실패:", error);
+    logger.error("웹 푸시 토큰 등록 실패:", error);
     throw error;
   }
 };
@@ -1134,7 +1135,7 @@ export const unregisterWebPushToken = async (endpoint: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("웹 푸시 토큰 해제 실패:", error);
+    logger.error("웹 푸시 토큰 해제 실패:", error);
     throw error;
   }
 };
@@ -1147,7 +1148,7 @@ export const getWebPushTokenStatus = async (endpoint: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("웹 푸시 토큰 상태 조회 실패:", error);
+    logger.error("웹 푸시 토큰 상태 조회 실패:", error);
     throw error;
   }
 };
@@ -1164,7 +1165,7 @@ export const toggleWebPushStatus = async (
     });
     return response.data;
   } catch (error) {
-    console.error("웹 푸시 상태 변경 실패:", error);
+    logger.error("웹 푸시 상태 변경 실패:", error);
     throw error;
   }
 };
@@ -1175,7 +1176,7 @@ export const getUserWebPushTokens = async () => {
     const response = await api.get("/public/push/web-push-tokens");
     return response.data;
   } catch (error) {
-    console.error("웹 푸시 토큰 조회 실패:", error);
+    logger.error("웹 푸시 토큰 조회 실패:", error);
     throw error;
   }
 };

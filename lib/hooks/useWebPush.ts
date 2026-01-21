@@ -11,6 +11,7 @@ import {
   getWebPushTokenStatus,
   toggleWebPushStatus,
 } from "../api";
+import { logger } from "@/lib/logger";
 
 export interface PushSubscriptionData {
   endpoint: string;
@@ -88,29 +89,29 @@ export function useWebPush(): UseWebPushReturn {
               setIsRegistered(true);
             } else {
               // 구독은 있지만 백엔드에 등록되지 않은 경우 자동 등록
-              console.log("구독은 있지만 백엔드에 미등록, 자동 등록 시도");
+              logger.debug("구독은 있지만 백엔드에 미등록, 자동 등록 시도");
               try {
                 await registerWebPushToken(currentSubscription);
                 setIsRegistered(true);
-                console.log("✅ 기존 구독 백엔드 자동 등록 완료");
+                logger.info("✅ 기존 구독 백엔드 자동 등록 완료");
               } catch (err) {
-                console.error("백엔드 자동 등록 실패:", err);
+                logger.error("백엔드 자동 등록 실패:", err);
               }
             }
           } catch (err) {
             // 등록되지 않은 경우 자동 등록 시도
-            console.log("백엔드에 등록되지 않은 구독, 자동 등록 시도");
+            logger.debug("백엔드에 등록되지 않은 구독, 자동 등록 시도");
             try {
               await registerWebPushToken(currentSubscription);
               setIsRegistered(true);
-              console.log("✅ 구독 백엔드 자동 등록 완료");
+              logger.info("✅ 구독 백엔드 자동 등록 완료");
             } catch (err) {
-              console.error("백엔드 자동 등록 실패:", err);
+              logger.error("백엔드 자동 등록 실패:", err);
             }
           }
         } else if (permission === "granted") {
           // 구독이 없지만 권한이 있는 경우 자동 구독 시도
-          console.log("권한은 있지만 구독이 없음, 자동 구독 시도");
+          logger.debug("권한은 있지만 구독이 없음, 자동 구독 시도");
           const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
           if (vapidKey) {
             try {
@@ -119,15 +120,15 @@ export function useWebPush(): UseWebPushReturn {
                 setSubscription(subscriptionData);
                 await registerWebPushToken(subscriptionData);
                 setIsRegistered(true);
-                console.log("✅ 자동 푸시 구독 및 등록 완료");
+                logger.info("✅ 자동 푸시 구독 및 등록 완료");
               }
             } catch (err) {
-              console.error("자동 구독 실패:", err);
+              logger.error("자동 구독 실패:", err);
             }
           }
         }
       } catch (err) {
-        console.error("구독 정보 확인 실패:", err);
+        logger.error("구독 정보 확인 실패:", err);
         hasInitializedRef.current = false; // 실패 시 재시도 가능하도록
       }
     };
@@ -156,7 +157,7 @@ export function useWebPush(): UseWebPushReturn {
       }
     } catch (err: unknown) {
       const error = err as { message?: string };
-      console.error("알림 권한 요청 실패:", err);
+      logger.error("알림 권한 요청 실패:", err);
       setError(error.message || "알림 권한 요청에 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -193,9 +194,9 @@ export function useWebPush(): UseWebPushReturn {
         try {
           await registerWebPushToken(subscriptionData);
           setIsRegistered(true);
-          console.log("✅ 웹 푸시 토큰 등록 완료");
+          logger.info("✅ 웹 푸시 토큰 등록 완료");
         } catch (err) {
-          console.error("백엔드 토큰 등록 실패:", err);
+          logger.error("백엔드 토큰 등록 실패:", err);
           // 구독은 성공했지만 백엔드 등록 실패는 경고만
           setError("푸시 구독은 완료되었지만 서버 등록에 실패했습니다.");
         }
@@ -203,7 +204,7 @@ export function useWebPush(): UseWebPushReturn {
         return subscriptionData;
       } catch (err: unknown) {
         const error = err as { message?: string };
-        console.error("푸시 구독 실패:", err);
+        logger.error("푸시 구독 실패:", err);
         setError(error.message || "푸시 구독에 실패했습니다.");
         return null;
       } finally {
@@ -223,7 +224,7 @@ export function useWebPush(): UseWebPushReturn {
       try {
         await unregisterWebPushToken(subscription.endpoint);
       } catch (err) {
-        console.error("백엔드 토큰 삭제 실패:", err);
+        logger.error("백엔드 토큰 삭제 실패:", err);
       }
 
       // 브라우저에서 구독 해제
@@ -231,10 +232,10 @@ export function useWebPush(): UseWebPushReturn {
 
       setSubscription(null);
       setIsRegistered(false);
-      console.log("✅ 푸시 구독 해제 완료");
+      logger.info("✅ 푸시 구독 해제 완료");
     } catch (err: unknown) {
       const error = err as { message?: string };
-      console.error("푸시 구독 해제 실패:", err);
+      logger.error("푸시 구독 해제 실패:", err);
       setError(error.message || "푸시 구독 해제에 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -254,10 +255,10 @@ export function useWebPush(): UseWebPushReturn {
         setError(null);
 
         await toggleWebPushStatus(subscription.endpoint, isPush);
-        console.log(`✅ 푸시 알림 ${isPush ? "활성화" : "비활성화"} 완료`);
+        logger.info(`✅ 푸시 알림 ${isPush ? "활성화" : "비활성화"} 완료`);
       } catch (err: unknown) {
         const error = err as { message?: string };
-        console.error("푸시 상태 변경 실패:", err);
+        logger.error("푸시 상태 변경 실패:", err);
         setError(error.message || "푸시 상태 변경에 실패했습니다.");
       } finally {
         setIsLoading(false);

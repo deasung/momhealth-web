@@ -1,6 +1,8 @@
 // lib/env.ts
 // Next.js standalone 모드에서 런타임 환경 변수를 읽기 위한 헬퍼 함수
 
+import { logger } from "@/lib/logger";
+
 /**
  * 런타임 환경 변수를 안전하게 읽는 함수
  * Next.js가 빌드 시점에 최적화하면서 환경 변수를 제거하는 것을 방지하기 위해
@@ -9,12 +11,12 @@
 export function getEnvVar(key: string): string | undefined {
     // Node.js 환경인지 확인
     if (typeof process === "undefined") {
-        console.error(`[env.ts] process가 정의되지 않음: ${key}`);
+        logger.error(`[env.ts] process가 정의되지 않음: ${key}`);
         return undefined;
     }
 
     if (!process.env) {
-        console.error(`[env.ts] process.env가 정의되지 않음: ${key}`);
+        logger.error(`[env.ts] process.env가 정의되지 않음: ${key}`);
         return undefined;
     }
 
@@ -27,7 +29,7 @@ export function getEnvVar(key: string): string | undefined {
 
     // 디버깅: 환경 변수가 없을 때만 로그 (너무 많은 로그 방지)
     if (!value && (key === "MOMHEALTH_API_URL" || key === "MOMHEALTH_API_KEY")) {
-        console.warn(`[env.ts] 환경 변수 누락: ${key}`, {
+        logger.warn(`[env.ts] 환경 변수 누락: ${key}`, {
             allKeys: Object.keys(process.env).filter((k) => k.includes("MOMHEALTH")),
             nodeEnv: process.env.NODE_ENV,
         });

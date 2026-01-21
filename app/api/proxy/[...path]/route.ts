@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import { logger } from "@/lib/logger";
 
 // 서버 시작 시 환경 변수 확인 (모듈 로드 시점에 실행)
 // Next.js standalone 모드에서 런타임 환경 변수를 직접 읽기
@@ -8,7 +9,7 @@ if (typeof process !== "undefined" && process.env) {
   const apiKey = process.env.MOMHEALTH_API_KEY;
 
   if (!baseURL || !apiKey) {
-    console.error("❌ [프록시 API] 환경변수 누락 (서버 시작 시):", {
+    logger.error(" [프록시 API] 환경변수 누락 (서버 시작 시):", {
       MOMHEALTH_API_URL: baseURL || "undefined",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "undefined",
       allEnvKeys: Object.keys(process.env).filter((key) =>
@@ -17,7 +18,7 @@ if (typeof process !== "undefined" && process.env) {
       nodeEnv: process.env.NODE_ENV,
     });
   } else {
-    console.log("✅ [프록시 API] 환경변수 확인 완료:", {
+    logger.info(" [프록시 API] 환경변수 확인 완료:", {
       MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
       MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
       nodeEnv: process.env.NODE_ENV,
@@ -61,7 +62,7 @@ async function handleRequest(
     };
 
     // 서버 로그에 기록 (Docker 컨테이너 로그에서 확인: docker logs momhealth-web)
-    console.error("❌ 환경변수 누락 (프록시 요청 시):", debugInfo);
+    logger.error(" 환경변수 누락 (프록시 요청 시):", debugInfo);
 
     // 개발 환경에서만 클라이언트에 디버깅 정보 전달 (보안상 프로덕션에서는 제외)
     const isDev =
@@ -106,7 +107,7 @@ async function handleRequest(
         finalToken = `Bearer ${guestTokenResponse.data.access_token}`;
       }
     } catch (guestError: any) {
-      console.error("[API 프록시] 게스트 토큰 발급 실패:", {
+      logger.error("[API 프록시] 게스트 토큰 발급 실패:", {
         message: guestError.message,
         status: guestError.response?.status,
         data: guestError.response?.data,
@@ -236,7 +237,7 @@ async function handleRequest(
           return nextResponse;
         }
       } catch (refreshError: any) {
-        console.error("[API 프록시] refresh token 재발급 실패:", {
+        logger.error("[API 프록시] refresh token 재발급 실패:", {
           message: refreshError.message,
           status: refreshError.response?.status,
           data: refreshError.response?.data,

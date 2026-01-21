@@ -7,6 +7,7 @@ import HealthQuestionActions from "../../components/HealthQuestionActions";
 import { getHealthQuestionDetailServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generateHealthQuestionMetadata } from "../../../lib/metadata";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -84,7 +85,7 @@ export default async function HealthQuestionDetailPage({
         data?: unknown;
       };
     };
-    console.error("❌ [HealthQuestionDetailPage] 질문 상세 로딩 실패:", {
+    logger.error(" [HealthQuestionDetailPage] 질문 상세 로딩 실패:", {
       message: axiosError.message,
       status: axiosError.response?.status,
       statusText: axiosError.response?.statusText,

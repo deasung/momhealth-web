@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { updateCommunityPost, deleteCommunityPost } from "../../lib/api";
 import type { CommunityPostDetail } from "../types/community";
 import CommunityWriteModal from "./CommunityWriteModal";
+import { logger } from "@/lib/logger";
 
 interface CommunityPostActionsProps {
   post: CommunityPostDetail;
@@ -67,8 +68,8 @@ export default function CommunityPostActions({
     !isNaN(authorIdNum) &&
     userIdNum === authorIdNum;
 
-  console.log("✅ [CommunityPostActions] isOwnPost 최종 결과:", isOwnPost);
-  console.log(
+  logger.debug("✅ [CommunityPostActions] isOwnPost 최종 결과:", isOwnPost);
+  logger.debug(
     "✅ [CommunityPostActions] 버튼 표시 여부:",
     isOwnPost ? "표시됨" : "표시 안됨"
   );

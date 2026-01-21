@@ -7,6 +7,7 @@ import Footer from "../../../components/Footer";
 import SEO from "../../../components/SEO";
 import { getQuizItems, submitQuizAnswers } from "../../../../lib/api";
 import { QuizAnswer, QuizData } from "../../../types/health-questions";
+import { logger } from "@/lib/logger";
 
 const QuizPage = () => {
   const router = useRouter();
@@ -33,7 +34,7 @@ const QuizPage = () => {
       const data = await getQuizItems(id);
       setQuiz(data);
     } catch (error) {
-      console.error("퀴즈 문항 로딩 실패:", error);
+      logger.error("퀴즈 문항 로딩 실패:", error);
       // ✅ UX: alert 제거, 에러 상태 설정
       setError("퀴즈 문항을 불러오는 데 실패했습니다.");
       setShowErrorModal(true);
@@ -72,7 +73,7 @@ const QuizPage = () => {
 
   // ✅ 성능: 핸들러 메모이제이션
   const handleSelect = useCallback((itemId: string, choiceId: string) => {
-    console.log("handleSelect", itemId, choiceId);
+    logger.debug("handleSelect", itemId, choiceId);
 
     // ✅ 유효성 검사: itemId와 choiceId가 유효한 값인지 확인
     if (
@@ -85,7 +86,7 @@ const QuizPage = () => {
       choiceId === undefined ||
       choiceId === ""
     ) {
-      console.error("유효하지 않은 itemId 또는 choiceId:", {
+      logger.error("유효하지 않은 itemId 또는 choiceId:", {
         itemId,
         choiceId,
       });
@@ -99,7 +100,7 @@ const QuizPage = () => {
         ? prev.map((a) => (a.itemId === itemId ? { ...a, choiceId } : a))
         : [...prev, { itemId, choiceId }];
 
-      console.log(newAnswers);
+      logger.debug(newAnswers);
 
       return newAnswers;
     });
@@ -152,13 +153,13 @@ const QuizPage = () => {
         choiceId: String(answer.choiceId),
       }));
 
-      console.log("제출할 답변 데이터:", formattedAnswers);
+      logger.debug("제출할 답변 데이터:", formattedAnswers);
 
       await submitQuizAnswers(id, formattedAnswers);
       // ✅ UX: 제출 성공 후 결과 페이지로 이동
       router.push(`/health-questions/${id}/result`);
     } catch (error: unknown) {
-      console.error("퀴즈 제출 실패:", error);
+      logger.error("퀴즈 제출 실패:", error);
       // ✅ UX: alert 제거, 에러 모달 표시
       const errorMessage =
         error instanceof Error
@@ -400,7 +401,7 @@ const QuizPage = () => {
                       choice.id === null ||
                       choice.id === undefined
                     ) {
-                      console.error("유효하지 않은 ID:", {
+                      logger.error("유효하지 않은 ID:", {
                         itemId: currentItem.id,
                         choiceId: choice.id,
                       });

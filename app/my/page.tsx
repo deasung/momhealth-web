@@ -11,6 +11,7 @@ import { useLogout } from "../../lib/hooks/useLogout";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
 import { getUserProfile } from "../../lib/api";
 import type { UserProfile } from "../types/user";
+import { logger } from "@/lib/logger";
 
 export default function MyPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -50,7 +51,7 @@ export default function MyPage() {
       profileErrorRef.current = false; // 성공 시 플래그 리셋
     } catch (error) {
       // 프로필 정보 로딩 실패 시 에러 플래그 설정 (무한 루프 방지)
-      console.error("프로필 로딩 실패:", error);
+      logger.error("프로필 로딩 실패:", error);
       profileErrorRef.current = true;
       // 401 또는 403 에러인 경우에만 플래그 설정 (네트워크 에러 등은 재시도 가능)
       const axiosError = error as { response?: { status?: number } };

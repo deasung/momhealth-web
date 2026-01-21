@@ -103,6 +103,12 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
                   <span>
                     {question.durationMinutes
                       ? `${question.durationMinutes}분`
+                      : question.readTime
+                      ? (() => {
+                          // "5 min read" 형식에서 숫자 추출
+                          const match = question.readTime.match(/(\d+)\s*min/);
+                          return match ? `${match[1]}분` : question.readTime;
+                        })()
                       : "시간 미정"}
                   </span>
                 </span>

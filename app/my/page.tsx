@@ -32,59 +32,56 @@ export default function MyPage() {
   // 프로필 로딩 실패 플래그 (무한 루프 방지)
   const profileErrorRef = useRef(false);
 
-  // 사용자 프로필 정보 가져오기
-  const fetchProfile = useCallback(async () => {
-    // 인증 상태 확인이 완료되고 토큰 동기화가 완료된 후 인증된 경우에만 프로필 가져오기
-    if (
-      !isAuthenticated ||
-      isLoading ||
-      !isTokenSynced ||
-      profileErrorRef.current
-    )
-      return;
-
-    try {
-      setProfileLoading(true);
-      profileErrorRef.current = false; // 재시도 전 플래그 리셋
-      const response = await getUserProfile();
-      setUserProfile(response.user);
-      profileErrorRef.current = false; // 성공 시 플래그 리셋
-    } catch (error) {
-      // 프로필 정보 로딩 실패 시 에러 플래그 설정 (무한 루프 방지)
-      logger.error("프로필 로딩 실패:", error);
-      profileErrorRef.current = true;
-      // 401 또는 403 에러인 경우에만 플래그 설정 (네트워크 에러 등은 재시도 가능)
-      const axiosError = error as { response?: { status?: number } };
-      if (
-        axiosError.response?.status === 401 ||
-        axiosError.response?.status === 403
-      ) {
-        // 인증 에러는 재시도하지 않음
-        profileErrorRef.current = true;
-      }
-    } finally {
-      setProfileLoading(false);
-    }
-  }, [isAuthenticated, isLoading, isTokenSynced]);
-
-  // 메모리 최적화: fetchProfile 의존성 최소화
+  // 메모리 최적화: 컴포넌트 언마운트 추적
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      !isLoading &&
-      isTokenSynced &&
-      mounted &&
-      !profileErrorRef.current
-    ) {
-      fetchProfile();
-    }
-    // 컴포넌트 언마운트 시 프로필 데이터 정리
-    return () => {
-      if (!mounted) {
-        setUserProfile(null);
+    let isCancelled = false;
+
+    const loadProfile = async () => {
+      if (
+        isAuthenticated &&
+        !isLoading &&
+        isTokenSynced &&
+        mounted &&
+        !profileErrorRef.current
+      ) {
+        try {
+          setProfileLoading(true);
+          profileErrorRef.current = false;
+          const response = await getUserProfile();
+
+          // 컴포넌트가 언마운트되지 않았을 때만 상태 업데이트
+          if (!isCancelled) {
+            setUserProfile(response.user);
+            profileErrorRef.current = false;
+          }
+        } catch (error) {
+          logger.error("프로필 로딩 실패:", error);
+          if (!isCancelled) {
+            profileErrorRef.current = true;
+            const axiosError = error as { response?: { status?: number } };
+            if (
+              axiosError.response?.status === 401 ||
+              axiosError.response?.status === 403
+            ) {
+              profileErrorRef.current = true;
+            }
+          }
+        } finally {
+          if (!isCancelled) {
+            setProfileLoading(false);
+          }
+        }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    loadProfile();
+
+    // 컴포넌트 언마운트 시 클린업
+    return () => {
+      isCancelled = true;
+      setUserProfile(null);
+      setProfileLoading(false);
+    };
   }, [isAuthenticated, isLoading, isTokenSynced, mounted]);
 
   // 로그인 확인

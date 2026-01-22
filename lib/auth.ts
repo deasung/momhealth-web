@@ -161,6 +161,98 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (!account?.provider) return true;
+
+      if (account.provider === "kakao" || account.provider === "google") {
+        try {
+          const apiKey = process.env.MOMHEALTH_API_KEY;
+          const baseURL = process.env.MOMHEALTH_API_URL;
+
+          if (!baseURL || !apiKey) {
+            logger.error("❌ 환경변수 누락 (소셜 로그인 signIn):", {
+              MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
+              MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
+            });
+            return "/login?error=ENV_NOT_CONFIGURED";
+          }
+
+          const response = await axios.post(
+            `${baseURL}/public/auth/social-login`,
+            {
+              provider: account.provider,
+              socialId: account.providerAccountId,
+              email: user.email,
+              nickname: user.name,
+              profileImage: (user as { image?: string | null }).image || null,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+              },
+            }
+          );
+
+          if (response.data?.success) {
+            (user as { backendAccessToken?: string }).backendAccessToken =
+              response.data.access_token;
+            (user as { backendRefreshToken?: string }).backendRefreshToken =
+              response.data.refresh_token;
+            (user as { backendNickname?: string }).backendNickname =
+              response.data.user?.nickname;
+            (user as { backendUserId?: string }).backendUserId =
+              response.data.user?.id?.toString();
+            return true;
+          }
+
+          if (response.data?.code === "WITHDRAWN_USER") {
+            return "/login?error=WITHDRAWN_USER";
+          }
+
+          return "/login?error=SOCIAL_LOGIN_FAILED";
+        } catch (error: unknown) {
+          const axiosError = error as {
+            response?: {
+              status?: number;
+              data?: unknown;
+            };
+          };
+
+          if (axiosError.response?.status === 403) {
+            const data = axiosError.response.data as
+              | { code?: string; message?: string; error?: { code?: string; message?: string } }
+              | string
+              | null
+              | undefined;
+            const code =
+              typeof data === "object" && data
+                ? data.code || data.error?.code
+                : undefined;
+            const message =
+              typeof data === "object" && data
+                ? data.message || data.error?.message
+                : typeof data === "string"
+                ? data
+                : undefined;
+
+            if (code === "WITHDRAWN_USER" || (message && message.includes("탈퇴"))) {
+              return "/login?error=WITHDRAWN_USER";
+            }
+            return "/login?error=ACCESS_DENIED";
+          }
+
+          if (axiosError.response?.status === 409) {
+            return "/login?error=EMAIL_IN_USE";
+          }
+
+          logger.error("❌ 소셜 로그인 백엔드 API 실패 (signIn):", error);
+          return "/login?error=SOCIAL_LOGIN_FAILED";
+        }
+      }
+
+      return true;
+    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
@@ -175,42 +267,25 @@ export const authOptions: NextAuthOptions = {
         // 소셜 로그인인 경우 백엔드 API 호출
         if (account?.provider === "kakao" || account?.provider === "google") {
           try {
-            // 서버 사이드에서 직접 백엔드 API 호출
-            const apiKey = process.env.MOMHEALTH_API_KEY;
-            const baseURL = process.env.MOMHEALTH_API_URL;
+            const backendAccessToken = (user as { backendAccessToken?: string })
+              .backendAccessToken;
+            const backendRefreshToken = (user as { backendRefreshToken?: string })
+              .backendRefreshToken;
+            const backendNickname = (user as { backendNickname?: string })
+              .backendNickname;
+            const backendUserId = (user as { backendUserId?: string })
+              .backendUserId;
 
-            if (!baseURL || !apiKey) {
-              logger.error("❌ 환경변수 누락 (소셜 로그인):", {
-                MOMHEALTH_API_URL: baseURL ? "설정됨" : "누락",
-                MOMHEALTH_API_KEY: apiKey ? "설정됨" : "누락",
-              });
-              throw new Error("환경변수가 설정되지 않았습니다.");
-            }
-
-            const response = await axios.post(
-              `${baseURL}/public/auth/social-login`,
-              {
-                provider: account.provider,
-                email: user.email,
-                name: user.name,
-                socialId: user.id,
-              },
-              {
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": apiKey,
-                },
-              }
-            );
-
-            if (response.data.success) {
-              // 백엔드에서 받은 토큰 사용
-              token.token = response.data.access_token;
-              token.refreshToken = response.data.refresh_token;
-              token.nickname = response.data.user?.nickname;
-              token.user_id = response.data.user?.id?.toString(); // 실제 DB 사용자 ID
+            if (backendAccessToken) {
+              token.token = backendAccessToken;
+              token.refreshToken = backendRefreshToken;
+              token.nickname = backendNickname;
+              token.user_id = backendUserId;
             } else {
-              throw new Error(response.data.message || "소셜 로그인 실패");
+              logger.error("❌ 소셜 로그인 토큰 누락 (jwt):", {
+                provider: account.provider,
+              });
+              throw new Error("SOCIAL_LOGIN_FAILED");
             }
           } catch (error) {
             // 백엔드 API 실패 시 에러 로깅만 수행

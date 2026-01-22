@@ -8,10 +8,12 @@ import Footer from "../../components/Footer";
 import SEO from "../../components/SEO";
 import { useAuth } from "../../../lib/hooks/useAuth";
 import { useTokenSync } from "../../../lib/hooks/useTokenSync";
+import { useLogout } from "../../../lib/hooks/useLogout";
 import {
   getUserProfile,
   updateUserProfile,
   uploadThumbnail,
+  withdrawAccount,
 } from "../../../lib/api";
 import type { UserProfile } from "../../types/user";
 import { logger } from "@/lib/logger";
@@ -20,11 +22,13 @@ export default function MySettingsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { isTokenSynced } = useTokenSync(); // 세션 토큰을 localStorage에 동기화
+  const { logout } = useLogout();
   const [nickname, setNickname] = useState("");
   const [age, setAge] = useState("");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [thumbnailPath, setThumbnailPath] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -122,6 +126,39 @@ export default function MySettingsPage() {
       alert(errorMessage);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const ok = window.confirm(
+      "정말 회원탈퇴 하시겠습니까?\n탈퇴 후에는 되돌릴 수 없습니다."
+    );
+    if (!ok) return;
+
+    try {
+      setWithdrawing(true);
+      const response = await withdrawAccount();
+      alert(response?.message || "회원탈퇴가 완료되었습니다.");
+      await logout();
+    } catch (error: unknown) {
+      let errorMessage = "회원탈퇴 중 오류가 발생했습니다.";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const apiError = error as {
+          response?: { status?: number; data?: { error?: string } };
+        };
+        if (apiError.response?.status === 401) {
+          errorMessage = "로그인이 필요합니다.";
+        } else if (apiError.response?.status === 404) {
+          errorMessage = "사용자 정보를 찾을 수 없습니다.";
+        } else if (apiError.response?.data?.error) {
+          errorMessage = apiError.response.data.error;
+        }
+      }
+
+      alert(errorMessage);
+    } finally {
+      setWithdrawing(false);
     }
   };
 
@@ -376,6 +413,29 @@ export default function MySettingsPage() {
               "변경하기"
             )}
           </button>
+        </div>
+
+        {/* 회원탈퇴 */}
+        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 mt-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                회원탈퇴
+              </h2>
+              <p className="text-sm text-gray-600">
+                탈퇴 시 계정은 비활성화되며, 안내에 따라 일정 기간 후 삭제될 수
+                있습니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleWithdraw}
+              disabled={withdrawing || submitting}
+              className="px-5 py-3 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {withdrawing ? "처리 중..." : "회원탈퇴"}
+            </button>
+          </div>
         </div>
       </main>
 

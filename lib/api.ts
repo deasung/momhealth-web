@@ -517,42 +517,37 @@ export const submitQuizAnswers = async (
   id: string,
   answers: Array<{ questionId: string; choiceId: string }>
 ) => {
-  try {
-    logger.debug("=== API 호출 상세 정보 ===");
-    logger.debug("요청 URL:", `/private/health.questions/${id}/submit`);
-    logger.debug("원본 답변 데이터:", answers);
+  logger.debug("=== API 호출 상세 정보 ===");
+  logger.debug("요청 URL:", { url: `/private/health.questions/${id}/submit` });
+  logger.debug("원본 답변 데이터:", { answers });
 
-    // 백엔드 API 형식에 맞게 데이터 변환
-    const formattedAnswers = answers.map((answer) => ({
-      itemId: parseInt(answer.questionId), // 문자열 → 숫자
-      choiceId: parseInt(answer.choiceId), // 문자열 → 숫자
-    }));
+  // 백엔드 API 형식에 맞게 데이터 변환
+  const formattedAnswers = answers.map((answer) => ({
+    itemId: parseInt(answer.questionId), // 문자열 → 숫자
+    choiceId: parseInt(answer.choiceId), // 문자열 → 숫자
+  }));
 
-    logger.debug("변환된 답변 데이터:", formattedAnswers);
-    logger.debug("답변 배열 길이:", formattedAnswers.length);
+  logger.debug("변환된 답변 데이터:", { formattedAnswers });
+  logger.debug("답변 배열 길이:", { length: formattedAnswers.length });
 
-    // 각 답변의 타입 확인
-    formattedAnswers.forEach((answer, index) => {
-      logger.debug(`답변 ${index + 1} 타입 확인:`, {
-        itemId: answer.itemId,
-        itemIdType: typeof answer.itemId,
-        choiceId: answer.choiceId,
-        choiceIdType: typeof answer.choiceId,
-        isItemIdValid: !isNaN(answer.itemId),
-        isChoiceIdValid: !isNaN(answer.choiceId),
-      });
+  // 각 답변의 타입 확인
+  formattedAnswers.forEach((answer, index) => {
+    logger.debug(`답변 ${index + 1} 타입 확인:`, {
+      itemId: answer.itemId,
+      itemIdType: typeof answer.itemId,
+      choiceId: answer.choiceId,
+      choiceIdType: typeof answer.choiceId,
+      isItemIdValid: !isNaN(answer.itemId),
+      isChoiceIdValid: !isNaN(answer.choiceId),
     });
+  });
 
-    const response = await api.post(`/private/health.questions/${id}/submit`, {
-      answers: formattedAnswers,
-    });
+  const response = await api.post(`/private/health.questions/${id}/submit`, {
+    answers: formattedAnswers,
+  });
 
-    logger.debug("API 응답 성공:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    // 퀴즈 답안 제출 실패 처리
-    throw error;
-  }
+  logger.debug("API 응답 성공:", { data: response.data });
+  return response.data;
 };
 
 // 커뮤니티 API 함수
@@ -871,6 +866,28 @@ export const updateUserProfile = async (data: {
     return response.data;
   } catch (error) {
     logger.error("사용자 프로필 수정 실패:", error);
+    throw error;
+  }
+};
+
+export interface WithdrawAccountResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    userId: number;
+    nickname: string;
+    withdrawalDate: string;
+    note?: string;
+  };
+}
+
+// 회원탈퇴
+export const withdrawAccount = async () => {
+  try {
+    const response = await api.delete("/private/register/withdraw");
+    return response.data as WithdrawAccountResponse;
+  } catch (error) {
+    logger.error("회원탈퇴 실패:", error);
     throw error;
   }
 };

@@ -9,7 +9,7 @@ import SEO from "../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
 import { useTokenSync } from "../../lib/hooks/useTokenSync";
-import { getUserProfile } from "../../lib/api";
+import { getUserProfile, withdrawAccount } from "../../lib/api";
 import type { UserProfile } from "../types/user";
 import { logger } from "@/lib/logger";
 
@@ -20,6 +20,7 @@ export default function MyPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -28,6 +29,37 @@ export default function MyPage() {
   const handleLogout = useCallback(() => {
     logout();
   }, [logout]);
+
+  const handleWithdraw = useCallback(async () => {
+    if (withdrawing) return;
+    if (!confirm("정말 탈퇴하시겠습니까?")) return;
+
+    try {
+      setWithdrawing(true);
+      const response = await withdrawAccount();
+      alert(response?.message || "회원탈퇴가 완료되었습니다.");
+      await logout();
+    } catch (error: unknown) {
+      let errorMessage = "회원탈퇴 중 오류가 발생했습니다.";
+
+      if (error && typeof error === "object" && "response" in error) {
+        const apiError = error as {
+          response?: { status?: number; data?: { error?: string } };
+        };
+        if (apiError.response?.status === 401) {
+          errorMessage = "로그인이 필요합니다.";
+        } else if (apiError.response?.status === 404) {
+          errorMessage = "사용자 정보를 찾을 수 없습니다.";
+        } else if (apiError.response?.data?.error) {
+          errorMessage = apiError.response.data.error;
+        }
+      }
+
+      alert(errorMessage);
+    } finally {
+      setWithdrawing(false);
+    }
+  }, [logout, withdrawing]);
 
   // 프로필 로딩 실패 플래그 (무한 루프 방지)
   const profileErrorRef = useRef(false);
@@ -397,14 +429,14 @@ export default function MyPage() {
           <div className="grid grid-cols-2 divide-x divide-gray-200">
             <button
               onClick={() => {
-                if (confirm("정말 탈퇴하시겠습니까?")) {
-                  // 탈퇴 로직 (추후 구현)
-                  alert("회원 탈퇴 기능은 준비 중입니다.");
-                }
+                handleWithdraw();
               }}
               className="p-6 text-center hover:bg-gray-50 transition-colors text-red-600"
+              disabled={withdrawing}
             >
-              <p className="font-medium">회원 탈퇴</p>
+              <p className="font-medium">
+                {withdrawing ? "처리 중..." : "회원 탈퇴"}
+              </p>
             </button>
             <button
               onClick={() => {

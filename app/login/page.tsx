@@ -115,22 +115,35 @@ export default function LoginPage() {
     if (!errorParam) return;
 
     if (errorParam === "WITHDRAWN_USER") {
-      showError("로그인 실패", "탈퇴된 계정입니다.\n다른 계정으로 로그인해주세요.");
+      showError(
+        "로그인 실패",
+        "탈퇴된 계정입니다.\n다른 계정으로 로그인해주세요."
+      );
     } else if (errorParam === "ACCESS_DENIED") {
       showError("로그인 실패", "로그인이 거부되었습니다.\n다시 시도해주세요.");
     } else if (errorParam === "EMAIL_IN_USE") {
       showError("로그인 실패", "이미 사용 중인 이메일입니다.");
     } else if (errorParam === "SOCIAL_LOGIN_FAILED") {
-      showError("로그인 실패", "소셜 로그인에 실패했습니다.\n다시 시도해주세요.");
+      showError(
+        "로그인 실패",
+        "소셜 로그인에 실패했습니다.\n다시 시도해주세요."
+      );
     } else if (errorParam === "ENV_NOT_CONFIGURED") {
-      showError("로그인 실패", "서버 설정 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.");
+      showError(
+        "로그인 실패",
+        "서버 설정 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+      );
     }
 
     // 동일 에러로 모달이 반복 노출되지 않도록 URL에서 error 파라미터 제거
     const params = new URLSearchParams(searchParams.toString());
     params.delete("error");
     const qs = params.toString();
-    router.replace(qs ? `/login?${qs}` : "/login");
+    try {
+      window.history.replaceState(null, "", qs ? `/login?${qs}` : "/login");
+    } catch (e) {
+      router.replace(qs ? `/login?${qs}` : "/login");
+    }
   }, [searchParams, router, showError]);
 
   // 제출 가능 여부 확인

@@ -86,7 +86,9 @@ const CommunityPosts = ({ posts }: CommunityPostsProps) => {
                 작성자: {post.authorName}
               </span>
               <span className="text-sm text-gray-400">
-                {new Date(post.createdAt).toLocaleDateString("ko-KR")}
+                <span suppressHydrationWarning>
+                  {new Date(post.createdAt).toLocaleDateString("ko-KR")}
+                </span>
               </span>
             </div>
           </div>

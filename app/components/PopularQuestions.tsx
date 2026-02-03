@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { QuestionCardDTO } from "../types/dto";
+import { formatDuration } from "@/lib/utils/timeFormat";
 
 interface PopularQuestionsProps {
   questions: QuestionCardDTO[];
@@ -101,15 +102,10 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
                     />
                   </svg>
                   <span>
-                    {question.durationMinutes
-                      ? `${question.durationMinutes}분`
-                      : question.readTime
-                      ? (() => {
-                          // "5 min read" 형식에서 숫자 추출
-                          const match = question.readTime.match(/(\d+)\s*min/);
-                          return match ? `${match[1]}분` : question.readTime;
-                        })()
-                      : "시간 미정"}
+                    {formatDuration({
+                      durationMinutes: question.durationMinutes,
+                      durationSeconds: question.durationSeconds,
+                    })}
                   </span>
                 </span>
                 <time
@@ -131,7 +127,9 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
                     />
                   </svg>
                   <span>
-                    {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                    <span suppressHydrationWarning>
+                      {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
                   </span>
                 </time>
               </div>

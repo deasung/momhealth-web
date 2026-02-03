@@ -11,13 +11,14 @@ import MobileMenu from "./MobileMenu";
 import UserInfo from "./UserInfo";
 
 const Header = () => {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const { data: session, status } = useSession();
+  const { logout } = useLogout();
+
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [isClient, setIsClient] = useState(false);
-  const { logout } = useLogout();
 
   useEffect(() => {
     setIsClient(true);
@@ -38,7 +39,6 @@ const Header = () => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -52,10 +52,11 @@ const Header = () => {
 
   // 로그인된 경우에만 친구와 마이 메뉴 추가
   // 세션이 있고 user 정보가 있어야 로그인 상태로 간주
-  const isLoggedIn =
+  const isLoggedInRaw =
     status === "authenticated" &&
-    session &&
-    (session.user?.email || session.user?.name || session.user?.nickname);
+    !!session &&
+    !!(session.user?.email || session.user?.name || session.user?.nickname);
+  const isLoggedIn = isClient ? isLoggedInRaw : false;
   const navItems: NavItem[] = [
     { label: "홈", path: "/" },
     ...(isLoggedIn ? [{ label: "친구", path: "/friends" }] : []),
@@ -95,8 +96,8 @@ const Header = () => {
         {/* 데스크톱 사용자 정보 */}
         <div className="hidden md:flex items-center gap-4 text-sm whitespace-nowrap">
           <UserInfo
-            session={session}
-            status={status}
+            session={isClient ? session : null}
+            status={isClient ? status : "loading"}
             isLoggedIn={isLoggedIn}
             onLogout={logout}
             variant="desktop"
@@ -105,8 +106,11 @@ const Header = () => {
 
         {/* 모바일 햄버거 메뉴 버튼 */}
         <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          type="button"
+          onClick={() => setIsMobileMenuOpen((v) => !v)}
           className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="메뉴"
+          aria-expanded={isMobileMenuOpen}
         >
           <svg
             className="w-6 h-6"
@@ -139,8 +143,8 @@ const Header = () => {
         navItems={navItems}
         pathname={pathname}
         isClient={isClient}
-        session={session}
-        status={status}
+        session={isClient ? session : null}
+        status={isClient ? status : "loading"}
         isLoggedIn={isLoggedIn}
         onClose={() => setIsMobileMenuOpen(false)}
         onLogout={logout}

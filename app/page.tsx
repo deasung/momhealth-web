@@ -98,7 +98,6 @@ export default async function Home() {
       thumbnailUrl: q.thumbnailUrl,
       durationMinutes: q.durationMinutes,
       createdAt: q.createdAt,
-      readTime: q.readTime,
     })) || [];
 
   return (
@@ -115,35 +114,7 @@ export default async function Home() {
             당신의 건강을 위한 맞춤형 건강 관리 플랫폼
           </p>
 
-          {/* ✅ 반응형 & 디자인: 통계 카드 */}
-          {stats && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 md:gap-6 max-w-4xl mx-auto mb-10 md:mb-12 lg:mb-16">
-              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 mb-2">
-                  {stats.popular.toLocaleString()}
-                </div>
-                <div className="text-sm sm:text-base text-gray-700 font-semibold">
-                  인기 질문
-                </div>
-              </article>
-              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600 mb-2">
-                  {stats.recommended.toLocaleString()}
-                </div>
-                <div className="text-sm sm:text-base text-gray-700 font-semibold">
-                  추천 질문
-                </div>
-              </article>
-              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-purple-600 mb-2">
-                  {stats.community.toLocaleString()}
-                </div>
-                <div className="text-sm sm:text-base text-gray-700 font-semibold">
-                  커뮤니티 게시글
-                </div>
-              </article>
-            </div>
-          )}
+
         </section>
 
         {/* ✅ 에러 상태 */}

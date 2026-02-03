@@ -16,7 +16,6 @@ export interface RecommendedQuestion {
   thumbnailUrl: string;
   durationMinutes: number | null;
   createdAt: string;
-  readTime: string;
 }
 
 export interface CommunityPost {

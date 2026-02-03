@@ -59,6 +59,38 @@ export async function getHomeDataServer() {
   try {
     const api = createServerApi();
     const response = await api.get("/public/home");
+
+    // 디버깅: 홈 응답 시간 필드 확인 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development") {
+      const data = response.data as {
+        popularQuestions?: Array<Record<string, unknown>>;
+        recommendedQuestions?: Array<Record<string, unknown>>;
+      };
+      const popular0 = data?.popularQuestions?.[0];
+      const recommended0 = data?.recommendedQuestions?.[0];
+
+      logger.debug("🏠 [getHomeDataServer] /public/home 시간 필드 샘플", {
+        popular0: popular0
+          ? {
+              id: popular0["id"],
+              durationMinutes: popular0["durationMinutes"],
+              durationSeconds: popular0["durationSeconds"],
+              createdAt: popular0["createdAt"],
+              keys: Object.keys(popular0),
+            }
+          : null,
+        recommended0: recommended0
+          ? {
+              id: recommended0["id"],
+              durationMinutes: recommended0["durationMinutes"],
+              durationSeconds: recommended0["durationSeconds"],
+              createdAt: recommended0["createdAt"],
+              keys: Object.keys(recommended0),
+            }
+          : null,
+      });
+    }
+
     return response.data;
   } catch (error) {
     logger.error("홈 데이터 가져오기 실패:", error);

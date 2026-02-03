@@ -83,3 +83,27 @@ export function formatTimeAgoForHome(dateStr: string | null): string {
     .toString()
     .padStart(2, "0")}.${targetDate.getDate().toString().padStart(2, "0")}`;
 }
+
+/**
+ * 소요시간 포맷팅 (분/초 우선순위)
+ * - durationMinutes가 있으면 "N분"
+ * - durationSeconds가 있으면 60초 이상은 "N분", 그 미만은 "N초"
+ * - 둘 다 없으면 "시간 미정"
+ */
+export function formatDuration(params: {
+  durationMinutes?: number | null;
+  durationSeconds?: number | null;
+}): string {
+  const minutes = params.durationMinutes;
+  if (typeof minutes === "number" && !Number.isNaN(minutes) && minutes > 0) {
+    return `${minutes}분`;
+  }
+
+  const seconds = params.durationSeconds;
+  if (typeof seconds === "number" && !Number.isNaN(seconds) && seconds > 0) {
+    if (seconds >= 60) return `${Math.floor(seconds / 60)}분`;
+    return `${seconds}초`;
+  }
+
+  return "시간 미정";
+}

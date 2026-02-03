@@ -12,9 +12,8 @@ export type QuestionCardDTO = {
   description: string;
   thumbnailUrl: string;
   durationMinutes: number | null;
+  durationSeconds?: number | null;
   createdAt: string;
-  // readTime은 RecommendedQuestion에만 필요
-  readTime?: string;
 };
 
 /**

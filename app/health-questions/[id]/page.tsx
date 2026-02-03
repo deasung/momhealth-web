@@ -8,6 +8,7 @@ import { getHealthQuestionDetailServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generateHealthQuestionMetadata } from "../../../lib/metadata";
 import { logger } from "@/lib/logger";
+import { formatDuration } from "@/lib/utils/timeFormat";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -47,7 +48,9 @@ export async function generateMetadata({
     const title = `${question.title} | 오늘의 건강`;
     const description =
       question.description ||
-      `${question.title} - 총 ${question.questionCount}문항, 소요시간 ${Math.floor(question.durationSeconds / 60)}분`;
+      `${question.title} - 총 ${
+        question.questionCount
+      }문항, 소요시간 ${Math.floor(question.durationSeconds / 60)}분`;
     const imageUrl =
       question.detailThumbnailUrl ||
       question.thumbnailUrl ||
@@ -316,8 +319,8 @@ export default async function HealthQuestionDetailPage({
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                소요시간 {Math.floor(question.durationSeconds / 60)}분{" "}
-                {question.durationSeconds % 60}초
+                소요시간{" "}
+                {formatDuration({ durationSeconds: question.durationSeconds })}
               </span>
             </div>
           </header>
@@ -404,7 +407,9 @@ export default async function HealthQuestionDetailPage({
                 </div>
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1">
-                    {Math.floor(question.durationSeconds / 60)}분
+                    {formatDuration({
+                      durationSeconds: question.durationSeconds,
+                    })}
                   </div>
                   <div className="text-xs sm:text-sm text-gray-600">
                     소요시간

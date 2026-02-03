@@ -87,6 +87,7 @@ export default async function Home() {
       description: q.description,
       thumbnailUrl: q.thumbnailUrl,
       durationMinutes: q.durationMinutes,
+      durationSeconds: q.durationSeconds,
       createdAt: q.createdAt,
     })) || [];
 
@@ -97,6 +98,7 @@ export default async function Home() {
       description: q.description,
       thumbnailUrl: q.thumbnailUrl,
       durationMinutes: q.durationMinutes,
+      durationSeconds: q.durationSeconds,
       createdAt: q.createdAt,
     })) || [];
 
@@ -113,8 +115,6 @@ export default async function Home() {
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
             당신의 건강을 위한 맞춤형 건강 관리 플랫폼
           </p>
-
-
         </section>
 
         {/* ✅ 에러 상태 */}

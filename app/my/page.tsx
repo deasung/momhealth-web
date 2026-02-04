@@ -114,21 +114,23 @@ export default function MyPage() {
     };
   }, [isAuthenticated, isLoading, isTokenSynced, mounted]);
 
-  // 로그인 확인
-  if (!mounted || (!isLoading && !isAuthenticated)) {
-    if (!mounted) {
-      return (
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <SEO
-            title="마이페이지"
-            description="나의 건강 정보와 활동 내역을 확인하고 관리해보세요."
-            noindex={true}
-          />
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-        </div>
-      );
-    }
+  // Hydration 오류를 방지하기 위해, 클라이언트에서 마운트된 후에만 UI를 렌더링합니다.
+  // 서버 렌더링과 초기 클라이언트 렌더링 시에는 항상 로딩 스피너를 보여주어 일관성을 유지합니다.
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <SEO
+          title="마이페이지"
+          description="나의 건강 정보와 활동 내역을 확인하고 관리해보세요."
+          noindex={true}
+        />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
+  // 마운트 후, 인증 상태를 확인하여 비로그인 사용자에게는 로그인 페이지로 안내합니다.
+  if (!isLoading && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
         <SEO

@@ -40,7 +40,7 @@ const Footer = () => {
         <div className="border-t border-gray-100 pt-6 md:pt-8 mb-6 md:mb-8">
           <div className="text-xs text-gray-500 leading-relaxed">
             <p className="break-keep">
-              상호명: 오늘의 건강 | 대표: 최재현 | 개인정보책임자: 최재현
+              상호명: 참치컴퍼니 | 대표: 최재현 | 개인정보책임자: 최재현
             </p>
           </div>
         </div>

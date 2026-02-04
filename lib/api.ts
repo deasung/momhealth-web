@@ -501,6 +501,31 @@ export const getQuizItems = async (id: string) => {
   }
 };
 
+// 내 건강질문 결과 조회
+export interface QuestionResult {
+  score: number;
+  riskLevel: string;
+  result: {
+    title: string;
+    description: string;
+    imageUrl?: string | null;
+    linkUrl?: string | null;
+    linkUrlName?: string | null;
+  };
+}
+
+export const getMyQuestionResult = async (
+  id: string
+): Promise<QuestionResult> => {
+  try {
+    const response = await api.get(`/private/health.questions/${id}/result`);
+    return response.data as QuestionResult;
+  } catch (error) {
+    logger.error("건강질문 결과 조회 실패:", error);
+    throw error;
+  }
+};
+
 // 퀴즈 진행상태 리셋 (다시 풀기)
 export const resetQuizProgress = async (id: string) => {
   try {

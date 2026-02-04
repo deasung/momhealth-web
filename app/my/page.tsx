@@ -111,8 +111,6 @@ export default function MyPage() {
     // 컴포넌트 언마운트 시 클린업
     return () => {
       isCancelled = true;
-      setUserProfile(null);
-      setProfileLoading(false);
     };
   }, [isAuthenticated, isLoading, isTokenSynced, mounted]);
 
@@ -200,7 +198,6 @@ export default function MyPage() {
                   width={80}
                   height={80}
                   className="w-full h-full object-cover"
-                  unoptimized
                 />
               ) : (
                 <span className="text-3xl">👤</span>

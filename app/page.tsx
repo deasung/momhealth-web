@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Header from "./components/Header";
+import dynamic from "next/dynamic";
 import Footer from "./components/Footer";
 import PopularQuestions from "./components/PopularQuestions";
 import RecommendedQuestions from "./components/RecommendedQuestions";
@@ -10,6 +10,8 @@ import type { HomeData } from "./types/home";
 import type { QuestionCardDTO } from "./types/dto";
 import { generatePageMetadata } from "../lib/metadata";
 import { logger } from "@/lib/logger";
+
+const Header = dynamic(() => import("./components/Header"), { ssr: false });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 

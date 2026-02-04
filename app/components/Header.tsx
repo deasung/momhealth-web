@@ -11,13 +11,12 @@ import MobileMenu from "./MobileMenu";
 import UserInfo from "./UserInfo";
 
 const Header = () => {
-  const pathname = usePathname() || "";
+  const pathname = usePathname();
   const { data: session, status } = useSession();
-  const { logout } = useLogout();
-
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const { logout } = useLogout();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -26,8 +25,6 @@ const Header = () => {
 
   // 이벤트 리스너 정리 최적화 (메모리 누수 방지)
   useEffect(() => {
-    if (!isClient) return;
-
     const handleClickOutside = (event: MouseEvent) => {
       if (
         openDropdown &&
@@ -39,10 +36,11 @@ const Header = () => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [openDropdown, isClient]);
+  }, [openDropdown]);
 
   // App Router에서는 pathname이 변경될 때마다 실행
   useEffect(() => {
@@ -50,16 +48,12 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // 로그인된 경우에만 친구와 마이 메뉴 추가
-  // 세션이 있고 user 정보가 있어야 로그인 상태로 간주
-  const isLoggedInRaw =
-    status === "authenticated" &&
-    !!session &&
-    !!(session.user?.email || session.user?.name || session.user?.nickname);
-  const isLoggedIn = isClient ? isLoggedInRaw : false;
+  const isLoggedIn = status === "authenticated";
+
+  // Hydration 오류 방지를 위해 isClient가 true일 때만 동적 메뉴를 추가
   const navItems: NavItem[] = [
     { label: "홈", path: "/" },
-    ...(isLoggedIn ? [{ label: "친구", path: "/friends" }] : []),
+    ...(isClient && isLoggedIn ? [{ label: "친구", path: "/friends" }] : []),
     {
       label: "건강질문",
       path: "/health-questions/list",
@@ -68,7 +62,7 @@ const Header = () => {
       label: "커뮤니티",
       path: "/community/list",
     },
-    ...(isLoggedIn ? [{ label: "마이", path: "/my" }] : []),
+    ...(isClient && isLoggedIn ? [{ label: "마이", path: "/my" }] : []),
   ];
 
   return (
@@ -95,22 +89,22 @@ const Header = () => {
 
         {/* 데스크톱 사용자 정보 */}
         <div className="hidden md:flex items-center gap-4 text-sm whitespace-nowrap">
-          <UserInfo
-            session={isClient ? session : null}
-            status={isClient ? status : "loading"}
-            isLoggedIn={isLoggedIn}
-            onLogout={logout}
-            variant="desktop"
-          />
+          {/* 클라이언트에서만 사용자 정보 렌더링 */}
+          {isClient && (
+            <UserInfo
+              session={session}
+              status={status}
+              isLoggedIn={isLoggedIn}
+              onLogout={logout}
+              variant="desktop"
+            />
+          )}
         </div>
 
         {/* 모바일 햄버거 메뉴 버튼 */}
         <button
-          type="button"
-          onClick={() => setIsMobileMenuOpen((v) => !v)}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          aria-label="메뉴"
-          aria-expanded={isMobileMenuOpen}
         >
           <svg
             className="w-6 h-6"
@@ -137,20 +131,22 @@ const Header = () => {
         </button>
       </div>
 
-      {/* 모바일 메뉴 */}
-      <MobileMenu
-        isOpen={isMobileMenuOpen}
-        navItems={navItems}
-        pathname={pathname}
-        isClient={isClient}
-        session={isClient ? session : null}
-        status={isClient ? status : "loading"}
-        isLoggedIn={isLoggedIn}
-        onClose={() => setIsMobileMenuOpen(false)}
-        onLogout={logout}
-        openDropdown={openDropdown}
-        onDropdownToggle={setOpenDropdown}
-      />
+      {/* 모바일 메뉴 - 클라이언트에서만 렌더링 */}
+      {isClient && (
+        <MobileMenu
+          isOpen={isMobileMenuOpen}
+          navItems={navItems}
+          pathname={pathname}
+          isClient={isClient}
+          session={session}
+          status={status}
+          isLoggedIn={isLoggedIn}
+          onClose={() => setIsMobileMenuOpen(false)}
+          onLogout={logout}
+          openDropdown={openDropdown}
+          onDropdownToggle={setOpenDropdown}
+        />
+      )}
     </header>
   );
 };

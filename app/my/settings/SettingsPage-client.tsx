@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import SEO from "../../components/SEO";
 import { useAuth } from "../../../lib/hooks/useAuth";
 import { useTokenSync } from "../../../lib/hooks/useTokenSync";
 import { useLogout } from "../../../lib/hooks/useLogout";
@@ -168,11 +167,6 @@ export default function MySettingsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <SEO
-          title="내 정보 설정"
-          description="내 정보를 설정하고 관리할 수 있습니다."
-          noindex={true}
-        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex items-center justify-center">
           <div className="text-center">
@@ -189,11 +183,6 @@ export default function MySettingsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <SEO
-          title="내 정보 설정"
-          description="내 정보를 설정하고 관리할 수 있습니다."
-          noindex={true}
-        />
         <Header />
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 text-center flex items-center justify-center">
           <div className="mb-8">
@@ -223,12 +212,6 @@ export default function MySettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SEO
-        title="내 정보 설정"
-        description="내 정보를 설정하고 관리할 수 있습니다."
-        noindex={true}
-      />
-
       <Header />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">

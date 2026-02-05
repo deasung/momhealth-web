@@ -70,10 +70,11 @@ export const setToken = (
         localStorage.setItem(TOKEN_KEYS.TOKEN, token);
         localStorage.setItem(TOKEN_KEYS.IS_GUEST, guest.toString());
 
-        // refresh token도 저장
+        // refresh token도 저장 (undefined가 아닐 때만)
         if (refreshToken) {
           localStorage.setItem(TOKEN_KEYS.REFRESH_TOKEN, refreshToken);
-        } else {
+        } else if (refreshToken === null) {
+          // 명시적으로 null이 전달된 경우에만 삭제
           localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
         }
       } else {
@@ -108,8 +109,10 @@ export const clearToken = () => {
 };
 
 // 세션 만료 처리 (토큰 갱신 실패 시)
-const handleSessionExpired = async () => {
+const handleSessionExpired = async (reason: string) => {
   if (typeof window === "undefined") return;
+
+  logger.warn(`🚨 세션 만료 처리 실행. 사유: ${reason}`);
 
   // NextAuth 세션 초기화
   try {
@@ -129,6 +132,7 @@ const handleSessionExpired = async () => {
     const guestTokens = await getGuestToken();
     if (guestTokens) {
       setToken(guestTokens.accessToken, true, guestTokens.refreshToken);
+      logger.info("🏠 새 게스트 토큰 발급 완료. 홈으로 이동합니다.");
     }
   } catch (error) {
     // 게스트 토큰 발급 실패해도 홈으로 이동
@@ -229,8 +233,7 @@ api.interceptors.response.use(
       // 이미 재시도한 경우는 더 이상 시도하지 않고 즉시 실패 처리
       if (originalRequest._retry) {
         // 무한 루프 방지: 이미 재시도했으면 세션 만료 처리
-        logger.error("❌ 401 에러 재시도 실패 - 세션 만료 처리");
-        await handleSessionExpired();
+        await handleSessionExpired("토큰 갱신 재시도 실패");
         return Promise.reject(error);
       }
 
@@ -254,12 +257,12 @@ api.interceptors.response.use(
               return api(originalRequest);
             } else {
               // refresh 실패
-              await handleSessionExpired();
+              await handleSessionExpired("진행 중인 토큰 갱신 실패");
               return Promise.reject(error);
             }
           } catch (refreshError) {
             // refresh 실패
-            await handleSessionExpired();
+            await handleSessionExpired("진행 중인 토큰 갱신 대기 중 오류");
             return Promise.reject(error);
           }
         }
@@ -300,7 +303,7 @@ api.interceptors.response.use(
             }
           } catch (refreshError) {
             // refresh 호출 자체가 실패한 경우 (네트워크 에러 또는 401 등)
-            logger.error("❌ 토큰 갱신 실패:", refreshError);
+            logger.error("❌ 토큰 갱신 API 호출 실패:", refreshError);
             return null;
           } finally {
             // refresh 완료 (성공/실패 관계없이)
@@ -320,13 +323,12 @@ api.interceptors.response.use(
             return api(originalRequest);
           } else {
             // refresh 실패 - 무한 루프 방지를 위해 즉시 세션 만료 처리
-            logger.error("❌ 토큰 갱신 실패 - 세션 만료 처리");
-            await handleSessionExpired();
+            await handleSessionExpired("새 토큰 갱신 요청 실패");
             return Promise.reject(error);
           }
         } catch (refreshError) {
           // refresh 실패
-          await handleSessionExpired();
+          await handleSessionExpired("새 토큰 갱신 프로세스 오류");
           return Promise.reject(error);
         }
       } else {
@@ -366,7 +368,7 @@ api.interceptors.response.use(
         }
 
         // refresh token이 없고 세션도 없으면 세션 만료 처리
-        await handleSessionExpired();
+        await handleSessionExpired("리프레시 토큰 및 NextAuth 세션 없음");
         return Promise.reject(error);
       }
     }

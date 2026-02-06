@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
 import {
@@ -42,7 +43,7 @@ const showInPageNotification = (
   body: string,
   onClick?: () => void,
   icon?: string,
-  badge?: string
+  _badge?: string
 ) => {
   // 기존 알림이 있으면 제거
   const existing = document.getElementById("in-page-notification");
@@ -183,11 +184,11 @@ const showInPageNotification = (
 };
 
 export default function ClientProviders({
-  children,
   session,
+  children,
 }: {
-  children: React.ReactNode;
   session: Session | null;
+  children: ReactNode;
 }) {
   useEffect(() => {
     // Service Worker 등록 및 푸시 구독 초기화

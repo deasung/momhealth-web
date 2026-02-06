@@ -364,9 +364,11 @@ const MyPostsPage = () => {
                               dateTime={post.createdAt}
                               className="text-xs text-gray-500"
                             >
-                              {new Date(post.createdAt).toLocaleDateString(
-                                "ko-KR"
-                              )}
+                              <span suppressHydrationWarning>
+                                {new Date(post.createdAt).toLocaleDateString(
+                                  "ko-KR"
+                                )}
+                              </span>
                             </time>
                           </div>
                         </div>
@@ -441,13 +443,15 @@ const MyPostsPage = () => {
                             />
                           </svg>
                           <span>
-                            댓글 {(post.commentCount || 0).toLocaleString()}개
+                            댓글 {(post.commentCount || 0).toLocaleString("ko-KR")}개
                           </span>
                         </span>
                       </div>
                       <time dateTime={post.updatedAt} className="text-xs">
                         수정:{" "}
-                        {new Date(post.updatedAt).toLocaleDateString("ko-KR")}
+                        <span suppressHydrationWarning>
+                          {new Date(post.updatedAt).toLocaleDateString("ko-KR")}
+                        </span>
                       </time>
                     </footer>
                   </div>

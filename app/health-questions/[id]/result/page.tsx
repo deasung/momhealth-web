@@ -119,7 +119,7 @@ const ResultPage = () => {
                   />
                 </svg>
                 <span className="text-sm sm:text-base font-semibold">
-                  {result?.riskLevel || "결과 없음"}
+                  {result?.result.title || "결과 없음"}
                 </span>
               </div>
 
@@ -128,7 +128,7 @@ const ResultPage = () => {
                   <p>{error}</p>
                 ) : (
                   <>
-                    <p className="mb-2">
+                    <p className="mb-2 whitespace-pre-line">
                       {result?.result.description ||
                         "퀴즈 결과 설명을 확인할 수 없습니다."}
                     </p>

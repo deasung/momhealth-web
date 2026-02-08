@@ -50,7 +50,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* 저작권 */}
             <div className="text-xs text-gray-400">
-              <p>© 2024 Today Health Company. All rights reserved.</p>
+              <p>© 2026 medigen.ai.</p>
             </div>
 
             {/* 앱 다운로드 링크 */}

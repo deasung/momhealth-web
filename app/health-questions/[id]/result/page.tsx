@@ -132,6 +132,43 @@ const ResultPage = () => {
                       {result?.result.description ||
                         "퀴즈 결과 설명을 확인할 수 없습니다."}
                     </p>
+                    {result?.result.linkUrl && (
+                      <div className="mt-4">
+                        <a
+                          href={result.result.linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 active:bg-orange-200 text-orange-700 px-4 py-2.5 rounded-lg transition-colors text-sm sm:text-base font-semibold border border-orange-200 min-h-[44px]"
+                          aria-label={
+                            result.result.linkUrlName
+                              ? `${result.result.linkUrlName} 새 창으로 열기`
+                              : "관련 링크 새 창으로 열기"
+                          }
+                        >
+                          <span>{result.result.linkUrlName || "관련 링크"}</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M14 3h7m0 0v7m0-7L10 14"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 10v11a1 1 0 001 1h11"
+                            />
+                          </svg>
+                        </a>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

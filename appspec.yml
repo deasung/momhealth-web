@@ -15,9 +15,15 @@ hooks:
       timeout: 300
       runas: ec2-user
   BeforeInstall:
+    # 1️⃣ CodeDeploy 배포 이력 정리 (용량 핵심 원인)
+    - location: scripts/cleanup_codedeploy.sh
+      timeout: 300
+      runas: root
+    # 2️⃣ EC2 로그 정리
     - location: scripts/clear-logs-once-a-day.sh
       timeout: 300
       runas: root
+    # 3️⃣ 기존 before_install
     - location: scripts/before_install.sh
       timeout: 300
       runas: ec2-user

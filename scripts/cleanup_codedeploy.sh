@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -euo pipefail
 
 BASE="/opt/codedeploy-agent/deployment-root"

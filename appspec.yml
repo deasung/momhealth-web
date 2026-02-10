@@ -19,6 +19,9 @@ hooks:
       runas: ec2-user
 
   BeforeInstall:
+    - location: scripts/cleanup_app_dir.sh
+      timeout: 300
+      runas: root
     # EC2 로그 정리 (journald / system log)
     - location: scripts/clear-logs-once-a-day.sh
       timeout: 300

@@ -35,11 +35,6 @@ hooks:
       timeout: 300
       runas: ec2-user
 
-    # CodeDeploy 배포 이력 정리 (deployment-root)
-    - location: scripts/cleanup_codedeploy.sh
-      timeout: 300
-      runas: root
-
   ApplicationStart:
     - location: scripts/start_server.sh
       timeout: 300

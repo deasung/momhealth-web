@@ -30,7 +30,7 @@ export async function generateMetadata({
     const question = await getHealthQuestionDetailServer(
       params.id,
       tokens.accessToken,
-      tokens.refreshToken
+      tokens.refreshToken,
     );
 
     if (!question) {
@@ -145,7 +145,7 @@ export default async function HealthQuestionDetailPage({
     question = await getHealthQuestionDetailServer(
       params.id,
       tokens.accessToken,
-      tokens.refreshToken
+      tokens.refreshToken,
     );
   } catch (err: unknown) {
     const axiosError = err as {
@@ -352,7 +352,7 @@ export default async function HealthQuestionDetailPage({
                 {question.description}
               </p>
               {question.detailDescription && (
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-left">
                   {question.detailDescription}
                 </p>
               )}

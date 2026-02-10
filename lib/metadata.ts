@@ -15,7 +15,8 @@ export interface PageMetadata {
 // 기본 메타데이터 설정
 export const defaultMetadata: PageMetadata = {
   title: "오늘의 건강",
-  description: "건강한 하루를 위한 맞춤형 건강 관리 서비스",
+  description: "오늘의 건강은  5~47초 사이에 답변 할 수 있는 건강 질문 답변을 통해 현재의 건강 상태를 파악할 수 있는 서비스 입니다. \n" +
+      "'오늘의 건강'으로 오늘의 건강을 가장 빨리 파악해보세요",
   keywords: "건강, 의료, 질문, 커뮤니티, 건강관리",
   ogImage: "/og-image.png",
 };
@@ -25,7 +26,8 @@ export const pageMetadata: Record<string, PageMetadata> = {
   home: {
     title: "홈",
     description:
-      "건강한 하루를 위한 맞춤형 건강 관리 서비스입니다. 건강 질문, 커뮤니티, 친구와의 건강 공유를 통해 더 나은 건강을 만들어보세요.",
+      "오늘의 건강은  5~47초 사이에 답변 할 수 있는 건강 질문 답변을 통해 현재의 건강 상태를 파악할 수 있는 서비스 입니다. \n" +
+        "'오늘의 건강'으로 오늘의 건강을 가장 빨리 파악해보세요",
     keywords: "건강 관리, 건강 질문, 건강 커뮤니티, 건강 공유",
   },
   community: {

@@ -128,10 +128,24 @@ const ResultPage = () => {
                   <p>{error}</p>
                 ) : (
                   <>
-                    <p className="mb-2 whitespace-pre-line">
-                      {result?.result.description ||
-                        "퀴즈 결과 설명을 확인할 수 없습니다."}
-                    </p>
+                    <div className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-4 sm:p-5 text-left">
+                      {(
+                        result?.result.description ||
+                        "퀴즈 결과 설명을 확인할 수 없습니다."
+                      )
+                        .split(/\n{2,}/)
+                        .filter((paragraph) => paragraph.trim().length > 0)
+                        .map((paragraph, index, all) => (
+                          <p
+                            key={`${index}-${paragraph.slice(0, 12)}`}
+                            className={`whitespace-pre-wrap break-words ${
+                              index === all.length - 1 ? "" : "mb-4"
+                            }`}
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
+                    </div>
                     {result?.result.linkUrl && (
                       <div className="mt-4">
                         <a
@@ -145,7 +159,9 @@ const ResultPage = () => {
                               : "관련 링크 새 창으로 열기"
                           }
                         >
-                          <span>{result.result.linkUrlName || "관련 링크"}</span>
+                          <span>
+                            {result.result.linkUrlName || "관련 링크"}
+                          </span>
                           <svg
                             className="w-4 h-4"
                             fill="none"

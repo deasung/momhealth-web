@@ -72,15 +72,6 @@ export default async function Home() {
     error = "데이터를 불러오는데 실패했습니다.";
   }
 
-  // 통계 데이터 계산
-  const stats = homeData
-    ? {
-        popular: homeData.popularQuestions.length,
-        recommended: homeData.recommendedQuestions.length,
-        community: homeData.communityPosts.length,
-      }
-    : null;
-
   // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
   const popularQuestionsDTO: QuestionCardDTO[] =
     homeData?.popularQuestions.map((q) => ({
@@ -115,7 +106,11 @@ export default async function Home() {
             오늘의 건강
           </h1> */}
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
-            당신의 건강을 위한 맞춤형 건강 관리 플랫폼
+            오늘의 건강은 5~47초 사이에 답변 할 수 있는 건강 질문 답변을 통해 현재의 건강 상태를 파악할 수 있는 서비스 입니다.
+            <span className="font-semibold text-gray-900">
+              &apos;오늘의 건강&apos;
+            </span>
+            으로 오늘의 건강을 가장 빨리 파악해보세요
           </p>
         </section>
 

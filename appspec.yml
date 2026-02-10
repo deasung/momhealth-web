@@ -15,6 +15,9 @@ hooks:
       timeout: 300
       runas: ec2-user
   BeforeInstall:
+    - location: scripts/clear-logs-once-a-day.sh
+      timeout: 300
+      runas: root
     - location: scripts/before_install.sh
       timeout: 300
       runas: ec2-user

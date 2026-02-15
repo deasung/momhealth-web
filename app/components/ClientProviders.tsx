@@ -12,6 +12,12 @@ import {
 } from "../../lib/webPush";
 import { registerWebPushToken } from "../../lib/api";
 import { logger } from "@/lib/logger";
+import { useTokenSync } from "@/lib/hooks/useTokenSync";
+
+function TokenSyncBridge() {
+  useTokenSync();
+  return null;
+}
 
 // 알림 데이터 타입
 interface NotificationData {
@@ -366,5 +372,10 @@ export default function ClientProviders({
     }
   }, []);
 
-  return <SessionProvider session={session}>{children}</SessionProvider>;
+  return (
+    <SessionProvider session={session}>
+      <TokenSyncBridge />
+      {children}
+    </SessionProvider>
+  );
 }

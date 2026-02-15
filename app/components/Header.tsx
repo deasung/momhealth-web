@@ -1,27 +1,78 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useLogout } from "../../lib/hooks/useLogout";
+import { useEnsureAuth } from "../../lib/hooks/useEnsureAuth";
 import { NavItem } from "@/app/types/navigation";
 import DesktopNav from "./DesktopNav";
 import MobileMenu from "./MobileMenu";
 import UserInfo from "./UserInfo";
 
 const Header = () => {
-  const pathname = usePathname();
+  const router = useRouter();
+  const pathname = usePathname() || "/";
   const { data: session, status } = useSession();
+  const { ensureAuth } = useEnsureAuth();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const { logout } = useLogout();
   const [isClient, setIsClient] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthLoggedIn, setIsAuthLoggedIn] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    const sync = async () => {
+      if (status === "authenticated") {
+        const result = await ensureAuth({
+          redirectToLogin: false,
+          verifyWithServer: true,
+        });
+        setIsAuthLoggedIn(result.ok);
+        setIsAuthReady(true);
+
+        const isProtectedRoute =
+          pathname.startsWith("/friends") ||
+          pathname.startsWith("/my") ||
+          /^\/health-questions\/[^/]+\/(quiz|result)$/.test(pathname) ||
+          pathname.startsWith("/health-questions/user-completed");
+
+        if (!result.ok && isProtectedRoute) {
+          router.push("/login");
+        }
+        return;
+      }
+
+      if (status === "unauthenticated") {
+        setIsAuthLoggedIn(false);
+        setIsAuthReady(true);
+
+        const isProtectedRoute =
+          pathname.startsWith("/friends") ||
+          pathname.startsWith("/my") ||
+          /^\/health-questions\/[^/]+\/(quiz|result)$/.test(pathname) ||
+          pathname.startsWith("/health-questions/user-completed");
+
+        if (isProtectedRoute) {
+          router.push("/login");
+        }
+        return;
+      }
+
+      setIsAuthReady(false);
+    };
+
+    sync();
+  }, [ensureAuth, isClient, pathname, router, status]);
 
   // 이벤트 리스너 정리 최적화 (메모리 누수 방지)
   useEffect(() => {
@@ -48,7 +99,7 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const isLoggedIn = status === "authenticated";
+  const isLoggedIn = isAuthReady ? isAuthLoggedIn : status === "authenticated";
 
   // Hydration 오류 방지를 위해 isClient가 true일 때만 동적 메뉴를 추가
   const navItems: NavItem[] = [

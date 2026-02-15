@@ -25,7 +25,6 @@ const initializeTokenFromStorage = () => {
     try {
       const storedToken = localStorage.getItem(TOKEN_KEYS.TOKEN);
       const storedIsGuest = localStorage.getItem(TOKEN_KEYS.IS_GUEST);
-      const storedRefreshToken = localStorage.getItem(TOKEN_KEYS.REFRESH_TOKEN);
 
       if (storedToken) {
         currentToken = storedToken;
@@ -42,18 +41,6 @@ const initializeTokenFromStorage = () => {
 if (typeof window !== "undefined") {
   initializeTokenFromStorage();
 }
-
-// JWT 토큰 만료 시간 확인
-const isTokenExpired = (token: string): boolean => {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const currentTime = Math.floor(Date.now() / 1000);
-    return payload.exp < currentTime;
-  } catch (error) {
-    logger.error("토큰 파싱 실패:", error);
-    return true; // 파싱 실패 시 만료된 것으로 간주
-  }
-};
 
 // 토큰 관리 함수들
 export const setToken = (
@@ -500,6 +487,52 @@ export const getQuizItems = async (id: string) => {
   } catch (error) {
     logger.error("퀴즈 문항 가져오기 실패:", error);
     throw error;
+  }
+};
+
+// 토큰 검증 (백엔드 verify 엔드포인트 사용)
+export const verifyAuthToken = async (jwt: string): Promise<boolean> => {
+  try {
+    await api.post("/public/auth/token/verify", { jwt });
+    return true;
+  } catch (error) {
+    logger.error("토큰 검증 실패:", error);
+    return false;
+  }
+};
+
+export const refreshAuthToken = async (
+  refreshToken: string
+): Promise<{
+  accessToken: string;
+  refreshToken: string;
+} | null> => {
+  try {
+    const refreshResponse = await axios.post(
+      `${BASE_URL}/public/auth/token/refresh`,
+      { refresh_token: refreshToken },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY,
+        },
+      }
+    );
+
+    if (
+      refreshResponse.data?.access_token &&
+      refreshResponse.data?.refresh_token
+    ) {
+      return {
+        accessToken: refreshResponse.data.access_token,
+        refreshToken: refreshResponse.data.refresh_token,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    logger.error("토큰 갱신 실패:", error);
+    return null;
   }
 };
 

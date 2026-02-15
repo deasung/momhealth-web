@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { resetQuizProgress, getHealthQuestionDetail } from "../../lib/api";
 import { useAuth } from "../../lib/hooks/useAuth";
+import { useEnsureAuth } from "../../lib/hooks/useEnsureAuth";
 import KakaoShareButton from "./KakaoShareButton";
 import { logger } from "@/lib/logger";
 
@@ -103,7 +104,8 @@ export default function HealthQuestionActions({
   imageUrl,
 }: HealthQuestionActionsProps) {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  const { ensureAuth } = useEnsureAuth();
   const [resetting, setResetting] = useState(false);
   const [shareData, setShareData] = useState<{
     title?: string;
@@ -135,16 +137,31 @@ export default function HealthQuestionActions({
     }
   }, [questionId, title, description]);
 
-  const handleStartQuestion = () => {
-    if (!isAuthenticated) {
-      router.push("/login");
+  const handleStartQuestion = async () => {
+    if (isLoading) {
+      alert("로그인 상태를 확인 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
+
+    const result = await ensureAuth({
+      redirectToLogin: true,
+      verifyWithServer: true,
+    });
+    if (!result.ok) return;
     router.push(`/health-questions/${questionId}/quiz`);
   };
 
   const handleResetQuestion = async () => {
-    if (!isAuthenticated) return;
+    if (isLoading) {
+      alert("로그인 상태를 확인 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    const result = await ensureAuth({
+      redirectToLogin: true,
+      verifyWithServer: true,
+    });
+    if (!result.ok) return;
 
     try {
       setResetting(true);
@@ -212,9 +229,19 @@ export default function HealthQuestionActions({
             )}
           </button>
           <button
-            onClick={() =>
-              router.push(`/health-questions/${questionId}/result`)
-            }
+            onClick={async () => {
+              if (isLoading) {
+                alert("로그인 상태를 확인 중입니다. 잠시 후 다시 시도해주세요.");
+                return;
+              }
+
+              const result = await ensureAuth({
+                redirectToLogin: true,
+                verifyWithServer: true,
+              });
+              if (!result.ok) return;
+              router.push(`/health-questions/${questionId}/result`);
+            }}
             className="inline-flex items-center justify-center gap-2 font-semibold py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition-all duration-200 shadow-md hover:shadow-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white min-h-[44px] sm:min-h-[52px] w-full sm:w-64"
             aria-label="퀴즈 결과 보기"
           >

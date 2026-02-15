@@ -64,7 +64,7 @@ const CompletedQuestionCard = ({
     const date = new Date(item.completedAt);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}.${String(date.getDate()).padStart(2, "0")}`;
   })();
 
@@ -222,7 +222,7 @@ export default async function FriendQuestionsPage({
     try {
       const friendsResponse = await getMappedUsersServer(token);
       const friend = friendsResponse.data?.friends?.find(
-        (f) => String(f.friend.id) === userId
+        (f) => String(f.friend.id) === userId,
       );
       if (friend) {
         friendName = friend.friend.nickname;
@@ -239,7 +239,7 @@ export default async function FriendQuestionsPage({
           page: currentPage,
           limit: LIMIT,
         },
-        token
+        token,
       );
     completedQuestions = response.data?.results || [];
     pagination = response.data?.pagination || null;

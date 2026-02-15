@@ -22,7 +22,7 @@ export class SessionExpiredError extends Error {
   }
 }
 
-const API_KEY = "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
+const API_KEY = "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
 const BASE_URL = process.env.MOMHEALTH_API_URL;
 
 if (!BASE_URL) {

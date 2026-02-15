@@ -33,6 +33,7 @@ export interface CommunityPost {
 }
 
 export interface HomeData {
+  title?: string;
   popularQuestions: PopularQuestion[];
   recommendedQuestions: RecommendedQuestion[];
   communityPosts: CommunityPost[];

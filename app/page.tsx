@@ -101,17 +101,26 @@ export default async function Home() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* ✅ SEO & UX: 히어로 섹션 - h1 태그 */}
-        <section className="text-center mb-10 md:mb-12 lg:mb-16">
+
+        <section>
           {/* <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">
             오늘의 건강
           </h1> */}
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
-            오늘의 건강은 5~47초 사이에 답변 할 수 있는 건강 질문 답변을 통해 현재의 건강 상태를 파악할 수 있는 서비스 입니다.
-            <span className="font-semibold text-gray-900">
-              &apos;오늘의 건강&apos;
-            </span>
-            으로 오늘의 건강을 가장 빨리 파악해보세요
-          </p>
+          {homeData?.title ? (
+            <div
+              className="max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p:empty]:min-h-[1em]"
+              dangerouslySetInnerHTML={{ __html: homeData.title }}
+            />
+          ) : (
+            <p className="text-center text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
+              오늘의 건강은 5~47초 사이에 답변 할 수 있는 건강 질문 답변을 통해
+              현재의 건강 상태를 파악할 수 있는 서비스 입니다.
+              <span className="font-semibold text-gray-900">
+                &apos;오늘의 건강&apos;
+              </span>
+              으로 오늘의 건강을 가장 빨리 파악해보세요
+            </p>
+          )}
         </section>
 
         {/* ✅ 에러 상태 */}

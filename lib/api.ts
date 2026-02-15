@@ -6,7 +6,7 @@ import { logger } from "./logger";
 
 // 클라이언트에서는 Next.js API 라우트를 통해 프록시
 export const BASE_URL = "/api/proxy";
-export const API_KEY = "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
+export const API_KEY = "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
 
 // 토큰 관리 상태
 let currentToken: string | null = null;

@@ -8,11 +8,13 @@ import SEO from "../../../components/SEO";
 import { getQuizItems, submitQuizAnswers } from "../../../../lib/api";
 import { QuizAnswer, QuizData } from "../../../types/health-questions";
 import { logger } from "@/lib/logger";
+import { useEnsureAuth } from "@/lib/hooks/useEnsureAuth";
 
 const QuizPage = () => {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
+  const { ensureAuth } = useEnsureAuth();
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
@@ -73,7 +75,7 @@ const QuizPage = () => {
 
   // ✅ 성능: 핸들러 메모이제이션
   const handleSelect = useCallback((itemId: string, choiceId: string) => {
-    logger.debug("handleSelect", itemId, choiceId);
+    logger.debug("handleSelect", { itemId, choiceId });
 
     // ✅ 유효성 검사: itemId와 choiceId가 유효한 값인지 확인
     if (
@@ -100,7 +102,7 @@ const QuizPage = () => {
         ? prev.map((a) => (a.itemId === itemId ? { ...a, choiceId } : a))
         : [...prev, { itemId, choiceId }];
 
-      logger.debug(newAnswers);
+      logger.debug("answers updated", { answers: newAnswers });
 
       return newAnswers;
     });
@@ -155,6 +157,17 @@ const QuizPage = () => {
 
       logger.debug("제출할 답변 데이터:", formattedAnswers);
 
+      const authResult = await ensureAuth({
+        redirectToLogin: true,
+        verifyWithServer: true,
+      });
+      if (!authResult.ok) {
+        setError("로그인이 필요합니다. 다시 로그인 후 제출해주세요.");
+        setShowErrorModal(true);
+        setSubmitting(false);
+        return;
+      }
+
       await submitQuizAnswers(id, formattedAnswers);
       // ✅ UX: 제출 성공 후 결과 페이지로 이동
       router.push(`/health-questions/${id}/result`);
@@ -170,7 +183,7 @@ const QuizPage = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [id, answers, items, router]);
+  }, [ensureAuth, id, answers, items, router]);
 
   const handleNext = useCallback(() => {
     if (isLastQuestion) {

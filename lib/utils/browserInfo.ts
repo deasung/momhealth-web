@@ -3,6 +3,8 @@
  * 백엔드 API 요구사항에 맞춘 브라우저 정보 수집
  */
 
+import { logger } from "../logger";
+
 export interface BrowserInfo {
   userAgent: string;
   browserName: string;
@@ -98,7 +100,7 @@ export const getInstallationId = (): string => {
 
     return installationId;
   } catch (error) {
-    console.error("브라우저 ID 생성 실패:", error);
+    logger.error("브라우저 ID 생성 실패:", error);
     // localStorage 접근 실패 시 임시 ID 생성
     return `web_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }

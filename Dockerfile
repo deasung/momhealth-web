@@ -5,13 +5,13 @@
 # =========================
 
 # 1) deps
-FROM node:20-slim AS deps
+FROM public.ecr.aws/docker/library/node:20-slim AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 # 2) builder
-FROM node:20-slim AS builder
+FROM public.ecr.aws/docker/library/node:20-slim AS builder
 WORKDIR /app
 
 # arm64 플랫폼에서 SWC 바이너리 로드를 위한 패키지 설치 (유지)
@@ -30,10 +30,12 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # arm64에서 SWC 바이너리 문제를 피하기 위해 환경변수 설정 (유지)
 ENV NEXT_SWC_BINARY_PATH=""
+# 빌드 시 서버 사이드에서 클라이언트 전용 코드가 실행되지 않도록 설정
+ENV NODE_ENV=production
 RUN npm run build
 
 # 3) runner
-FROM node:20-slim AS runner
+FROM public.ecr.aws/docker/library/node:20-slim AS runner
 WORKDIR /app
 ENV PORT=3300
 

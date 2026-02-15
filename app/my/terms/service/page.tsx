@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { getServiceTermsServer } from "../../../../lib/api-server";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -34,7 +35,7 @@ export default async function ServiceTermsPage() {
     const res = await getServiceTermsServer();
     policy = res?.data ?? res;
   } catch (e) {
-    console.error("약관 로딩 실패:", e);
+    logger.error("약관 로딩 실패:", e);
     error = "약관을 불러올 수 없습니다.";
   }
 

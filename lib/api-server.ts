@@ -10,6 +10,7 @@ import axios from "axios";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
 import { redirect } from "next/navigation";
+import { logger } from "./logger";
 
 /**
  * 세션 만료 에러 (refresh token 갱신 실패 시)
@@ -21,11 +22,11 @@ export class SessionExpiredError extends Error {
   }
 }
 
-const API_KEY = "f5e60c40-5eb4-11ea-b4d7-0d9c1606f185";
+const API_KEY = "b9d54cc0-5ea5-11ea-b7f9-41b4f2de8659";
 const BASE_URL = process.env.MOMHEALTH_API_URL;
 
 if (!BASE_URL) {
-  console.warn("⚠️ MOMHEALTH_API_URL 환경변수가 설정되지 않았습니다.");
+  logger.warn("⚠️ MOMHEALTH_API_URL 환경변수가 설정되지 않았습니다.");
 }
 
 // 서버용 axios 인스턴스 생성
@@ -40,7 +41,7 @@ const createServerApi = (token?: string | null) => {
     headers["Authorization"] = `Bearer ${token}`;
     // 개발 환경에서만 로깅 (프로덕션에서는 로그 제거)
     if (process.env.NODE_ENV === "development") {
-      console.log("✅ [createServerApi] Authorization 헤더 추가됨");
+      logger.debug("✅ [createServerApi] Authorization 헤더 추가됨");
     }
   }
 
@@ -58,9 +59,41 @@ export async function getHomeDataServer() {
   try {
     const api = createServerApi();
     const response = await api.get("/public/home");
+
+    // 디버깅: 홈 응답 시간 필드 확인 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development") {
+      const data = response.data as {
+        popularQuestions?: Array<Record<string, unknown>>;
+        recommendedQuestions?: Array<Record<string, unknown>>;
+      };
+      const popular0 = data?.popularQuestions?.[0];
+      const recommended0 = data?.recommendedQuestions?.[0];
+
+      logger.debug("🏠 [getHomeDataServer] /public/home 시간 필드 샘플", {
+        popular0: popular0
+          ? {
+              id: popular0["id"],
+              durationMinutes: popular0["durationMinutes"],
+              durationSeconds: popular0["durationSeconds"],
+              createdAt: popular0["createdAt"],
+              keys: Object.keys(popular0),
+            }
+          : null,
+        recommended0: recommended0
+          ? {
+              id: recommended0["id"],
+              durationMinutes: recommended0["durationMinutes"],
+              durationSeconds: recommended0["durationSeconds"],
+              createdAt: recommended0["createdAt"],
+              keys: Object.keys(recommended0),
+            }
+          : null,
+      });
+    }
+
     return response.data;
   } catch (error) {
-    console.error("홈 데이터 가져오기 실패:", error);
+    logger.error("홈 데이터 가져오기 실패:", error);
     throw error;
   }
 }
@@ -89,7 +122,7 @@ export async function getHealthQuestionsServer(
   try {
     // 디버깅: 토큰 전달 확인 (개발 환경에서만)
     if (process.env.NODE_ENV === "development") {
-      console.log("🔐 [getHealthQuestionsServer] 토큰 전달 상태:", {
+      logger.debug("🔐 [getHealthQuestionsServer] 토큰 전달 상태:", {
         hasToken: !!token,
         hasRefreshToken: !!refreshToken,
         tokenPreview: token ? `${token.substring(0, 20)}...` : "null",
@@ -106,7 +139,7 @@ export async function getHealthQuestionsServer(
     }
 
     if (!accessToken) {
-      console.warn(
+      logger.warn(
         "⚠️ [getHealthQuestionsServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
       );
     }
@@ -182,7 +215,7 @@ export async function getHealthQuestionsServer(
         };
       };
 
-      console.error("❌ [getHealthQuestionsServer] 질문목록 가져오기 실패:", {
+      logger.error("❌ [getHealthQuestionsServer] 질문목록 가져오기 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -239,7 +272,7 @@ export async function getHealthQuestionCategoriesServer(
         };
       };
 
-      console.error(
+      logger.error(
         "❌ [getHealthQuestionCategoriesServer] 카테고리 목록 가져오기 실패:",
         {
           message: axiosError.message,
@@ -274,7 +307,7 @@ export async function getHealthQuestionDetailServer(
     }
 
     if (!accessToken) {
-      console.warn(
+      logger.warn(
         "⚠️ [getHealthQuestionDetailServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
       );
     }
@@ -307,7 +340,7 @@ export async function getHealthQuestionDetailServer(
         };
       };
 
-      console.error(
+      logger.error(
         "❌ [getHealthQuestionDetailServer] 질문 상세 가져오기 실패:",
         {
           message: axiosError.message,
@@ -370,7 +403,7 @@ export async function resetQuizProgressServer(
         };
       };
 
-      console.error("❌ [resetQuizProgressServer] 퀴즈 리셋 실패:", {
+      logger.error("❌ [resetQuizProgressServer] 퀴즈 리셋 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -405,7 +438,7 @@ export async function getCommunityPostsServer(
     }
 
     if (!accessToken) {
-      console.warn(
+      logger.warn(
         "⚠️ [getCommunityPostsServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
       );
     }
@@ -449,7 +482,7 @@ export async function getCommunityPostsServer(
         };
       };
 
-      console.error("❌ [getCommunityPostsServer] 커뮤니티 게시글 로딩 실패:", {
+      logger.error("❌ [getCommunityPostsServer] 커뮤니티 게시글 로딩 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -483,7 +516,7 @@ export async function getCommunityPostDetailServer(
     }
 
     if (!accessToken) {
-      console.warn(
+      logger.warn(
         "⚠️ [getCommunityPostDetailServer] 토큰을 가져올 수 없습니다. 401 에러가 발생할 수 있습니다."
       );
     }
@@ -514,7 +547,7 @@ export async function getCommunityPostDetailServer(
         };
       };
 
-      console.error(
+      logger.error(
         "❌ [getCommunityPostDetailServer] 커뮤니티 게시글 상세 로딩 실패:",
         {
           message: axiosError.message,
@@ -539,7 +572,7 @@ export async function getPrivacyPolicyServer() {
     const response = await api.get("/public/policy/privacy");
     return response.data;
   } catch (error) {
-    console.error("개인정보 처리방침 조회 실패:", error);
+    logger.error("개인정보 처리방침 조회 실패:", error);
     throw error;
   }
 }
@@ -553,7 +586,7 @@ export async function getServiceTermsServer() {
     const response = await api.get("/public/policy/terms");
     return response.data;
   } catch (error) {
-    console.error("서비스 이용약관 조회 실패:", error);
+    logger.error("서비스 이용약관 조회 실패:", error);
     throw error;
   }
 }
@@ -612,7 +645,7 @@ export async function getUserCompletedQuestionsServer(
         };
       };
 
-      console.error(
+      logger.error(
         "❌ [getUserCompletedQuestionsServer] 완료한 건강 질문 조회 실패:",
         {
           message: axiosError.message,
@@ -679,7 +712,7 @@ export async function getFriendQuestionResultServer(
         };
       };
 
-      console.error(
+      logger.error(
         "❌ [getFriendQuestionResultServer] 친구의 질문 결과 조회 실패:",
         {
           message: axiosError.message,
@@ -707,7 +740,7 @@ export async function getNoticesServer(params?: {
     const response = await api.get("/public/notice/list", { params });
     return response.data;
   } catch (error) {
-    console.error("공지사항 목록 가져오기 실패:", error);
+    logger.error("공지사항 목록 가져오기 실패:", error);
     throw error;
   }
 }
@@ -721,7 +754,7 @@ export async function getNoticeDetailServer(id: string) {
     const response = await api.get(`/public/notice/${id}`);
     return response.data;
   } catch (error) {
-    console.error("공지사항 상세 가져오기 실패:", error);
+    logger.error("공지사항 상세 가져오기 실패:", error);
     throw error;
   }
 }
@@ -747,7 +780,7 @@ export async function getMappedUsersServer(
 
     const api = createServerApi(accessToken);
     const response = await api.get("/private/register/mapped-users");
-    console.log("response", response.data);
+    logger.debug("response", response.data);
     return response.data;
   } catch (error: unknown) {
     // 401 에러 처리 및 토큰 갱신 (공통 헬퍼 사용)
@@ -772,7 +805,7 @@ export async function getMappedUsersServer(
         };
       };
 
-      console.error("매핑된 사용자 목록 조회 실패:", {
+      logger.error("매핑된 사용자 목록 조회 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -832,7 +865,7 @@ export async function getFriendRequestCountsServer(
         };
       };
 
-      console.error("친구 요청 카운트 조회 실패:", {
+      logger.error("친구 요청 카운트 조회 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -903,7 +936,7 @@ export async function getInquiriesServer(
         };
       };
 
-      console.error("❌ [getInquiriesServer] 문의 목록 가져오기 실패:", {
+      logger.error("❌ [getInquiriesServer] 문의 목록 가져오기 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -961,7 +994,7 @@ export async function getInquiryDetailServer(
         };
       };
 
-      console.error("❌ [getInquiryDetailServer] 문의 상세 가져오기 실패:", {
+      logger.error("❌ [getInquiryDetailServer] 문의 상세 가져오기 실패:", {
         message: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
@@ -984,7 +1017,7 @@ function isTokenExpired(token: string): boolean {
     const isExpired = payload.exp < currentTime;
 
     if (isExpired) {
-      console.warn("⚠️ [isTokenExpired] 토큰이 만료되었습니다:", {
+      logger.warn("⚠️ [isTokenExpired] 토큰이 만료되었습니다:", {
         exp: payload.exp,
         currentTime,
         expiredAt: new Date(payload.exp * 1000).toISOString(),
@@ -994,7 +1027,7 @@ function isTokenExpired(token: string): boolean {
 
     return isExpired;
   } catch (error) {
-    console.error("❌ [isTokenExpired] 토큰 파싱 실패:", error);
+    logger.error("❌ [isTokenExpired] 토큰 파싱 실패:", error);
     return true; // 파싱 실패 시 만료된 것으로 간주
   }
 }
@@ -1008,7 +1041,7 @@ export async function getServerToken(): Promise<string | null> {
     const session = await getServerSession(authOptions);
     if (!session) {
       if (process.env.NODE_ENV === "development") {
-        console.warn("⚠️ [getServerToken] 세션이 없습니다.");
+        logger.warn("⚠️ [getServerToken] 세션이 없습니다.");
       }
       return null;
     }
@@ -1025,7 +1058,7 @@ export async function getServerToken(): Promise<string | null> {
 
     // 디버깅: 세션 구조 로깅 (개발 환경에서만)
     if (process.env.NODE_ENV === "development" && !token) {
-      console.log("🔐 [getServerToken] 세션 구조:", {
+      logger.debug("🔐 [getServerToken] 세션 구조:", {
         hasSession: !!session,
         sessionKeys: Object.keys(session),
         hasToken: !!sessionAny.token,
@@ -1035,7 +1068,7 @@ export async function getServerToken(): Promise<string | null> {
 
     if (!token) {
       if (process.env.NODE_ENV === "development") {
-        console.warn("⚠️ [getServerToken] 세션에는 있지만 토큰이 없습니다.", {
+        logger.warn("⚠️ [getServerToken] 세션에는 있지만 토큰이 없습니다.", {
           sessionKeys: Object.keys(session),
         });
       }
@@ -1045,7 +1078,7 @@ export async function getServerToken(): Promise<string | null> {
     // 토큰 만료 여부 확인
     if (isTokenExpired(token)) {
       if (process.env.NODE_ENV === "development") {
-        console.warn(
+        logger.warn(
           "⚠️ [getServerToken] 토큰이 만료되었습니다. refresh_token으로 갱신 필요"
         );
       }
@@ -1054,7 +1087,7 @@ export async function getServerToken(): Promise<string | null> {
 
     return token;
   } catch (error) {
-    console.error("❌ [getServerToken] 서버 토큰 가져오기 실패:", error);
+    logger.error("❌ [getServerToken] 서버 토큰 가져오기 실패:", error);
     return null;
   }
 }
@@ -1074,7 +1107,7 @@ export async function getServerRefreshToken(): Promise<string | null> {
 
     // 디버깅: refresh token 상태 로깅 (개발 환경에서만)
     if (process.env.NODE_ENV === "development" && refreshToken) {
-      console.log("🔐 [getServerRefreshToken] refresh token 확인:", {
+      logger.debug("🔐 [getServerRefreshToken] refresh token 확인:", {
         hasSession: !!session,
         hasRefreshToken: !!refreshToken,
         refreshTokenPreview: `${refreshToken.substring(0, 20)}...`,
@@ -1083,7 +1116,7 @@ export async function getServerRefreshToken(): Promise<string | null> {
 
     return refreshToken;
   } catch (error) {
-    console.error(
+    logger.error(
       "❌ [getServerRefreshToken] refresh_token 가져오기 실패:",
       error
     );
@@ -1103,7 +1136,7 @@ export async function getGuestToken(): Promise<{
     const response = await api.post("/public/auth/token", {});
 
     if (response.data?.access_token && response.data?.refresh_token) {
-      console.log("✅ [getGuestToken] 게스트 토큰 발급 성공");
+      logger.info("✅ [getGuestToken] 게스트 토큰 발급 성공");
       return {
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
@@ -1111,7 +1144,7 @@ export async function getGuestToken(): Promise<{
     }
     return null;
   } catch (error) {
-    console.error("❌ [getGuestToken] 게스트 토큰 발급 실패:", error);
+    logger.error("❌ [getGuestToken] 게스트 토큰 발급 실패:", error);
     return null;
   }
 }
@@ -1130,7 +1163,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
     });
 
     if (response.data?.access_token && response.data?.refresh_token) {
-      console.log("✅ [refreshAccessToken] 토큰 갱신 성공");
+      logger.info("✅ [refreshAccessToken] 토큰 갱신 성공");
       return {
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
@@ -1138,7 +1171,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{
     }
     return null;
   } catch (error) {
-    console.error("❌ [refreshAccessToken] 토큰 갱신 실패:", error);
+    logger.error("❌ [refreshAccessToken] 토큰 갱신 실패:", error);
     return null;
   }
 }
@@ -1168,24 +1201,24 @@ export async function handle401Error<T>(
 
   // 401 에러이고 refresh_token이 있으면 토큰 갱신 후 재시도
   if (axiosError.response?.status === 401 && refreshToken) {
-    console.log(
+    logger.info(
       `🔄 [${functionName}] 401 에러 발생, refresh_token으로 토큰 갱신 시도`
     );
 
     try {
       const newTokens = await refreshAccessToken(refreshToken);
       if (newTokens) {
-        console.log(`✅ [${functionName}] 토큰 갱신 성공, 재시도`);
+        logger.info(`✅ [${functionName}] 토큰 갱신 성공, 재시도`);
 
         // 갱신된 토큰으로 재시도
         return await retryFn(newTokens.accessToken);
       } else {
-        console.error(`❌ [${functionName}] 토큰 갱신 응답에 토큰이 없습니다`);
+        logger.error(`❌ [${functionName}] 토큰 갱신 응답에 토큰이 없습니다`);
         // 토큰 갱신 실패 시 세션 만료 처리 - 홈으로 리다이렉트
         redirect("/");
       }
     } catch (refreshError) {
-      console.error(`❌ [${functionName}] 토큰 갱신 실패:`, refreshError);
+      logger.error(`❌ [${functionName}] 토큰 갱신 실패:`, refreshError);
       // 토큰 갱신 실패 시 세션 만료 처리 - 홈으로 리다이렉트
       redirect("/");
     }
@@ -1216,20 +1249,20 @@ export async function getServerTokens(): Promise<{
 
   // 토큰이 만료되었지만 refresh_token이 있으면 자동 갱신 시도
   if (!sessionToken && sessionRefreshToken) {
-    console.log(
+    logger.info(
       "🔄 [getServerTokens] 토큰이 만료되었습니다. refresh_token으로 갱신 시도"
     );
     try {
       const newTokens = await refreshAccessToken(sessionRefreshToken);
       if (newTokens) {
-        console.log("✅ [getServerTokens] 토큰 갱신 성공");
+        logger.info("✅ [getServerTokens] 토큰 갱신 성공");
         return {
           accessToken: newTokens.accessToken,
           refreshToken: newTokens.refreshToken,
         };
       }
     } catch (error) {
-      console.error("❌ [getServerTokens] 토큰 갱신 실패:", error);
+      logger.error("❌ [getServerTokens] 토큰 갱신 실패:", error);
     }
   }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { isTokenExpired } from "@/lib/auth";
+import { isTokenExpired } from "../auth";
 import { TOKEN_KEYS } from "../constants";
 
 interface UseAuthReturn {

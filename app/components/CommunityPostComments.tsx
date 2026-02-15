@@ -107,7 +107,7 @@ export default function CommunityPostComments({
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             댓글{" "}
             <span className="text-gray-600 font-normal">
-              {comments.length.toLocaleString()}개
+              {comments.length.toLocaleString("ko-KR")}개
             </span>
           </h2>
         </header>
@@ -163,7 +163,9 @@ export default function CommunityPostComments({
                             dateTime={comment.createdAt}
                             className="text-xs text-gray-500"
                           >
-                            {formatTimeAgo(comment.createdAt)}
+                            <span suppressHydrationWarning>
+                              {formatTimeAgo(comment.createdAt)}
+                            </span>
                           </time>
                         </div>
 

@@ -1,0 +1,44 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ec2-user/app
+    overwrite: yes
+
+permissions:
+  - object: /home/ec2-user/app
+    pattern: "**"
+    owner: ec2-user
+    group: ec2-user
+
+hooks:
+  ApplicationStop:
+    - location: scripts/stop_server.sh
+      timeout: 300
+      runas: ec2-user
+
+  BeforeInstall:
+    - location: scripts/cleanup_app_dir.sh
+      timeout: 300
+      runas: root
+    # EC2 로그 정리 (journald / system log)
+    - location: scripts/clear-logs-once-a-day.sh
+      timeout: 300
+      runas: root
+
+    # 기존 before_install
+    - location: scripts/before_install.sh
+      timeout: 300
+      runas: ec2-user
+
+  AfterInstall:
+    # 의존성 설치
+    - location: scripts/install_dependencies.sh
+      timeout: 300
+      runas: ec2-user
+
+  ApplicationStart:
+    - location: scripts/start_server.sh
+      timeout: 300
+      runas: ec2-user

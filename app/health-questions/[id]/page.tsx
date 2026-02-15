@@ -7,35 +7,97 @@ import HealthQuestionActions from "../../components/HealthQuestionActions";
 import { getHealthQuestionDetailServer } from "../../../lib/api-server";
 import type { HealthQuestionDetail } from "../../types/health-questions";
 import { generateHealthQuestionMetadata } from "../../../lib/metadata";
+import { logger } from "@/lib/logger";
+import { formatDuration } from "@/lib/utils/timeFormat";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
-// ✅ SEO: 동적 메타데이터 생성
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
+// ✅ SEO: 동적 메타데이터 (각 질문마다 고유한 타이틀과 설명)
 export async function generateMetadata({
   params,
 }: {
   params: { id: string };
 }): Promise<Metadata> {
+  const canonicalUrl = `${siteUrl}/health-questions/${params.id}`;
+
   try {
+    // 서버에서 질문 상세 정보 가져오기
     const { getServerTokens } = await import("../../../lib/api-server");
     const tokens = await getServerTokens();
     const question = await getHealthQuestionDetailServer(
       params.id,
       tokens.accessToken,
-      tokens.refreshToken
+      tokens.refreshToken,
     );
+
+    if (!question) {
+      // 질문을 찾을 수 없는 경우 기본 메타데이터 반환
+      return {
+        title: "질문을 찾을 수 없습니다 | 오늘의 건강",
+        description: "요청하신 건강 질문을 찾을 수 없습니다.",
+        alternates: {
+          canonical: canonicalUrl,
+        },
+      };
+    }
+
+    // 질문 정보로 동적 메타데이터 생성
+    const title = `${question.title} | 오늘의 건강`;
+    const description =
+      question.description ||
+      `${question.title} - 총 ${
+        question.questionCount
+      }문항, 소요시간 ${Math.floor(question.durationSeconds / 60)}분`;
+    const imageUrl =
+      question.detailThumbnailUrl ||
+      question.thumbnailUrl ||
+      `${siteUrl}/og-image.png`;
+
     const metadata = generateHealthQuestionMetadata({
       title: question.title,
-      description: question.description || question.title,
+      description: description,
       category: question.primaryCategory.name,
     });
 
-    const ogImage =
-      question.detailThumbnailUrl || question.thumbnailUrl || "/og-image.png";
-    const fullOgImage = ogImage.startsWith("http")
-      ? ogImage
-      : `${siteUrl}${ogImage}`;
-    const canonicalUrl = `${siteUrl}/health-questions/${question.id}`;
+    return {
+      title: title,
+      description: description,
+      keywords: metadata.keywords,
+      openGraph: {
+        title: title,
+        description: description,
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: question.title,
+          },
+        ],
+        url: canonicalUrl,
+        type: "article",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: title,
+        description: description,
+        images: [imageUrl],
+      },
+      alternates: {
+        canonical: canonicalUrl,
+      },
+    };
+  } catch (error) {
+    logger.error("[generateMetadata] 메타데이터 생성 실패:", error);
+    // 에러 발생 시 기본 메타데이터 반환
+    const metadata = generateHealthQuestionMetadata({
+      title: "건강 질문",
+      description: "건강 질문 정보를 확인해보세요.",
+      category: "건강",
+    });
 
     return {
       title: metadata.title,
@@ -46,11 +108,11 @@ export async function generateMetadata({
         description: metadata.ogDescription || metadata.description,
         images: [
           {
-            url: fullOgImage,
+            url: `${siteUrl}/og-image.png`,
             width: 1200,
             height: 630,
             type: "image/png",
-            alt: question.title,
+            alt: "건강 질문",
           },
         ],
         url: canonicalUrl,
@@ -59,16 +121,11 @@ export async function generateMetadata({
         card: "summary_large_image",
         title: metadata.ogTitle || metadata.title,
         description: metadata.ogDescription || metadata.description,
-        images: [fullOgImage],
+        images: [`${siteUrl}/og-image.png`],
       },
       alternates: {
         canonical: canonicalUrl,
       },
-    };
-  } catch (error) {
-    return {
-      title: "건강 질문",
-      description: "건강 질문 정보를 불러오는 중입니다.",
     };
   }
 }
@@ -88,7 +145,7 @@ export default async function HealthQuestionDetailPage({
     question = await getHealthQuestionDetailServer(
       params.id,
       tokens.accessToken,
-      tokens.refreshToken
+      tokens.refreshToken,
     );
   } catch (err: unknown) {
     const axiosError = err as {
@@ -99,7 +156,7 @@ export default async function HealthQuestionDetailPage({
         data?: unknown;
       };
     };
-    console.error("❌ [HealthQuestionDetailPage] 질문 상세 로딩 실패:", {
+    logger.error(" [HealthQuestionDetailPage] 질문 상세 로딩 실패:", {
       message: axiosError.message,
       status: axiosError.response?.status,
       statusText: axiosError.response?.statusText,
@@ -262,8 +319,8 @@ export default async function HealthQuestionDetailPage({
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                소요시간 {Math.floor(question.durationSeconds / 60)}분{" "}
-                {question.durationSeconds % 60}초
+                소요시간{" "}
+                {formatDuration({ durationSeconds: question.durationSeconds })}
               </span>
             </div>
           </header>
@@ -272,14 +329,20 @@ export default async function HealthQuestionDetailPage({
             {/* 썸네일 이미지 */}
             <div className="mb-8">
               <div className="relative w-full h-48 sm:h-64 md:h-80 rounded-xl overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100">
-                <Image
-                  src={question.detailThumbnailUrl || question.thumbnailUrl}
-                  alt={question.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
-                  priority
-                />
+                {question.detailThumbnailUrl || question.thumbnailUrl ? (
+                  <Image
+                    src={question.detailThumbnailUrl || question.thumbnailUrl}
+                    alt={question.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-5xl">
+                    💊
+                  </div>
+                )}
               </div>
             </div>
 
@@ -289,7 +352,7 @@ export default async function HealthQuestionDetailPage({
                 {question.description}
               </p>
               {question.detailDescription && (
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-left">
                   {question.detailDescription}
                 </p>
               )}
@@ -344,7 +407,9 @@ export default async function HealthQuestionDetailPage({
                 </div>
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-bold text-orange-600 mb-1">
-                    {Math.floor(question.durationSeconds / 60)}분
+                    {formatDuration({
+                      durationSeconds: question.durationSeconds,
+                    })}
                   </div>
                   <div className="text-xs sm:text-sm text-gray-600">
                     소요시간

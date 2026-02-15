@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { QuestionCardDTO } from "../types/dto";
+import { formatDuration } from "@/lib/utils/timeFormat";
 
 interface PopularQuestionsProps {
   questions: QuestionCardDTO[];
@@ -61,13 +62,19 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
             aria-label={`${question.title} 질문 보기`}
           >
             <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50">
-              <Image
-                src={question.thumbnailUrl}
-                alt={question.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
+              {question.thumbnailUrl ? (
+                <Image
+                  src={question.thumbnailUrl}
+                  alt={question.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl sm:text-3xl">
+                  💊
+                </div>
+              )}
             </div>
 
             <div className="p-4 sm:p-5">
@@ -95,9 +102,10 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
                     />
                   </svg>
                   <span>
-                    {question.durationMinutes
-                      ? `${question.durationMinutes}분`
-                      : "시간 미정"}
+                    {formatDuration({
+                      durationMinutes: question.durationMinutes,
+                      durationSeconds: question.durationSeconds,
+                    })}
                   </span>
                 </span>
                 <time
@@ -119,7 +127,9 @@ const PopularQuestions = ({ questions }: PopularQuestionsProps) => {
                     />
                   </svg>
                   <span>
-                    {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                    <span suppressHydrationWarning>
+                      {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
                   </span>
                 </time>
               </div>

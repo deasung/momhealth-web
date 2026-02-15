@@ -2,6 +2,8 @@
  * 웹 환경에서 디바이스 정보를 수집하는 유틸리티
  */
 
+import { logger } from "../logger";
+
 /**
  * 브라우저 고유 ID 생성 및 관리 (installationId 대체)
  * localStorage에 저장하여 브라우저별로 고유한 ID 유지
@@ -24,7 +26,7 @@ export const getBrowserId = (): string => {
 
     return browserId;
   } catch (error) {
-    console.error("브라우저 ID 생성 실패:", error);
+    logger.error("브라우저 ID 생성 실패:", error);
     // localStorage 접근 실패 시 임시 ID 생성
     return generateUUID();
   }

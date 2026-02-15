@@ -4,6 +4,7 @@ export interface PopularQuestion {
   description: string;
   thumbnailUrl: string;
   durationMinutes: number | null;
+  durationSeconds?: number | null;
   createdAt: string;
   viewCount: number;
   type: string;
@@ -15,8 +16,9 @@ export interface RecommendedQuestion {
   description: string;
   thumbnailUrl: string;
   durationMinutes: number | null;
+  durationSeconds?: number | null;
   createdAt: string;
-  readTime: string;
+  readTime?: string;
 }
 
 export interface CommunityPost {
@@ -31,6 +33,7 @@ export interface CommunityPost {
 }
 
 export interface HomeData {
+  title?: string;
   popularQuestions: PopularQuestion[];
   recommendedQuestions: RecommendedQuestion[];
   communityPosts: CommunityPost[];

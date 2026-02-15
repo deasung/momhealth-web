@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../lib/auth";
 import ClientProviders from "./components/ClientProviders";
-import AnalyticsListener from "./components/AnalyticsListener"; // ✅ 추가
+import AnalyticsListener from "./components/AnalyticsListener";
 import "../styles/globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
@@ -93,7 +93,6 @@ export default async function RootLayout({
         <html lang="ko">
         <body className="antialiased">
         <ClientProviders session={session}>
-            {/* ✅ 페이지 이동 감지 & page_view 이벤트 전송 */}
             <AnalyticsListener />
             {children}
         </ClientProviders>

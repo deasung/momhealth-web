@@ -6,8 +6,12 @@ import CommunityListClient from "../../components/CommunityListClient";
 import { getCommunityPostsServer } from "../../../lib/api-server";
 import type { CommunityPost } from "../../types/community";
 import type { CommunityPostCardDTO } from "../../types/dto";
+import { logger } from "@/lib/logger";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
+
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
 
 // ✅ SEO: 동적 메타데이터 생성
 export async function generateMetadata(): Promise<Metadata> {
@@ -79,7 +83,7 @@ export default async function CommunityPage() {
         data?: unknown;
       };
     };
-    console.error("❌ [CommunityPage] 커뮤니티 게시글 로딩 실패:", {
+    logger.error(" [CommunityPage] 커뮤니티 게시글 로딩 실패:", {
       message: axiosError.message,
       status: axiosError.response?.status,
       statusText: axiosError.response?.statusText,

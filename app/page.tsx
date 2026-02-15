@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import Header from "./components/Header";
+import dynamic from "next/dynamic";
 import Footer from "./components/Footer";
 import PopularQuestions from "./components/PopularQuestions";
 import RecommendedQuestions from "./components/RecommendedQuestions";
 import CommunityPosts from "./components/CommunityPosts";
+import ReloadButton from "./components/ReloadButton";
 import { getHomeDataServer } from "../lib/api-server";
 import type { HomeData } from "./types/home";
 import type { QuestionCardDTO } from "./types/dto";
 import { generatePageMetadata } from "../lib/metadata";
+import { logger } from "@/lib/logger";
+
+const Header = dynamic(() => import("./components/Header"), { ssr: false });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://medigen.ai.kr";
 
@@ -64,18 +68,9 @@ export default async function Home() {
     // 서버에서 데이터 가져오기
     homeData = await getHomeDataServer();
   } catch (err) {
-    console.error("홈 데이터 로딩 실패:", err);
+    logger.error("홈 데이터 로딩 실패:", err);
     error = "데이터를 불러오는데 실패했습니다.";
   }
-
-  // 통계 데이터 계산
-  const stats = homeData
-    ? {
-        popular: homeData.popularQuestions.length,
-        recommended: homeData.recommendedQuestions.length,
-        community: homeData.communityPosts.length,
-      }
-    : null;
 
   // ✅ RSC Payload 최적화: DTO 패턴 적용 - 필요한 필드만 추출
   const popularQuestionsDTO: QuestionCardDTO[] =
@@ -85,6 +80,7 @@ export default async function Home() {
       description: q.description,
       thumbnailUrl: q.thumbnailUrl,
       durationMinutes: q.durationMinutes,
+      durationSeconds: q.durationSeconds,
       createdAt: q.createdAt,
     })) || [];
 
@@ -95,8 +91,8 @@ export default async function Home() {
       description: q.description,
       thumbnailUrl: q.thumbnailUrl,
       durationMinutes: q.durationMinutes,
+      durationSeconds: q.durationSeconds,
       createdAt: q.createdAt,
-      readTime: q.readTime,
     })) || [];
 
   return (
@@ -105,42 +101,25 @@ export default async function Home() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
         {/* ✅ SEO & UX: 히어로 섹션 - h1 태그 */}
-        <section className="text-center mb-10 md:mb-12 lg:mb-16">
+
+        <section>
           {/* <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">
             오늘의 건강
           </h1> */}
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
-            당신의 건강을 위한 맞춤형 건강 관리 플랫폼
-          </p>
-
-          {/* ✅ 반응형 & 디자인: 통계 카드 */}
-          {stats && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 md:gap-6 max-w-4xl mx-auto mb-10 md:mb-12 lg:mb-16">
-              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 mb-2">
-                  {stats.popular.toLocaleString()}
-                </div>
-                <div className="text-sm sm:text-base text-gray-700 font-semibold">
-                  인기 질문
-                </div>
-              </article>
-              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600 mb-2">
-                  {stats.recommended.toLocaleString()}
-                </div>
-                <div className="text-sm sm:text-base text-gray-700 font-semibold">
-                  추천 질문
-                </div>
-              </article>
-              <article className="bg-white rounded-xl p-6 sm:p-7 md:p-8 text-center shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-purple-600 mb-2">
-                  {stats.community.toLocaleString()}
-                </div>
-                <div className="text-sm sm:text-base text-gray-700 font-semibold">
-                  커뮤니티 게시글
-                </div>
-              </article>
-            </div>
+          {homeData?.title ? (
+            <div
+              className="max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p:empty]:min-h-[1em]"
+              dangerouslySetInnerHTML={{ __html: homeData.title }}
+            />
+          ) : (
+            <p className="text-center text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 lg:mb-12 leading-relaxed">
+              오늘의 건강은 5~47초 사이에 답변 할 수 있는 건강 질문 답변을 통해
+              현재의 건강 상태를 파악할 수 있는 서비스 입니다.
+              <span className="font-semibold text-gray-900">
+                &apos;오늘의 건강&apos;
+              </span>
+              으로 오늘의 건강을 가장 빨리 파악해보세요
+            </p>
           )}
         </section>
 
@@ -159,27 +138,7 @@ export default async function Home() {
                 데이터를 불러올 수 없습니다
               </h2>
               <p className="text-gray-600 text-sm sm:text-base mb-6">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors text-sm sm:text-base font-medium min-h-[44px] shadow-sm hover:shadow-md"
-                aria-label="페이지 새로고침"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                <span>새로고침</span>
-              </button>
+              <ReloadButton />
             </div>
           </div>
         )}

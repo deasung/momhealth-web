@@ -47,6 +47,9 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
+// 동적 렌더링 강제 (headers 사용)
+export const dynamic = "force-dynamic";
+
 interface UserCompletedResponse {
   data: {
     results: UserCompletedResult[];
@@ -67,7 +70,7 @@ const CompletedQuestionCard = ({ item }: CompletedQuestionCardProps) => {
     const date = new Date(item.completedAt);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}.${String(date.getDate()).padStart(2, "0")}`;
   })();
 
@@ -210,7 +213,7 @@ export default async function UserCompletedPage({
           page: currentPage,
           limit: LIMIT,
         },
-        token
+        token,
       );
     completedQuestions = response.data?.results || [];
     pagination = response.data?.pagination || null;
@@ -258,27 +261,27 @@ export default async function UserCompletedPage({
         {/* 페이지 헤더 */}
         <header className="mb-6 md:mb-8">
           <nav aria-label="브레드크럼 네비게이션" className="mb-4">
-          <Link
-            href="/my"
+            <Link
+              href="/my"
               className="inline-flex items-center gap-2 px-3 py-2 -ml-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors text-sm md:text-base font-medium min-h-[44px]"
-            aria-label="마이페이지로 돌아가기"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+              aria-label="마이페이지로 돌아가기"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            <span>뒤로가기</span>
-          </Link>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              <span>뒤로가기</span>
+            </Link>
           </nav>
 
           <div>

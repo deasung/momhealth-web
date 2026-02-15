@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { QuestionCardDTO } from "../types/dto";
+import { formatDuration } from "@/lib/utils/timeFormat";
 
 interface RecommendedQuestionsProps {
   questions: QuestionCardDTO[];
@@ -62,13 +63,19 @@ const RecommendedQuestions = ({ questions }: RecommendedQuestionsProps) => {
             aria-label={`${question.title} 추천 질문 보기`}
           >
             <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-gradient-to-br from-green-50 to-blue-50">
-              <Image
-                src={question.thumbnailUrl}
-                alt={question.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
+              {question.thumbnailUrl ? (
+                <Image
+                  src={question.thumbnailUrl}
+                  alt={question.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl sm:text-3xl">
+                  💊
+                </div>
+              )}
               <div className="absolute top-3 right-3">
                 <span
                   className="bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-md"
@@ -104,15 +111,10 @@ const RecommendedQuestions = ({ questions }: RecommendedQuestionsProps) => {
                     />
                   </svg>
                   <span>
-                    {question.durationMinutes
-                      ? `${question.durationMinutes}분`
-                      : question.readTime
-                      ? (() => {
-                          // "5 min read" 형식에서 숫자 추출
-                          const match = question.readTime.match(/(\d+)\s*min/);
-                          return match ? `${match[1]}분` : question.readTime;
-                        })()
-                      : "시간 미정"}
+                    {formatDuration({
+                      durationMinutes: question.durationMinutes,
+                      durationSeconds: question.durationSeconds,
+                    })}
                   </span>
                 </span>
                 <time
@@ -134,7 +136,9 @@ const RecommendedQuestions = ({ questions }: RecommendedQuestionsProps) => {
                     />
                   </svg>
                   <span>
-                    {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                    <span suppressHydrationWarning>
+                      {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
                   </span>
                 </time>
               </div>

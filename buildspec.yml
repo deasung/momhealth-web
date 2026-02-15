@@ -1,156 +1,40 @@
 version: 0.2
 
-env:
-  variables:
-    # --- 이미지 / 빌드 ---
-    IMAGE_REPO_NAME: momhealth-web-production
-    IMAGE_TAG: latest
-    PLATFORM: linux/arm64
-
-    # --- 배포 대상 EC2 (태그로 지정) ---
-    EC2_TAG_KEY: Name
-    EC2_TAG_VAL: momhealth-web
-
-    # --- 컨테이너 실행 옵션 ---
-    CONTAINER_NAME: momhealth-web
-    HOST_PORT: "80" # LB→EC2 외부 포트
-    APP_PORT: "3300" # 컨테이너 내부 Next.js 포트
-
 phases:
   install:
+    runtime-versions:
+      nodejs: 20
     commands:
-      - echo "[install] docker version"
-      - docker --version
-
-  pre_build:
-    commands:
-      - echo "[pre_build] login & ensure repo"
-      - set -e
-      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
-      - echo "Region=${REGION}"
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-      - |
-        if ! aws ecr describe-repositories --repository-names "${IMAGE_REPO_NAME}" --region "${REGION}" >/dev/null 2>&1; then
-          aws ecr create-repository --repository-name "${IMAGE_REPO_NAME}" --image-scanning-configuration scanOnPush=true --region "${REGION}"
-        fi
-      - aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URI}"
-      - COMMIT=${CODEBUILD_RESOLVED_SOURCE_VERSION:-local}
-      - IMAGE=${ECR_URI}/${IMAGE_REPO_NAME}
-      # buildx 멀티아키
-      - docker run --privileged --rm tonistiigi/binfmt --install all
-      - docker buildx create --use --name multi || docker buildx use multi
-      - docker buildx inspect --bootstrap
-
+      - npm ci
   build:
     commands:
-      - echo "[buildx] build and push (${PLATFORM})"
+      - cp .env.production .env
+      - NODE_ENV=production npm run build
       - |
-        # 💡 수정: --build-arg 모두 제거. 런타임 환경 변수는 런타임에만 주입합니다.
-        docker buildx build \
-          --platform "${PLATFORM}" \
-          -t "${IMAGE}:${COMMIT}" \
-          -t "${IMAGE}:${IMAGE_TAG}" \
-          --push .
-
-  post_build:
-    commands:
-      - echo "[post_build] write imagedefinitions.json"
-      - printf '[{"name":"%s","imageUri":"%s"}]' "${IMAGE_REPO_NAME}" "${IMAGE}:${IMAGE_TAG}" > imagedefinitions.json
-      - cat imagedefinitions.json
-
-      - echo "[deploy] SSM RunCommand to EC2 by tag ${EC2_TAG_KEY}=${EC2_TAG_VAL}"
-      - REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
-
-      # ====== CodeBuild 환경변수에서 읽어오기 (유지) ======
-      - |
-        echo "=== 환경변수 확인 ==="
-        echo "MOMHEALTH_API_URL_VALUE=${MOMHEALTH_API_URL_VALUE}"
-        echo "NODE_ENV=${NODE_ENV}"
-        echo "===================="
-        NEXTAUTH_URL_VALUE="${NEXTAUTH_URL_VALUE}"
-        NEXTAUTH_SECRET_VALUE="${NEXTAUTH_SECRET_VALUE}"
-        MOMHEALTH_API_URL_VALUE="${MOMHEALTH_API_URL_VALUE}"
-        MOMHEALTH_API_KEY_VALUE="${MOMHEALTH_API_KEY_VALUE}"
-        JWT_SECRET_VALUE="${JWT_SECRET_VALUE}"
-        CDN_URL_VALUE="${CDN_URL_VALUE}"
-        KAKAO_CLIENT_ID_VALUE="${KAKAO_CLIENT_ID_VALUE}"
-        KAKAO_CLIENT_SECRET_VALUE="${KAKAO_CLIENT_SECRET_VALUE}"
-        GOOGLE_CLIENT_ID_VALUE="${GOOGLE_CLIENT_ID_VALUE}"
-        GOOGLE_CLIENT_SECRET_VALUE="${GOOGLE_CLIENT_SECRET_VALUE}"
-      # ===========================================================
-      # SSM 파라미터 JSON을 jq로 생성 (docker run -e 옵션 사용)
-      - |
-        jq -n \
-          --arg region "${REGION}" \
-          --arg account "${ACCOUNT_ID}" \
-          --arg image "${IMAGE}" \
-          --arg tag "${IMAGE_TAG}" \
-          --arg container "${CONTAINER_NAME}" \
-          --arg host_port "${HOST_PORT}" \
-          --arg app_port "${APP_PORT}" \
-          --arg na_url "${NEXTAUTH_URL_VALUE}" \
-          --arg na_sec "${NEXTAUTH_SECRET_VALUE}" \
-          --arg mh_url "${MOMHEALTH_API_URL_VALUE}" \
-          --arg mh_key "${MOMHEALTH_API_KEY_VALUE}" \
-          --arg jwt    "${JWT_SECRET_VALUE}" \
-          --arg cdn    "${CDN_URL_VALUE}" \
-          --arg kid    "${KAKAO_CLIENT_ID_VALUE}" \
-          --arg ksec   "${KAKAO_CLIENT_SECRET_VALUE}" \
-          --arg gid    "${GOOGLE_CLIENT_ID_VALUE}" \
-          --arg gsec   "${GOOGLE_CLIENT_SECRET_VALUE}" \
-          --arg node_env "${NODE_ENV}" \
-          '{
-            commands: [
-              "set -e",
-              "REGION='\''\($region)'\''",
-              "ACCOUNT_ID='\''\($account)'\''",
-              "IMAGE_URI='\''\($image):\($tag)'\''",
-              "CONTAINER='\''\($container)'\''",
-              "HOST_PORT='\''\($host_port)'\''",
-              "APP_PORT='\''\($app_port)'\''",
-              "echo 로그인 및 이미지 풀",
-              "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com",
-              "docker pull ${IMAGE_URI}",
-              "echo 기존 컨테이너 중지 및 삭제",
-              "docker stop ${CONTAINER} || true",
-              "docker rm ${CONTAINER} || true",
-
-              "echo 새 컨테이너 실행 환경변수 직접 전달",
-              "docker run -d --name ${CONTAINER} -p ${HOST_PORT}:${APP_PORT} --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 -e NEXTAUTH_URL='\''\($na_url)'\'' -e NEXTAUTH_SECRET='\''\($na_sec)'\'' -e MOMHEALTH_API_URL='\''\($mh_url)'\'' -e MOMHEALTH_API_KEY='\''\($mh_key)'\'' -e JWT_SECRET='\''\($jwt)'\'' -e CDN_URL='\''\($cdn)'\'' -e KAKAO_CLIENT_ID='\''\($kid)'\'' -e KAKAO_CLIENT_SECRET='\''\($ksec)'\'' -e GOOGLE_CLIENT_ID='\''\($gid)'\'' -e GOOGLE_CLIENT_SECRET='\''\($gsec)'\'' -e NODE_ENV='\''\($node_env)'\'' -e HOST=0.0.0.0 -e PORT=${APP_PORT} ${IMAGE_URI}",
-
-              "sleep 5",
-              "echo 컨테이너 상태 확인",
-              "docker ps -f name=${CONTAINER}",
-              "echo 컨테이너 내부 환경 변수 확인",
-              "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_URL || echo ERROR: MOMHEALTH_API_URL check failed",
-              "docker exec ${CONTAINER} printenv | grep MOMHEALTH_API_KEY || echo ERROR: MOMHEALTH_API_KEY check failed",
-              "docker exec ${CONTAINER} printenv | grep NODE_ENV || echo ERROR: NODE_ENV check failed",
-              "docker exec ${CONTAINER} printenv | head -20",
-              "echo Next.js 로그 확인 디버깅",
-              "docker logs ${CONTAINER} --tail 20"
-            ]
-          }' > ssm-params.json
-        echo "--- ssm-params.json 생성 완료 (보안상 내용은 출력하지 않음) ---"
-
-      - |
-        COMMAND_ID=$(aws ssm send-command \
-          --document-name "AWS-RunShellScript" \
-          --comment "Deploy ${IMAGE_REPO_NAME} to EC2" \
-          --parameters file://ssm-params.json \
-          --targets "Key=tag:${EC2_TAG_KEY},Values=${EC2_TAG_VAL}" \
-          --timeout-seconds 600 \
-          --region "${REGION}" \
-          --query "Command.CommandId" --output text) || true
-        echo "SSM CommandId=${COMMAND_ID}"
-
-      - |
-        if [ -n "$COMMAND_ID" ] && [ "$COMMAND_ID" != "None" ]; then
-          aws ssm list-command-invocations --command-id "$COMMAND_ID" --details --region "${REGION}" || true
+        # standalone 모드: .next/static을 .next/standalone/.next/static으로 복사 (필수)
+        if [ -d ".next/standalone" ] && [ -d ".next/static" ]; then
+          echo "Copying .next/static to .next/standalone/.next/static"
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          echo "✅ Static files copied to standalone"
         else
-          echo "WARN: SSM CommandId is empty (send-command might have failed)."
+          echo "WARN: .next/standalone or .next/static not found"
         fi
-
+      - |
+        # public 폴더도 standalone에 복사 (필요한 경우)
+        if [ -d ".next/standalone" ] && [ -d "public" ]; then
+          echo "Copying public to .next/standalone/public"
+          cp -r public .next/standalone/public
+          echo "✅ Public files copied to standalone"
+        fi
 artifacts:
   files:
-    - imagedefinitions.jsonㅌ
+    - '.next/**/*'
+    - '.env'
+    - 'public/**/*'
+    - 'scripts/**/*'
+    - 'package.json'
+    - 'package-lock.json'
+    - 'next.config.js'
+    - 'appspec.yml'
+  discard-paths: no

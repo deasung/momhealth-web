@@ -1,5 +1,6 @@
 // lib/firebaseClient.ts 같은 곳
 
+import { logger } from "@/lib/logger";
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import {
   getMessaging,
@@ -143,7 +144,7 @@ export const getFCMToken = async (): Promise<string | null> => {
 
   const messagingInstance = initializeMessaging();
   if (!messagingInstance) {
-    console.warn("⚠️ Messaging이 초기화되지 않았습니다.");
+    logger.warn("⚠️ Messaging이 초기화되지 않았습니다.");
     return null;
   }
 
@@ -151,7 +152,7 @@ export const getFCMToken = async (): Promise<string | null> => {
     // VAPID 키는 Service Worker에서 사용됩니다
     const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
     if (!vapidKey) {
-      console.warn("⚠️ VAPID 키가 설정되지 않았습니다.");
+      logger.warn("⚠️ VAPID 키가 설정되지 않았습니다.");
       return null;
     }
 
@@ -160,14 +161,14 @@ export const getFCMToken = async (): Promise<string | null> => {
     });
 
     if (token) {
-      console.log("✅ FCM 토큰 발급 성공:", token.substring(0, 20) + "...");
+      logger.info("✅ FCM 토큰 발급 성공:", token.substring(0, 20) + "...");
       return token;
     } else {
-      console.warn("⚠️ FCM 토큰을 가져올 수 없습니다. 알림 권한을 확인하세요.");
+      logger.warn("⚠️ FCM 토큰을 가져올 수 없습니다. 알림 권한을 확인하세요.");
       return null;
     }
   } catch (error) {
-    console.error("❌ FCM 토큰 발급 실패:", error);
+    logger.error("❌ FCM 토큰 발급 실패:", error);
     return null;
   }
 };
@@ -184,7 +185,7 @@ export const onForegroundMessage = (
   try {
     return onMessage(messagingInstance, callback);
   } catch (error) {
-    console.error("❌ 포그라운드 메시지 리스너 등록 실패:", error);
+    logger.error("❌ 포그라운드 메시지 리스너 등록 실패:", error);
     return null;
   }
 };
@@ -201,7 +202,7 @@ export const requestNotificationPermission =
     }
 
     if (Notification.permission === "denied") {
-      console.warn("⚠️ 알림 권한이 거부되었습니다.");
+      logger.warn("⚠️ 알림 권한이 거부되었습니다.");
       return "denied";
     }
 
@@ -209,7 +210,7 @@ export const requestNotificationPermission =
       const permission = await Notification.requestPermission();
       return permission;
     } catch (error) {
-      console.error("❌ 알림 권한 요청 실패:", error);
+      logger.error("❌ 알림 권한 요청 실패:", error);
       return "denied";
     }
   };

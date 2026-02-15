@@ -11,6 +11,7 @@ import {
   registerPushToken,
   unregisterPushToken,
 } from "../api";
+import { logger } from "@/lib/logger";
 
 interface UsePushNotificationReturn {
   token: string | null;
@@ -86,7 +87,7 @@ export function usePushNotification(): UsePushNotificationReturn {
     if (!isSupported || permission !== "granted") return;
 
     const unsubscribe = onForegroundMessage((payload) => {
-      console.log("포그라운드 메시지 수신:", payload);
+      logger.debug("포그라운드 메시지 수신:", payload);
 
       // 브라우저 알림 표시
       if ("Notification" in window && Notification.permission === "granted") {
@@ -131,7 +132,7 @@ export function usePushNotification(): UsePushNotificationReturn {
         );
       }
     } catch (err: any) {
-      console.error("알림 권한 요청 실패:", err);
+      logger.error("알림 권한 요청 실패:", err);
       setError(err.message || "알림 권한 요청에 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -162,16 +163,16 @@ export function usePushNotification(): UsePushNotificationReturn {
       if (userToken) {
         try {
           await registerPushToken(fcmToken);
-          console.log("✅ 푸시 토큰 등록 완료");
+          logger.info("✅ 푸시 토큰 등록 완료");
         } catch (err) {
-          console.error("백엔드 토큰 등록 실패:", err);
+          logger.error("백엔드 토큰 등록 실패:", err);
           // 토큰은 저장했지만 백엔드 등록 실패는 경고만
         }
       }
 
       return fcmToken;
     } catch (err: any) {
-      console.error("푸시 토큰 등록 실패:", err);
+      logger.error("푸시 토큰 등록 실패:", err);
       setError(err.message || "푸시 토큰 등록에 실패했습니다.");
       return null;
     } finally {
@@ -192,14 +193,14 @@ export function usePushNotification(): UsePushNotificationReturn {
         try {
           await unregisterPushToken(token);
         } catch (err) {
-          console.error("백엔드 토큰 해제 실패:", err);
+          logger.error("백엔드 토큰 해제 실패:", err);
         }
       }
 
       setToken(null);
-      console.log("✅ 푸시 토큰 해제 완료");
+      logger.info("✅ 푸시 토큰 해제 완료");
     } catch (err: any) {
-      console.error("푸시 토큰 해제 실패:", err);
+      logger.error("푸시 토큰 해제 실패:", err);
       setError(err.message || "푸시 토큰 해제에 실패했습니다.");
     } finally {
       setIsLoading(false);

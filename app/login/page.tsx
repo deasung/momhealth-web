@@ -6,6 +6,7 @@ import { signIn, getSession, signOut } from "next-auth/react";
 import SEO from "../components/SEO";
 import { useAuth } from "../../lib/hooks/useAuth";
 import { useLogout } from "../../lib/hooks/useLogout";
+import { useEnsureAuth } from "../../lib/hooks/useEnsureAuth";
 import { clearToken, getGuestToken, setToken } from "../../lib/api";
 import { TOKEN_KEYS } from "../../lib/constants";
 
@@ -34,8 +35,47 @@ export default function LoginPage() {
     message: "",
   });
 
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
   const { logout } = useLogout();
+  const { ensureAuth } = useEnsureAuth();
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [isRealAuthenticated, setIsRealAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      const result = await ensureAuth({
+        redirectToLogin: false,
+        verifyWithServer: true,
+      });
+
+      if (result.ok) {
+        setIsRealAuthenticated(true);
+        setIsAuthChecked(true);
+        return;
+      }
+
+      // 세션만 살아있고 토큰이 무효/만료인 케이스 정리: 로그인 화면이 보이게 강제
+      try {
+        await signOut({ redirect: false });
+      } catch (e) {
+        // ignore
+      }
+
+      try {
+        localStorage.removeItem(TOKEN_KEYS.TOKEN);
+        localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
+        localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
+        clearToken();
+      } catch (e) {
+        // ignore
+      }
+
+      setIsRealAuthenticated(false);
+      setIsAuthChecked(true);
+    };
+
+    check();
+  }, [ensureAuth]);
 
   // session_expired 쿼리 파라미터 확인 및 처리
   useEffect(() => {
@@ -82,7 +122,7 @@ export default function LoginPage() {
     if (!EMAIL_RULE.test(email.trim()))
       return "올바른 이메일 형식을 입력해주세요.";
     return "";
-  }, [touched.email, email]);
+  }, [touched.email, email, EMAIL_RULE]);
 
   const passwordErrorDisplay = useMemo(() => {
     if (!touched.password) return "";
@@ -90,7 +130,7 @@ export default function LoginPage() {
     if (!PW_RULE.test(password))
       return "숫자·특수문자를 포함해 8자 이상 입력해주세요.";
     return "";
-  }, [touched.password, password]);
+  }, [touched.password, password, PW_RULE]);
 
   // ✅ UX: 성공 메시지 자동 숨김
   useEffect(() => {
@@ -275,7 +315,7 @@ export default function LoginPage() {
   );
 
   // 로딩 중이거나 이미 인증된 경우 로딩 표시
-  if (isLoading) {
+  if (isLoading || !isAuthChecked) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <SEO
@@ -313,11 +353,17 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {!isAuthenticated && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
-              {/* ✅ UX: 성공 메시지 표시 */}
-              {successMessage && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+            {isRealAuthenticated && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700 font-medium">
+                  이미 로그인되어 있습니다. 다른 계정으로 로그인하거나 로그아웃할 수 있어요.
+                </p>
+              </div>
+            )}
+            {/* ✅ UX: 성공 메시지 표시 */}
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                   <svg
                     className="w-5 h-5 text-green-500 flex-shrink-0"
                     fill="none"
@@ -334,40 +380,40 @@ export default function LoginPage() {
                   <p className="text-sm text-green-700 font-medium">
                     {successMessage}
                   </p>
-                </div>
-              )}
-              {/* 소셜 로그인 섹션 */}
-              <div className="space-y-3 mb-6">
-                <button
-                  type="button"
-                  onClick={() => signIn("kakao", { callbackUrl: "/" })}
-                  className="w-full h-14 rounded-xl bg-[#FEE500] text-black font-semibold hover:brightness-95 active:brightness-90 transition-all flex items-center justify-center gap-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
-                  aria-label="카카오 계정으로 로그인"
-                >
-                  <img
-                    src="/kakao.svg"
-                    alt=""
-                    className="w-5 h-5"
-                    aria-hidden="true"
-                  />
-                  카카오 계정으로 시작하기
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => signIn("google", { callbackUrl: "/" })}
-                  className="w-full h-14 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:bg-gray-100 transition-all flex items-center justify-center gap-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-                  aria-label="구글 계정으로 로그인"
-                >
-                  <img
-                    src="/google.svg"
-                    alt=""
-                    className="w-5 h-5"
-                    aria-hidden="true"
-                  />
-                  구글 계정으로 시작하기
-                </button>
               </div>
+            )}
+            {/* 소셜 로그인 섹션 */}
+            <div className="space-y-3 mb-6">
+              <button
+                type="button"
+                onClick={() => signIn("kakao", { callbackUrl: "/" })}
+                className="w-full h-14 rounded-xl bg-[#FEE500] text-black font-semibold hover:brightness-95 active:brightness-90 transition-all flex items-center justify-center gap-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
+                aria-label="카카오 계정으로 로그인"
+              >
+                <img
+                  src="/kakao.svg"
+                  alt=""
+                  className="w-5 h-5"
+                  aria-hidden="true"
+                />
+                카카오 계정으로 시작하기
+              </button>
+
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                className="w-full h-14 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:bg-gray-100 transition-all flex items-center justify-center gap-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                aria-label="구글 계정으로 로그인"
+              >
+                <img
+                  src="/google.svg"
+                  alt=""
+                  className="w-5 h-5"
+                  aria-hidden="true"
+                />
+                구글 계정으로 시작하기
+              </button>
+            </div>
 
               {/* 구분선 */}
               <div className="flex items-center gap-3 my-6">
@@ -658,32 +704,29 @@ export default function LoginPage() {
                   </form>
                 </div>
               )}
-            </div>
-          )}
+          </div>
 
-          {!isAuthenticated && (
-            <div className="mt-6 text-center text-sm text-gray-600">
-              <button
-                type="button"
-                onClick={handleSignUp}
-                className="hover:underline text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1"
-              >
-                이메일로 회원가입
-              </button>
-              <span className="mx-2 text-gray-400" aria-hidden="true">
-                ·
-              </span>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="hover:underline text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1"
-              >
-                비밀번호 찾기
-              </button>
-            </div>
-          )}
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <button
+              type="button"
+              onClick={handleSignUp}
+              className="hover:underline text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1"
+            >
+              이메일로 회원가입
+            </button>
+            <span className="mx-2 text-gray-400" aria-hidden="true">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="hover:underline text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1"
+            >
+              비밀번호 찾기
+            </button>
+          </div>
 
-          {isAuthenticated && (
+          {isRealAuthenticated && (
             <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               <div className="space-y-3">
                 <button

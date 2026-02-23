@@ -348,13 +348,12 @@ export default async function HealthQuestionDetailPage({
 
             {/* 설명 */}
             <section className="mb-8">
-              <p className="text-base sm:text-lg text-gray-700 leading-relaxed mb-4">
-                {question.description}
-              </p>
+
               {question.detailDescription && (
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-left">
-                  {question.detailDescription}
-                </p>
+                <div
+                  className="text-sm sm:text-base text-gray-600 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: question.detailDescription }}
+                />
               )}
             </section>
 

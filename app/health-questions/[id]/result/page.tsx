@@ -128,24 +128,14 @@ const ResultPage = () => {
                   <p>{error}</p>
                 ) : (
                   <>
-                    <div className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-4 sm:p-5 text-left">
-                      {(
-                        result?.result.description ||
-                        "퀴즈 결과 설명을 확인할 수 없습니다."
-                      )
-                        .split(/\n{2,}/)
-                        .filter((paragraph) => paragraph.trim().length > 0)
-                        .map((paragraph, index, all) => (
-                          <p
-                            key={`${index}-${paragraph.slice(0, 12)}`}
-                            className={`whitespace-pre-wrap break-words ${
-                              index === all.length - 1 ? "" : "mb-4"
-                            }`}
-                          >
-                            {paragraph}
-                          </p>
-                        ))}
-                    </div>
+                    <div
+                      className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-4 sm:p-5 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_p:empty]:block [&_p:empty]:h-4"
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          result?.result.description ||
+                          "퀴즈 결과 설명을 확인할 수 없습니다.",
+                      }}
+                    />
                     {result?.result.linkUrl && (
                       <div className="mt-4">
                         <a

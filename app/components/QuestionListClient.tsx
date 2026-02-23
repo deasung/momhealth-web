@@ -256,9 +256,10 @@ export default function QuestionListClient({
               <h3 className="font-semibold text-gray-900 text-lg sm:text-xl mb-2 line-clamp-2 leading-snug">
                 {question.title}
               </h3>
-              <p className="text-gray-600 text-sm sm:text-base mb-4 line-clamp-2 leading-relaxed">
-                {question.description}
-              </p>
+              <p
+                className="text-gray-600 text-sm sm:text-base mb-4 line-clamp-2 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: question.description || "" }}
+              />
 
               <div className="flex flex-wrap gap-2 mb-4">
                 {question.primaryCategory && (

@@ -245,8 +245,9 @@ export default function LoginPage() {
           // ✅ UX: alert 제거, 성공 메시지 표시
           setSuccessMessage("로그인 성공! 환영합니다!");
           // 로그인 성공 후 리다이렉트 (선택적)
+          const callbackUrl = searchParams?.get("callbackUrl") || "/";
           setTimeout(() => {
-            router.push("/");
+            router.push(callbackUrl);
           }, 1500);
         }
       }
@@ -386,7 +387,7 @@ export default function LoginPage() {
             <div className="space-y-3 mb-6">
               <button
                 type="button"
-                onClick={() => signIn("kakao", { callbackUrl: "/" })}
+                onClick={() => signIn("kakao", { callbackUrl: searchParams?.get("callbackUrl") || "/" })}
                 className="w-full h-14 rounded-xl bg-[#FEE500] text-black font-semibold hover:brightness-95 active:brightness-90 transition-all flex items-center justify-center gap-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
                 aria-label="카카오 계정으로 로그인"
               >
@@ -401,7 +402,7 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => signIn("google", { callbackUrl: "/" })}
+                onClick={() => signIn("google", { callbackUrl: searchParams?.get("callbackUrl") || "/" })}
                 className="w-full h-14 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:bg-gray-100 transition-all flex items-center justify-center gap-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                 aria-label="구글 계정으로 로그인"
               >

@@ -35,7 +35,10 @@ export function useEnsureAuth() {
 
       if (status !== "authenticated") {
         if (options?.redirectToLogin) {
-          router.push("/login");
+          const callbackUrl = typeof window !== "undefined"
+            ? window.location.pathname + window.location.search
+            : "/";
+          router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
         return { ok: false, reason: "unauthenticated" };
       }
@@ -80,7 +83,10 @@ export function useEnsureAuth() {
               localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
               localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
               if (options?.redirectToLogin) {
-                router.push("/login");
+                const callbackUrl = typeof window !== "undefined"
+                  ? window.location.pathname + window.location.search
+                  : "/";
+                router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
               }
               return { ok: false, reason: "token_invalid" };
             }
@@ -122,7 +128,10 @@ export function useEnsureAuth() {
                 localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
                 localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
                 if (options?.redirectToLogin) {
-                  router.push("/login");
+                  const callbackUrl = typeof window !== "undefined"
+                  ? window.location.pathname + window.location.search
+                  : "/";
+                router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
                 }
                 return { ok: false, reason: "token_invalid" };
               }
@@ -147,7 +156,10 @@ export function useEnsureAuth() {
                   localStorage.removeItem(TOKEN_KEYS.IS_GUEST);
                   localStorage.removeItem(TOKEN_KEYS.REFRESH_TOKEN);
                   if (options?.redirectToLogin) {
-                    router.push("/login");
+                    const callbackUrl = typeof window !== "undefined"
+                  ? window.location.pathname + window.location.search
+                  : "/";
+                router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
                   }
                   return { ok: false, reason: "token_invalid" };
                 }

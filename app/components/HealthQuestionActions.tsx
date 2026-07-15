@@ -13,6 +13,7 @@ interface HealthQuestionActionsProps {
   isCompleted: boolean;
   title?: string;
   description?: string;
+  descriptionText?: string;
   imageUrl?: string;
 }
 
@@ -22,11 +23,13 @@ function ShareButtons({
   questionId,
   title,
   description,
+  descriptionText,
   imageUrl,
 }: {
   questionId: string;
   title?: string;
   description?: string;
+  descriptionText?: string;
   imageUrl?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -53,7 +56,7 @@ function ShareButtons({
   // 질문 정보가 있으면 사용, 없으면 기본값 사용
   const shareTitle = title || "오늘의 건강 질문";
   const shareDescription =
-    description || "건강 질문을 카카오톡으로 공유해보세요.";
+    descriptionText || description || "건강 질문을 카카오톡으로 공유해보세요.";
   const shareImageUrl = imageUrl
     ? imageUrl.startsWith("http")
       ? imageUrl
@@ -101,6 +104,7 @@ export default function HealthQuestionActions({
   isCompleted,
   title,
   description,
+  descriptionText,
   imageUrl,
 }: HealthQuestionActionsProps) {
   const router = useRouter();
@@ -110,10 +114,12 @@ export default function HealthQuestionActions({
   const [shareData, setShareData] = useState<{
     title?: string;
     description?: string;
+    descriptionText?: string;
     imageUrl?: string;
   }>({
     title,
     description,
+    descriptionText,
     imageUrl,
   });
 
@@ -125,7 +131,8 @@ export default function HealthQuestionActions({
           const question = await getHealthQuestionDetail(questionId);
           setShareData({
             title: question.title,
-            description: question.description || question.title,
+            description: question.description,
+            descriptionText: question.descriptionText,
             imageUrl: question.detailThumbnailUrl || question.thumbnailUrl,
           });
         } catch (error) {
@@ -266,6 +273,7 @@ export default function HealthQuestionActions({
           questionId={questionId}
           title={title}
           description={description}
+          descriptionText={descriptionText}
           imageUrl={imageUrl}
         />
       </div>
@@ -309,6 +317,7 @@ export default function HealthQuestionActions({
         questionId={questionId}
         title={shareData.title}
         description={shareData.description}
+        descriptionText={shareData.descriptionText}
         imageUrl={shareData.imageUrl}
       />
     </div>

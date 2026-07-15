@@ -440,6 +440,7 @@ export default async function HealthQuestionDetailPage({
             isCompleted={question.userProgress?.isCompleted || false}
             title={question.title}
             description={question.description || question.title}
+            descriptionText={question.descriptionText}
             imageUrl={
               question.detailThumbnailUrl || question.thumbnailUrl || undefined
             }

@@ -42,7 +42,7 @@ const Header = () => {
 
         const isProtectedRoute =
           pathname.startsWith("/friends") ||
-          pathname.startsWith("/my") ||
+          (pathname.startsWith("/my") && !pathname.startsWith("/my/terms")) ||
           /^\/health-questions\/[^/]+\/(quiz|result)$/.test(pathname) ||
           pathname.startsWith("/health-questions/user-completed");
 
@@ -58,7 +58,7 @@ const Header = () => {
 
         const isProtectedRoute =
           pathname.startsWith("/friends") ||
-          pathname.startsWith("/my") ||
+          (pathname.startsWith("/my") && !pathname.startsWith("/my/terms")) ||
           /^\/health-questions\/[^/]+\/(quiz|result)$/.test(pathname) ||
           pathname.startsWith("/health-questions/user-completed");
 
